@@ -124,6 +124,7 @@ namespace Pinut::vkinit
             .colorAttachmentCount = attachmentCount,
             .pColorAttachments = attachments,
             .pDepthAttachment = depthAttachment,
+            .pStencilAttachment = depthAttachment,
         };
 
         return info;

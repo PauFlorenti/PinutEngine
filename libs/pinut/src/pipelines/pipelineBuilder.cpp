@@ -87,6 +87,11 @@ namespace Pinut
         render_info.depthAttachmentFormat = format;
     }
 
+    void PipelineBuilder::set_stencil_format(VkFormat format)
+    {
+        render_info.stencilAttachmentFormat = format;
+    }
+
     void PipelineBuilder::enable_depth_test(bool write_enable, VkCompareOp compare_operation)
     {
         depth_stencil = {};

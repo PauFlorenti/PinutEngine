@@ -28,6 +28,7 @@ namespace Pinut
         void disable_blending();
         void set_color_attachment_format(VkFormat format);
         void set_depth_format(VkFormat format);
+        void set_stencil_format(VkFormat format);
         void enable_depth_test(bool write_enable, VkCompareOp compare_operation);
         void disable_depth_test();
         VkPipeline build(VkDevice device);

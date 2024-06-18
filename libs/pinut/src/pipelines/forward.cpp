@@ -97,6 +97,7 @@ namespace Pinut
         builder.disable_blending();
         builder.enable_depth_test(true, VK_COMPARE_OP_LESS);
         builder.set_depth_format(VK_FORMAT_D32_SFLOAT_S8_UINT);
+        builder.set_stencil_format(VK_FORMAT_D32_SFLOAT_S8_UINT);
 
         pipeline = builder.build(logicalDevice);
 
