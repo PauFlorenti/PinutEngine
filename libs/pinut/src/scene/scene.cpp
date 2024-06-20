@@ -33,10 +33,18 @@ namespace Pinut
     void Scene::Renderable::OnDestroy()
     {
         objectBuffer.Destroy();
-        mesh->Destroy();
-        mesh = nullptr;
-        material->Destroy();
-        material = nullptr;
+
+        if (mesh)
+        {
+            mesh->Destroy();
+            mesh = nullptr;
+        }
+
+        if (material)
+        {
+            material->Destroy();
+            material = nullptr;
+        }
     }
 
     void Scene::Renderable::Draw(VkCommandBuffer cmd)

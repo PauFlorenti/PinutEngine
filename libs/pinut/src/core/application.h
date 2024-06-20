@@ -10,7 +10,7 @@ namespace Pinut
 	class Application
 	{
 	public:
-		Application(const char *inName, int32_t inWidth = 1920, int32_t inHeight = 1080);
+		Application(const char *inName, int32_t inWidth = 1280, int32_t inHeight = 720);
 		virtual ~Application(){};
 
 		// Application interface

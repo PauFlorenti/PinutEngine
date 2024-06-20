@@ -48,13 +48,13 @@ namespace Pinut
         const auto logicalDevice = device->GetDevice();
 
         VkShaderModule vertex_shader;
-        if (!load_shader_module("shaders/forward.vert.spv", logicalDevice, &vertex_shader))
+        if (!load_shader_module("shaders/basic.vert.spv", logicalDevice, &vertex_shader))
         {
             printf("[ERROR]: Error building the forward vertex shader.");
         }
 
         VkShaderModule fragment_shader;
-        if (!load_shader_module("shaders/forward.frag.spv", logicalDevice, &fragment_shader))
+        if (!load_shader_module("shaders/basic.frag.spv", logicalDevice, &fragment_shader))
         {
             printf("[ERROR]: Error building the forward fragment shader.");
         }
@@ -66,21 +66,22 @@ namespace Pinut
             vkinit::VertexInputAttributeDescription(3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)),
         };
 
-        auto perFrameBinding = vkinit::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-        auto perFrameDescriptorSetLayoutInfo = vkinit::DescriptorSetLayoutCreateInfo(1, &perFrameBinding);
+        // auto perFrameBinding = vkinit::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        // auto perFrameDescriptorSetLayoutInfo = vkinit::DescriptorSetLayoutCreateInfo(1, &perFrameBinding);
 
-        vkCreateDescriptorSetLayout(logicalDevice, &perFrameDescriptorSetLayoutInfo, nullptr, &perFrameDescriptorSetLayout);
+        // vkCreateDescriptorSetLayout(logicalDevice, &perFrameDescriptorSetLayoutInfo, nullptr, &perFrameDescriptorSetLayout);
 
-        auto perObjectBinding = vkinit::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-        auto perObjectTextureBinding = vkinit::DescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, VK_SHADER_STAGE_FRAGMENT_BIT);
+        // auto perObjectBinding = vkinit::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        // auto perObjectTextureBinding = vkinit::DescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        VkDescriptorSetLayoutBinding bindings[2] = {perObjectBinding, perObjectTextureBinding};
-        auto perObjectDescriptorSetLayoutInfo = vkinit::DescriptorSetLayoutCreateInfo(2, bindings);
+        // VkDescriptorSetLayoutBinding bindings[2] = {perObjectBinding, perObjectTextureBinding};
+        // auto perObjectDescriptorSetLayoutInfo = vkinit::DescriptorSetLayoutCreateInfo(2, bindings);
 
-        vkCreateDescriptorSetLayout(logicalDevice, &perObjectDescriptorSetLayoutInfo, nullptr, &perObjectDescriptorSetLayout);
+        // vkCreateDescriptorSetLayout(logicalDevice, &perObjectDescriptorSetLayoutInfo, nullptr, &perObjectDescriptorSetLayout);
 
-        VkDescriptorSetLayout layouts[2] = {perFrameDescriptorSetLayout, perObjectDescriptorSetLayout};
-        auto layout_info = vkinit::PipelineLayoutCreateInfo(2, layouts);
+        // VkDescriptorSetLayout layouts[2] = {perFrameDescriptorSetLayout, perObjectDescriptorSetLayout};
+        // auto layout_info = vkinit::PipelineLayoutCreateInfo(2, layouts);
+        auto layout_info = vkinit::PipelineLayoutCreateInfo(0, nullptr);
 
         auto ok = vkCreatePipelineLayout(logicalDevice, &layout_info, nullptr, &pipelineLayout);
         assert(ok == VK_SUCCESS);
@@ -95,9 +96,10 @@ namespace Pinut
         builder.set_cull_mode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         builder.set_multisampling_none();
         builder.disable_blending();
-        builder.enable_depth_test(true, VK_COMPARE_OP_LESS);
-        builder.set_depth_format(VK_FORMAT_D32_SFLOAT_S8_UINT);
-        builder.set_stencil_format(VK_FORMAT_D32_SFLOAT_S8_UINT);
+
+        builder.enable_depth_test(false, false, VK_COMPARE_OP_NEVER);
+        builder.set_depth_format(VK_FORMAT_UNDEFINED);
+        builder.set_stencil_format(VK_FORMAT_UNDEFINED);
 
         pipeline = builder.build(logicalDevice);
 
@@ -139,7 +141,7 @@ namespace Pinut
 
         for (auto &r : scene->GetRenderables())
         {
-            VkDescriptorSet set = descriptorSetManager.Allocate(perObjectDescriptorSetLayout);
+           /* VkDescriptorSet set = descriptorSetManager.Allocate(perObjectDescriptorSetLayout);
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &set, 0, nullptr);
 
             auto renderableBuffer = r->GetBuffer();
@@ -165,7 +167,7 @@ namespace Pinut
             auto imageWrite = vkinit::WriteDescriptorSet(set, 1, 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nullptr, imageInfos);
 
             VkWriteDescriptorSet writes[2] = {bufferWrite, imageWrite};
-            vkUpdateDescriptorSets(logicalDevice, 2, writes, 0, nullptr);
+            vkUpdateDescriptorSets(logicalDevice, 2, writes, 0, nullptr);*/
 
             r->Draw(cmd);
         }

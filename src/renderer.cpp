@@ -46,8 +46,8 @@ void Renderer::OnCreateDisplay(Swapchain *swapchain, uint32_t inWidth, uint32_t 
 	viewport.y = static_cast<float>(height);
 	viewport.width = static_cast<float>(width);
 	viewport.height = -static_cast<float>(height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	// viewport.minDepth = 0.0f;
+	// viewport.maxDepth = 1.0f;
 
 	scissor.extent.width = width;
 	scissor.extent.height = height;
@@ -87,7 +87,7 @@ void Renderer::Render(Swapchain *swapchain, const Scene *scene)
 	assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
 
 	Texture::TransitionImageLayout(cmd, swapchain->GetCurrentImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	Texture::TransitionImageLayout(cmd, forwardPass.GetDepth().GetImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	// Texture::TransitionImageLayout(cmd, forwardPass.GetDepth().GetImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	auto attachment = vkinit::RenderingAttachmentInfo(
 		swapchain->GetCurrentImageView(),
@@ -97,18 +97,17 @@ void Renderer::Render(Swapchain *swapchain, const Scene *scene)
 		{0.0f, 0.0f, 0.0f, 0.0f});
 
 	// Depth buffer
-	auto depthAttachment = vkinit::RenderingAttachmentInfo(
-		forwardPass.GetDepth().GetImageView(),
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_ATTACHMENT_LOAD_OP_CLEAR,
-		VK_ATTACHMENT_STORE_OP_STORE,
-		{1.0, 0});
+	// auto depthAttachment = vkinit::RenderingAttachmentInfo(
+	// 	forwardPass.GetDepth().GetImageView(),
+	// 	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	// 	VK_ATTACHMENT_LOAD_OP_CLEAR,
+	// 	VK_ATTACHMENT_STORE_OP_STORE,
+	// 	{1.0, 0});
 
 	auto renderingInfo = vkinit::RenderingInfo(
 		1,
 		&attachment,
-		{{0, 0}, {width, height}},
-		&depthAttachment);
+		{{0, 0}, {width, height}});
 
 	vkCmdBeginRendering(cmd, &renderingInfo);
 
@@ -124,9 +123,9 @@ void Renderer::Render(Swapchain *swapchain, const Scene *scene)
 	perFrameData.view = camera->GetView();
 	perFrameData.projection = camera->GetProjection();
 	auto view = glm::lookAt(glm::vec3(0.0f, 2.0f, -5.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	auto proj = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
+	auto proj = glm::perspective(glm::radians(45.0f), (float)width / height, 0.01f, 1000.0f);
 
-	forwardPass.UpdatePerFrameData(cmd, perFrameData);
+	//forwardPass.UpdatePerFrameData(cmd, perFrameData);
 	forwardPass.Draw(cmd, scene);
 
 	vkCmdEndRendering(cmd);

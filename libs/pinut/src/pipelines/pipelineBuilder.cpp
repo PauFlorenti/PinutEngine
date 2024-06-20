@@ -92,18 +92,13 @@ namespace Pinut
         render_info.stencilAttachmentFormat = format;
     }
 
-    void PipelineBuilder::enable_depth_test(bool write_enable, VkCompareOp compare_operation)
+    void PipelineBuilder::enable_depth_test(bool depth_test_enable, bool write_enable, VkCompareOp compare_operation)
     {
         depth_stencil = {};
-        depth_stencil.depthTestEnable = VK_TRUE;
+        depth_stencil.depthTestEnable = depth_test_enable ? VK_TRUE : VK_FALSE;
         depth_stencil.depthWriteEnable = write_enable ? VK_TRUE : VK_FALSE;
-        depth_stencil.depthCompareOp = compare_operation;
-        depth_stencil.depthBoundsTestEnable = VK_FALSE;
-        depth_stencil.stencilTestEnable = VK_FALSE;
-        depth_stencil.front = {};
+        depth_stencil.depthCompareOp = depth_test_enable ? compare_operation : VK_COMPARE_OP_NEVER;
         depth_stencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
-        depth_stencil.minDepthBounds = 0.0f;
-        depth_stencil.maxDepthBounds = 1.0f;
     }
 
     void PipelineBuilder::disable_depth_test()
@@ -147,15 +142,16 @@ namespace Pinut
 
         VkPipelineColorBlendStateCreateInfo color_blend{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            .logicOpEnable = VK_TRUE,
-            .logicOp = VK_LOGIC_OP_COPY,
+            // .logicOpEnable = VK_TRUE,
+            // .logicOp = VK_LOGIC_OP_COPY,
             .attachmentCount = 1,
             .pAttachments = &color_blend_attachment,
         };
 
         VkDynamicState state[] = {
             VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR};
+            VK_DYNAMIC_STATE_SCISSOR,
+        };
 
         VkPipelineDynamicStateCreateInfo dynamic_state{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
