@@ -8,4 +8,4 @@ int main()
     return 0;
 }
 
-Sandbox::Sandbox(const std::string& name) : Pinut::Application(std::move(name)){};
+Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};

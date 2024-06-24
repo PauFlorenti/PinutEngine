@@ -39,6 +39,9 @@ i32 Run(Pinut::Application* application)
     glfwSetWindowSizeCallback(window, &Pinut::Application::OnWindowResized);
     glfwSetWindowPosCallback(window, &Pinut::Application::OnWindowMoved);
 
+    application->Init(window);
+    application->OnCreate();
+
     while (!glfwWindowShouldClose(window))
     {
         // Check if we should close
@@ -55,6 +58,9 @@ i32 Run(Pinut::Application* application)
             application->OnRender();
         }
     }
+
+    application->OnDestroy();
+    application->Shutdown();
 
     return 0;
 }
@@ -84,5 +90,25 @@ void Application::OnWindowResized(GLFWwindow* window, int width, int height)
     app->_height = height;
 
     // app->UpdateDisplay();
+}
+
+void Application::Init(GLFWwindow* window)
+{
+    assert(window);
+    if (!window)
+        return;
+
+    _window = window;
+
+    // Get framebuffer size
+    glfwGetWindowSize(window, &_width, &_height);
+
+    device.OnCreate("Sandbox", "PinutEngine", ENABLE_GPU_VALIDATION_DEFAULT, window);
+}
+
+void Application::Shutdown()
+{
+    device.OnDestroy();
+    glfwDestroyWindow(_window);
 }
 } // namespace Pinut

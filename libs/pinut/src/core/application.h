@@ -1,11 +1,8 @@
 #pragma once
 
-namespace
-{
+#include "src/renderer/device.h"
+
 struct GLFWwindow;
-
-} // namespace
-
 namespace Pinut
 {
 class Application
@@ -25,12 +22,17 @@ class Application
     static void OnWindowMoved(GLFWwindow* window, int x, int y);
     static void OnWindowResized(GLFWwindow* window, int inWidth, int inHeight);
 
+    void Init(GLFWwindow* window);
+    void Shutdown();
+
   protected:
     std::string _name;
     i32         _width;
     i32         _height;
 
-    GLFWwindow* windowHandle{nullptr};
+    GLFWwindow* _window{nullptr};
+
+    Device device;
 };
 } // namespace Pinut
 
