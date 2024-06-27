@@ -18,11 +18,21 @@ class Device final
                   GLFWwindow*        window);
     void OnDestroy();
 
+    const VkDevice         GetDevice() const { return m_device; }
+    const VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
+    const VkSurfaceKHR     GetSurface() const { return m_surface; }
+
+    const VkQueue GetPresentQueue() const { return presentQueue; }
+    const VkQueue GetGraphicsQueue() const { return graphicsQueue; }
+    const u32     GetGraphicsQueueIndex() const { return graphicsQueueFamilyIndex; }
+
+    void WaitIdle() const;
+
   private:
-    VkInstance       instance{VK_NULL_HANDLE};
-    VkDevice         device{VK_NULL_HANDLE};
-    VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-    VkSurfaceKHR     surface{VK_NULL_HANDLE};
+    VkInstance       m_instance{VK_NULL_HANDLE};
+    VkDevice         m_device{VK_NULL_HANDLE};
+    VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
+    VkSurfaceKHR     m_surface{VK_NULL_HANDLE};
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT debugMessenger{nullptr};

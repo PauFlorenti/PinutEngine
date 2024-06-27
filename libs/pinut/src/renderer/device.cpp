@@ -1,8 +1,8 @@
 #include "stdafx.h"
 
+#include "VkBootstrap.h"
 #include "device.h"
 #define GLFW_INCLUDE_VULKAN
-#include "VkBootstrap.h"
 #include "glfw3.h"
 
 namespace Pinut
@@ -33,13 +33,13 @@ void Device::OnCreate(const std::string& applicationName,
     }
 
     vkb::Instance vkb_instance = instance_result.value();
-    instance                   = vkb_instance.instance;
+    m_instance                 = vkb_instance.instance;
 
 #ifdef _DEBUG
     debugMessenger = vkb_instance.debug_messenger;
 #endif
 
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(m_instance, window, nullptr, &m_surface) != VK_SUCCESS)
         return;
 
     VkPhysicalDeviceVulkan12Features features_12{
@@ -55,7 +55,7 @@ void Device::OnCreate(const std::string& applicationName,
     auto                        gpu_result = gpu_selector.set_minimum_version(1, 1)
                         .set_required_features_12(features_12)
                         .set_required_features_13(features_13)
-                        .set_surface(surface)
+                        .set_surface(m_surface)
                         .select();
 
     if (!gpu_result)
@@ -69,8 +69,8 @@ void Device::OnCreate(const std::string& applicationName,
     vkb::DeviceBuilder device_builder{gpu};
     vkb::Device        vkb_device = device_builder.build().value();
 
-    device                   = vkb_device.device;
-    physicalDevice           = vkb_device.physical_device;
+    m_device                 = vkb_device.device;
+    m_physicalDevice         = vkb_device.physical_device;
     graphicsQueue            = vkb_device.get_queue(vkb::QueueType::graphics).value();
     graphicsQueueFamilyIndex = vkb_device.get_queue_index(vkb::QueueType::graphics).value();
     computeQueue             = vkb_device.get_queue(vkb::QueueType::compute).value();
@@ -81,22 +81,24 @@ void Device::OnCreate(const std::string& applicationName,
 
 void Device::OnDestroy()
 {
-    if (surface != VK_NULL_HANDLE)
+    if (m_surface != VK_NULL_HANDLE)
     {
-        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     }
 
-    if (device != VK_NULL_HANDLE)
+    if (m_device != VK_NULL_HANDLE)
     {
-        vkDestroyDevice(device, nullptr);
-        device = VK_NULL_HANDLE;
+        vkDestroyDevice(m_device, nullptr);
+        m_device = VK_NULL_HANDLE;
     }
 
 #ifdef _DEBUG
-    vkb::destroy_debug_utils_messenger(instance, debugMessenger, nullptr);
+    vkb::destroy_debug_utils_messenger(m_instance, debugMessenger, nullptr);
 #endif
 
-    vkDestroyInstance(instance, nullptr);
-    instance = VK_NULL_HANDLE;
+    vkDestroyInstance(m_instance, nullptr);
+    m_instance = VK_NULL_HANDLE;
 }
+
+void Device::WaitIdle() const { vkDeviceWaitIdle(m_device); }
 } // namespace Pinut

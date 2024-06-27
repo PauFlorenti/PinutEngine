@@ -6,7 +6,11 @@ set(Pinut_core
 
 set(Pinut_renderer
     src/renderer/device.cpp
-    src/renderer/device.h)
+    src/renderer/device.h
+    src/renderer/swapchain.cpp
+    src/renderer/swapchain.h
+    src/renderer/utils.cpp
+    src/renderer/utils.h)
 
 # set(Pinut_misc
 # src/misc/camera.cpp

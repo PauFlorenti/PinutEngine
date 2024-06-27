@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/renderer/device.h"
+#include "src/renderer/swapchain.h"
 
 struct GLFWwindow;
 namespace Pinut
@@ -15,24 +16,32 @@ class Application
     virtual void OnRender()  = 0;
     virtual void OnUpdate()  = 0;
 
-    const std::string GetName() const { return _name; }
-    const i32         GetWidth() const { return _width; }
-    const i32         GetHeight() const { return _height; }
+    const std::string GetName() const { return m_name; }
+    const i32         GetWidth() const { return m_width; }
+    const i32         GetHeight() const { return m_height; }
 
     static void OnWindowMoved(GLFWwindow* window, int x, int y);
-    static void OnWindowResized(GLFWwindow* window, int inWidth, int inHeight);
+    static void OnWindowResized(GLFWwindow* window, int width, int height);
 
     void Init(GLFWwindow* window);
     void Shutdown();
+    void Render();
 
   protected:
-    std::string _name;
-    i32         _width;
-    i32         _height;
+    std::string m_name;
+    i32         m_width;
+    i32         m_height;
 
-    GLFWwindow* _window{nullptr};
+    GLFWwindow* m_window{nullptr};
 
-    Device device;
+  private:
+    void UpdateDisplay();
+
+    Device    m_device;
+    Swapchain m_swapchain;
+
+    // Temporal
+    VkCommandPool commandPool{VK_NULL_HANDLE};
 };
 } // namespace Pinut
 
