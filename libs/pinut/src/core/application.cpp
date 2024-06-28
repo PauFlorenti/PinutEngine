@@ -4,7 +4,6 @@
 #include <glfw3.h>
 
 #include "application.h"
-#include "src/renderer/pipeline.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -141,53 +140,15 @@ void Application::Init(GLFWwindow* window)
 
     UpdateDisplay();
 
-    // TODO Temporal, we should handle this somewhere else
-    VkShaderModule vertex_shader;
-    if (!vkinit::load_shader_module("shaders/basic.vert.spv", m_device.GetDevice(), &vertex_shader))
-    {
-        printf("[ERROR]: Error building the forward vertex shader.");
-    }
-
-    VkShaderModule fragment_shader;
-    if (!vkinit::load_shader_module("shaders/basic.frag.spv",
-                                    m_device.GetDevice(),
-                                    &fragment_shader))
-    {
-        printf("[ERROR]: Error building the forward fragment shader.");
-    }
-
-    auto layout_info = vkinit::PipelineLayoutCreateInfo(0, nullptr);
-
-    ok = vkCreatePipelineLayout(m_device.GetDevice(), &layout_info, nullptr, &pipelineLayout);
-    assert(ok == VK_SUCCESS);
-
-    PipelineBuilder builder;
-    builder.layout = pipelineLayout;
-    builder.set_shaders(vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
-    builder.set_shaders(fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
-    builder.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    builder.set_rasterizer(VK_POLYGON_MODE_FILL,
-                           VK_CULL_MODE_NONE,
-                           VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    builder.set_multisampling_none();
-    builder.disable_blending();
-    builder.enable_depth_test(false, false, VK_COMPARE_OP_NEVER);
-    builder.set_depth_format(VK_FORMAT_UNDEFINED);
-    builder.set_stencil_format(VK_FORMAT_UNDEFINED);
-    builder.set_color_attachment_format(VK_FORMAT_B8G8R8A8_UNORM);
-
-    pipeline = builder.build(m_device.GetDevice());
-
-    vkDestroyShaderModule(m_device.GetDevice(), vertex_shader, nullptr);
-    vkDestroyShaderModule(m_device.GetDevice(), fragment_shader, nullptr);
+    m_forwardPipeline.Init(&m_device);
 }
 
 void Application::Shutdown()
 {
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
 
-    vkDestroyPipelineLayout(m_device.GetDevice(), pipelineLayout, nullptr);
-    vkDestroyPipeline(m_device.GetDevice(), pipeline, nullptr);
+    m_forwardPipeline.Shutdown();
+
     vkDestroyCommandPool(m_device.GetDevice(), commandPool, nullptr);
 
     m_swapchain.OnDestroy();
@@ -267,7 +228,7 @@ void Application::Render()
     vkCmdSetViewport(cmd, 0, 1, &viewport);
     vkCmdSetScissor(cmd, 0, 1, &scissors);
 
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_forwardPipeline.Pipeline());
 
     vkCmdDraw(cmd, 3, 1, 0, 0);
 

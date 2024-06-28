@@ -144,7 +144,7 @@ VkPipeline PipelineBuilder::build(VkDevice device)
 
     VkPipelineColorBlendStateCreateInfo color_blend{
       .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-      .logicOpEnable   = VK_TRUE,
+      .logicOpEnable   = VK_FALSE,
       .logicOp         = VK_LOGIC_OP_COPY,
       .attachmentCount = 1,
       .pAttachments    = &color_blend_attachment,

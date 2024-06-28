@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/renderer/device.h"
+#include "src/renderer/pipelines/forward.h"
 #include "src/renderer/swapchain.h"
 
 struct GLFWwindow;
@@ -37,14 +38,13 @@ class Application
   private:
     void UpdateDisplay();
 
-    Device    m_device;
-    Swapchain m_swapchain;
+    Device          m_device;
+    Swapchain       m_swapchain;
+    ForwardPipeline m_forwardPipeline;
 
     // Temporal
-    VkCommandBuffer  cmds[3] = {};
-    VkCommandPool    commandPool{VK_NULL_HANDLE};
-    VkPipeline       pipeline{VK_NULL_HANDLE};
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkCommandBuffer cmds[3] = {};
+    VkCommandPool   commandPool{VK_NULL_HANDLE};
 };
 } // namespace Pinut
 

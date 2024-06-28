@@ -14,6 +14,10 @@ set(Pinut_renderer
     src/renderer/utils.cpp
     src/renderer/utils.h)
 
+set(Pinut_pipelines
+    src/renderer/pipelines/forward.cpp
+    src/renderer/pipelines/forward.h)
+
 # set(Pinut_misc
 # src/misc/camera.cpp
 # src/misc/camera.h)
@@ -31,7 +35,7 @@ set(Pinut_renderer
 # src/scene/mesh.h
 # src/scene/scene.cpp
 # src/scene/scene.h)
-add_library(Pinut STATIC ${Pinut_core} ${Pinut_renderer})
+add_library(Pinut STATIC ${Pinut_core} ${Pinut_renderer} ${Pinut_pipelines})
 
 add_subdirectory(external/glfw)
 add_subdirectory(external/vkbootstrap)
