@@ -22,9 +22,12 @@ class Swapchain
     u32  WaitForSwapchain();
     void Present();
 
-    void GetSyncObjects(VkSemaphore* outImageAvailableSemaphores,
-                        VkSemaphore* outRenderFinishedSemaphores,
-                        VkFence*     outFences);
+    void        GetSyncObjects(VkSemaphore* outImageAvailableSemaphores,
+                               VkSemaphore* outRenderFinishedSemaphores,
+                               VkFence*     outFences);
+    VkImage     GetCurrentImage() const;
+    VkImageView GetCurrentImageView() const;
+    const u32   GetImageIndex() const { return m_frameIndex; }
 
   private:
     Device*     m_device{nullptr};

@@ -4,7 +4,7 @@
 #include <glfw3.h>
 
 #include "application.h"
-#include "utils.h"
+#include "src/renderer/utils.h"
 
 #if _DEBUG
 static constexpr bool ENABLE_CPU_VALIDATION_DEFAULT = true;
@@ -117,11 +117,67 @@ void Application::Init(GLFWwindow* window)
     auto ok = vkCreateCommandPool(m_device.GetDevice(), &commandPoolInfo, nullptr, &commandPool);
     assert(ok == VK_SUCCESS);
 
+    VkCommandBufferAllocateInfo allocateInfo{
+      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .commandPool        = commandPool,
+      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      .commandBufferCount = 3,
+    };
+
+    ok = vkAllocateCommandBuffers(m_device.GetDevice(), &allocateInfo, cmds);
+    assert(ok == VK_SUCCESS);
+
     UpdateDisplay();
+
+    // TODO Temporal, we should handle this somewhere else
+    VkShaderModule vertex_shader;
+    if (!vkinit::load_shader_module("shaders/basic.vert.spv", m_device.GetDevice(), &vertex_shader))
+    {
+        printf("[ERROR]: Error building the forward vertex shader.");
+    }
+
+    VkShaderModule fragment_shader;
+    if (!vkinit::load_shader_module("shaders/basic.frag.spv",
+                                    m_device.GetDevice(),
+                                    &fragment_shader))
+    {
+        printf("[ERROR]: Error building the forward fragment shader.");
+    }
+
+    auto layout_info = vkinit::PipelineLayoutCreateInfo(0, nullptr);
+
+    ok = vkCreatePipelineLayout(m_device.GetDevice(), &layout_info, nullptr, &pipelineLayout);
+    assert(ok == VK_SUCCESS);
+
+    vkinit::PipelineBuilder builder;
+    builder.layout = pipelineLayout;
+    builder.set_shaders(vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
+    builder.set_shaders(fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    builder.set_rasterizer(VK_POLYGON_MODE_FILL,
+                           VK_CULL_MODE_NONE,
+                           VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    builder.set_multisampling_none();
+    builder.disable_blending();
+    builder.enable_depth_test(false, false, VK_COMPARE_OP_NEVER);
+    builder.set_depth_format(VK_FORMAT_UNDEFINED);
+    builder.set_stencil_format(VK_FORMAT_UNDEFINED);
+    builder.set_color_attachment_format(VK_FORMAT_B8G8R8A8_UNORM);
+
+    pipeline = builder.build(m_device.GetDevice());
+
+    vkDestroyShaderModule(m_device.GetDevice(), vertex_shader, nullptr);
+    vkDestroyShaderModule(m_device.GetDevice(), fragment_shader, nullptr);
 }
 
 void Application::Shutdown()
 {
+    assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
+
+    vkDestroyPipelineLayout(m_device.GetDevice(), pipelineLayout, nullptr);
+    vkDestroyPipeline(m_device.GetDevice(), pipeline, nullptr);
+    vkDestroyCommandPool(m_device.GetDevice(), commandPool, nullptr);
+
     m_swapchain.OnDestroy();
     m_device.OnDestroy();
     glfwDestroyWindow(m_window);
@@ -132,26 +188,101 @@ void Application::Render()
     auto frameIndex = m_swapchain.WaitForSwapchain();
 
     // Draw
-    VkCommandBufferAllocateInfo allocateInfo{
-      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = commandPool,
-      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      .commandBufferCount = 1,
-    };
-
-    VkCommandBuffer cmd;
-    auto            ok = vkAllocateCommandBuffers(m_device.GetDevice(), &allocateInfo, &cmd);
-    assert(ok == VK_SUCCESS);
-
     VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
     VkFence     fence{VK_NULL_HANDLE};
     m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
 
-    ok = vkResetCommandPool(m_device.GetDevice(), commandPool, 0);
+    auto ok = vkResetCommandPool(m_device.GetDevice(), commandPool, 0);
     assert(ok == VK_SUCCESS);
+
+    auto& cmd = cmds[m_swapchain.GetImageIndex()];
 
     auto cmdBeginInfo = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
+
+    {
+        VkImageMemoryBarrier2 barrier{
+          .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+          .srcStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .srcAccessMask    = 0,
+          .dstStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .dstAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+          .oldLayout        = VK_IMAGE_LAYOUT_UNDEFINED,
+          .newLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          .image            = m_swapchain.GetCurrentImage(),
+          .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        };
+
+        VkDependencyInfo dependencyInfo{
+          .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+          .imageMemoryBarrierCount = 1,
+          .pImageMemoryBarriers    = &barrier,
+        };
+
+        vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+    }
+
+    auto attachment = vkinit::RenderingAttachmentInfo(m_swapchain.GetCurrentImageView(),
+                                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                      VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                                      VK_ATTACHMENT_STORE_OP_STORE,
+                                                      {0.f, 0.f, 0.f, 0.f});
+
+    auto renderingInfo =
+      vkinit::RenderingInfo(1, &attachment, {{0, 0}, {(u32)m_width, (u32)m_height}});
+
+    VkRect2D scissors{};
+    scissors.extent = {1280, 720};
+    scissors.offset = {0, 0};
+
+    VkRenderingInfo renderingInfoTest{
+      .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+      .renderArea           = {0, 0, (u32)m_width, (u32)m_height},
+      .layerCount           = 1,
+      .colorAttachmentCount = 1,
+      .pColorAttachments    = &attachment,
+      .pDepthAttachment     = nullptr,
+      .pStencilAttachment   = nullptr,
+    };
+
+    vkCmdBeginRendering(cmd, &renderingInfo);
+
+    VkViewport viewport{};
+    viewport.width    = static_cast<float>(m_width);
+    viewport.height   = static_cast<float>(m_height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    vkCmdSetScissor(cmd, 0, 1, &scissors);
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    vkCmdDraw(cmd, 3, 1, 0, 0);
+
+    vkCmdEndRendering(cmd);
+
+    {
+        VkImageMemoryBarrier2 barrier{
+          .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+          .srcStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .srcAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+          .dstStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .dstAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+          .oldLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          .newLayout        = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+          .image            = m_swapchain.GetCurrentImage(),
+          .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        };
+
+        VkDependencyInfo dependencyInfo{
+          .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+          .imageMemoryBarrierCount = 1,
+          .pImageMemoryBarriers    = &barrier,
+        };
+
+        vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+    }
 
     vkEndCommandBuffer(cmd);
 

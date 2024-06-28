@@ -142,4 +142,8 @@ void Swapchain::GetSyncObjects(VkSemaphore* outImageAvailableSemaphores,
     *outRenderFinishedSemaphores = m_renderFinishedSemaphores[m_frameIndex];
     *outFences                   = m_fence;
 }
+
+VkImage Swapchain::GetCurrentImage() const { return m_images.at(m_imageIndex); }
+
+VkImageView Swapchain::GetCurrentImageView() const { return m_imageViews.at(m_imageIndex); }
 } // namespace Pinut

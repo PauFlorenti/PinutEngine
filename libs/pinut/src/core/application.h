@@ -41,7 +41,10 @@ class Application
     Swapchain m_swapchain;
 
     // Temporal
-    VkCommandPool commandPool{VK_NULL_HANDLE};
+    VkCommandBuffer cmds[3] = {};
+    VkCommandPool    commandPool{VK_NULL_HANDLE};
+    VkPipeline       pipeline{VK_NULL_HANDLE};
+    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 };
 } // namespace Pinut
 
