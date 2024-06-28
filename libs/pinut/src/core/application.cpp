@@ -4,6 +4,7 @@
 #include <glfw3.h>
 
 #include "application.h"
+#include "src/renderer/pipeline.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -160,7 +161,7 @@ void Application::Init(GLFWwindow* window)
     ok = vkCreatePipelineLayout(m_device.GetDevice(), &layout_info, nullptr, &pipelineLayout);
     assert(ok == VK_SUCCESS);
 
-    vkinit::PipelineBuilder builder;
+    PipelineBuilder builder;
     builder.layout = pipelineLayout;
     builder.set_shaders(vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
     builder.set_shaders(fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
