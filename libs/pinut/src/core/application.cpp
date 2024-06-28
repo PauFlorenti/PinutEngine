@@ -88,6 +88,14 @@ void Application::OnWindowResized(GLFWwindow* window, int width, int height)
     if (app->m_width == width && app->m_height == height)
         return;
 
+    if (width == 0 || height == 0)
+    {
+        bMinimized = true;
+        return;
+    }
+
+    bMinimized = false;
+
     app->m_width  = width;
     app->m_height = height;
 
