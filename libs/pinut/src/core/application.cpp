@@ -80,7 +80,7 @@ void Application::OnWindowMoved(GLFWwindow* window, int x, int y) { printf("Wind
 
 void Application::OnWindowResized(GLFWwindow* window, int width, int height)
 {
-    printf("Window resized\n");
+    printf("Window resized [%d, %d]\n", width, height);
 
     auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     assert(app != nullptr);
@@ -103,7 +103,10 @@ void Application::Init(GLFWwindow* window)
     m_window = window;
 
     // Get framebuffer size
-    glfwGetWindowSize(m_window, &m_width, &m_height);
+    i32 w, h;
+    glfwGetWindowSize(m_window, &w, &h);
+    m_width  = w;
+    m_height = h;
 
     m_device.OnCreate("Sandbox", "PinutEngine", ENABLE_GPU_VALIDATION_DEFAULT, m_window);
     m_swapchain.OnCreate(&m_device, 3, m_window);
@@ -228,16 +231,15 @@ void Application::Render()
                                                       VK_ATTACHMENT_STORE_OP_STORE,
                                                       {0.f, 0.f, 0.f, 0.f});
 
-    auto renderingInfo =
-      vkinit::RenderingInfo(1, &attachment, {{0, 0}, {(u32)m_width, (u32)m_height}});
+    auto renderingInfo = vkinit::RenderingInfo(1, &attachment, {{0, 0}, {m_width, m_height}});
 
     VkRect2D scissors{};
-    scissors.extent = {1280, 720};
+    scissors.extent = {m_width, m_height};
     scissors.offset = {0, 0};
 
     VkRenderingInfo renderingInfoTest{
       .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-      .renderArea           = {0, 0, (u32)m_width, (u32)m_height},
+      .renderArea           = {0, 0, m_width, m_height},
       .layerCount           = 1,
       .colorAttachmentCount = 1,
       .pColorAttachments    = &attachment,

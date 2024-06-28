@@ -29,8 +29,8 @@ class Application
 
   protected:
     std::string m_name;
-    i32         m_width;
-    i32         m_height;
+    u32         m_width;
+    u32         m_height;
 
     GLFWwindow* m_window{nullptr};
 
@@ -41,7 +41,7 @@ class Application
     Swapchain m_swapchain;
 
     // Temporal
-    VkCommandBuffer cmds[3] = {};
+    VkCommandBuffer  cmds[3] = {};
     VkCommandPool    commandPool{VK_NULL_HANDLE};
     VkPipeline       pipeline{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
