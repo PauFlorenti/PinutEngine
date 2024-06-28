@@ -1,9 +1,12 @@
 #include "stdafx.h"
 
 #include "VkBootstrap.h"
-#include "device.h"
 #define GLFW_INCLUDE_VULKAN
 #include "glfw3.h"
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
+#include "device.h"
 
 namespace Pinut
 {
