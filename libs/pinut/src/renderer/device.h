@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
 struct GLFWwindow;
@@ -21,10 +22,14 @@ class Device final
     const VkDevice         GetDevice() const { return m_device; }
     const VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
     const VkSurfaceKHR     GetSurface() const { return m_surface; }
+    const VmaAllocator     GetAllocator() const { return m_allocator; }
 
     const VkQueue GetPresentQueue() const { return presentQueue; }
     const VkQueue GetGraphicsQueue() const { return graphicsQueue; }
     const u32     GetGraphicsQueueIndex() const { return graphicsQueueFamilyIndex; }
+
+    VkCommandBuffer CreateCommandBuffer();
+    void            FlushCommandBuffer(VkCommandBuffer cmd) const;
 
     void WaitIdle() const;
 
@@ -33,6 +38,8 @@ class Device final
     VkDevice         m_device{VK_NULL_HANDLE};
     VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
     VkSurfaceKHR     m_surface{VK_NULL_HANDLE};
+    VkCommandPool    m_commandPool{VK_NULL_HANDLE};
+    VmaAllocator     m_allocator{nullptr};
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT debugMessenger{nullptr};

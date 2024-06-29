@@ -7,6 +7,7 @@ namespace Pinut
 class Device;
 class GPUBuffer
 {
+  public:
     void Create(Device*            device,
                 size_t             size,
                 VkBufferUsageFlags bufferUsageFlags,

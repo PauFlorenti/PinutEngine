@@ -7,6 +7,8 @@ set(Pinut_core
 set(Pinut_renderer
     src/renderer/device.cpp
     src/renderer/device.h
+    src/renderer/mesh.cpp
+    src/renderer/mesh.h
     src/renderer/pipeline.cpp
     src/renderer/pipeline.h
     src/renderer/swapchain.cpp

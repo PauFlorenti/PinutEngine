@@ -80,6 +80,26 @@ void Device::OnCreate(const std::string& applicationName,
     computeQueueFamilyIndex  = vkb_device.get_queue_index(vkb::QueueType::compute).value();
     presentQueue             = vkb_device.get_queue(vkb::QueueType::present).value();
     presentQueueFamilyIndex  = vkb_device.get_queue_index(vkb::QueueType::present).value();
+
+    VmaAllocatorCreateInfo allocator_info{
+      .flags          = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+      .physicalDevice = m_physicalDevice,
+      .device         = m_device,
+      .instance       = m_instance,
+    };
+
+    vmaCreateAllocator(&allocator_info, &m_allocator);
+
+    VkCommandPoolCreateInfo commandPoolInfo{
+      .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .pNext = nullptr,
+      .flags =
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+      .queueFamilyIndex = graphicsQueueFamilyIndex,
+    };
+
+    auto ok = vkCreateCommandPool(m_device, &commandPoolInfo, nullptr, &m_commandPool);
+    assert(ok == VK_SUCCESS);
 }
 
 void Device::OnDestroy()
@@ -101,6 +121,35 @@ void Device::OnDestroy()
 
     vkDestroyInstance(m_instance, nullptr);
     m_instance = VK_NULL_HANDLE;
+}
+
+VkCommandBuffer Device::CreateCommandBuffer()
+{
+    VkCommandBufferAllocateInfo info{
+      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .commandPool        = m_commandPool,
+      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      .commandBufferCount = 1,
+    };
+
+    VkCommandBuffer cmd;
+    assert(vkAllocateCommandBuffers(m_device, &info, &cmd) == VK_SUCCESS);
+    return cmd;
+}
+
+void Device::FlushCommandBuffer(VkCommandBuffer cmd) const
+{
+    vkEndCommandBuffer(cmd);
+
+    VkSubmitInfo info{.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                      .pNext              = nullptr,
+                      .commandBufferCount = 1,
+                      .pCommandBuffers    = &cmd};
+
+    vkQueueSubmit(graphicsQueue, 1, &info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue);
+
+    vkFreeCommandBuffers(m_device, m_commandPool, 1, &cmd);
 }
 
 void Device::WaitIdle() const { vkDeviceWaitIdle(m_device); }
