@@ -14,13 +14,13 @@ class GPUBuffer
                 VmaMemoryUsage     memoryUsage);
     void Destroy();
 
-    VkBuffer                 Buffer() const;
     VmaAllocation            Allocation() const;
     const VmaAllocationInfo& AllocationInfo() const;
 
+    VkBuffer          m_buffer{VK_NULL_HANDLE};
+
   private:
     Device*           m_device{nullptr};
-    VkBuffer          m_buffer{VK_NULL_HANDLE};
     VmaAllocation     m_allocation{nullptr};
     VmaAllocationInfo m_allocationInfo{};
 };

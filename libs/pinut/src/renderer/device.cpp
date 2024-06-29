@@ -104,10 +104,13 @@ void Device::OnCreate(const std::string& applicationName,
 
 void Device::OnDestroy()
 {
+    if (m_commandPool != VK_NULL_HANDLE)
+        vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+    vmaDestroyAllocator(m_allocator);
+
     if (m_surface != VK_NULL_HANDLE)
-    {
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-    }
 
     if (m_device != VK_NULL_HANDLE)
     {
@@ -134,6 +137,13 @@ VkCommandBuffer Device::CreateCommandBuffer()
 
     VkCommandBuffer cmd;
     assert(vkAllocateCommandBuffers(m_device, &info, &cmd) == VK_SUCCESS);
+
+    VkCommandBufferBeginInfo beginInfo{
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+
+    assert(vkBeginCommandBuffer(cmd, &beginInfo) == VK_SUCCESS);
     return cmd;
 }
 

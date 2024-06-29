@@ -20,7 +20,8 @@ void GPUBuffer::Create(Device*            device,
     };
 
     VmaAllocationCreateInfo allocationCreateInfo{
-      .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+      .flags =
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
       .usage = memoryUsage,
     };
 
@@ -35,7 +36,6 @@ void GPUBuffer::Create(Device*            device,
 
 void GPUBuffer::Destroy() { vmaDestroyBuffer(m_device->GetAllocator(), m_buffer, m_allocation); }
 
-VkBuffer                 GPUBuffer::Buffer() const { return m_buffer; }
 VmaAllocation            GPUBuffer::Allocation() const { return m_allocation; }
 const VmaAllocationInfo& GPUBuffer::AllocationInfo() const { return m_allocationInfo; }
 

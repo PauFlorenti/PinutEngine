@@ -5,12 +5,16 @@ set(Pinut_core
     src/core/defines.h)
 
 set(Pinut_renderer
+    src/renderer/buffer.cpp
+    src/renderer/buffer.h
     src/renderer/device.cpp
     src/renderer/device.h
     src/renderer/mesh.cpp
     src/renderer/mesh.h
     src/renderer/pipeline.cpp
     src/renderer/pipeline.h
+    src/renderer/primitives.cpp
+    src/renderer/primitives.h
     src/renderer/swapchain.cpp
     src/renderer/swapchain.h
     src/renderer/utils.cpp

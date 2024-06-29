@@ -1,7 +1,8 @@
 #include "stdafx.h"
 
-#include "src/renderer/device.h"
 #include "forward.h"
+#include "src/renderer/device.h"
+#include "src/renderer/mesh.h"
 #include "src/renderer/pipeline.h"
 #include "src/renderer/utils.h"
 
@@ -26,6 +27,15 @@ void ForwardPipeline::Init(Device* device)
         printf("[ERROR]: Error building the forward fragment shader.");
     }
 
+    // clang-format off
+    std::vector<VkVertexInputAttributeDescription> input_attributes{
+        vkinit::VertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)),
+        vkinit::VertexInputAttributeDescription(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)),
+        vkinit::VertexInputAttributeDescription(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color)),
+        vkinit::VertexInputAttributeDescription(3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)),
+    };
+    // clang-format on
+
     auto layout_info = vkinit::PipelineLayoutCreateInfo(0, nullptr);
 
     auto ok = vkCreatePipelineLayout(logicalDevice, &layout_info, nullptr, &m_pipelineLayout);
@@ -39,6 +49,7 @@ void ForwardPipeline::Init(Device* device)
     builder.set_rasterizer(VK_POLYGON_MODE_FILL,
                            VK_CULL_MODE_NONE,
                            VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    builder.set_input_attribute(std::move(input_attributes), sizeof(Vertex));
     builder.set_multisampling_none();
     builder.disable_blending();
     builder.enable_depth_test(false, false, VK_COMPARE_OP_NEVER);

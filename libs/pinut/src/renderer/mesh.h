@@ -26,11 +26,10 @@ class Mesh
 {
   public:
     static Mesh* Create(Device* device, std::vector<Vertex> vertices, std::vector<u16> indices);
+    void         Destroy();
 
     const u32& GetVertexCount() const;
     const u32& GetIndexCount() const;
-    // const GPUBuffer& GetVertexBuffer() const;
-    // const GPUBuffer& GetIndexBuffer() const;
 
     GPUBuffer m_vertexBuffer;
     GPUBuffer m_indexBuffer;

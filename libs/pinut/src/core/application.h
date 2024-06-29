@@ -44,7 +44,7 @@ class Application
 
     // Temporal
     VkCommandBuffer cmds[3] = {};
-    VkCommandPool   commandPool{VK_NULL_HANDLE};
+    VkCommandPool   m_commandPool{VK_NULL_HANDLE};
 };
 } // namespace Pinut
 

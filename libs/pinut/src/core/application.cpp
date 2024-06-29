@@ -4,6 +4,8 @@
 #include <glfw3.h>
 
 #include "application.h"
+#include "src/renderer/mesh.h"
+#include "src/renderer/primitives.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -125,20 +127,22 @@ void Application::Init(GLFWwindow* window)
       .queueFamilyIndex = m_device.GetGraphicsQueueIndex(),
     };
 
-    auto ok = vkCreateCommandPool(m_device.GetDevice(), &commandPoolInfo, nullptr, &commandPool);
+    auto ok = vkCreateCommandPool(m_device.GetDevice(), &commandPoolInfo, nullptr, &m_commandPool);
     assert(ok == VK_SUCCESS);
 
     VkCommandBufferAllocateInfo allocateInfo{
       .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = commandPool,
+      .commandPool        = m_commandPool,
       .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
       .commandBufferCount = 3,
     };
 
     ok = vkAllocateCommandBuffers(m_device.GetDevice(), &allocateInfo, cmds);
     assert(ok == VK_SUCCESS);
+    // TODO Finish Temporal.
 
     UpdateDisplay();
+    Primitives::InitializeDefaultPrimitives(&m_device);
 
     m_forwardPipeline.Init(&m_device);
 }
@@ -147,9 +151,11 @@ void Application::Shutdown()
 {
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
 
+    Primitives::DestroyDefaultPrimitives();
+
     m_forwardPipeline.Shutdown();
 
-    vkDestroyCommandPool(m_device.GetDevice(), commandPool, nullptr);
+    vkDestroyCommandPool(m_device.GetDevice(), m_commandPool, nullptr);
 
     m_swapchain.OnDestroy();
     m_device.OnDestroy();
@@ -165,7 +171,7 @@ void Application::Render()
     VkFence     fence{VK_NULL_HANDLE};
     m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
 
-    auto ok = vkResetCommandPool(m_device.GetDevice(), commandPool, 0);
+    auto ok = vkResetCommandPool(m_device.GetDevice(), m_commandPool, 0);
     assert(ok == VK_SUCCESS);
 
     auto& cmd = cmds[m_swapchain.GetImageIndex()];
@@ -230,7 +236,11 @@ void Application::Render()
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_forwardPipeline.Pipeline());
 
-    vkCmdDraw(cmd, 3, 1, 0, 0);
+    VkDeviceSize offset{0};
+    auto         cube = Primitives::GetUnitCube();
+    vkCmdBindVertexBuffers(cmd, 0, 1, &cube->m_vertexBuffer.m_buffer, &offset);
+    vkCmdBindIndexBuffer(cmd, cube->m_indexBuffer.m_buffer, offset, VK_INDEX_TYPE_UINT16);
+    vkCmdDrawIndexed(cmd, cube->GetIndexCount(), 1, 0, 0, 0);
 
     vkCmdEndRendering(cmd);
 
