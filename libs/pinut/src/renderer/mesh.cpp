@@ -61,7 +61,7 @@ Mesh* Mesh::Create(Device* device, std::vector<Vertex> vertices, std::vector<u16
           .size      = indexBufferSize,
         };
 
-        auto cmd = device->CreateCommandBuffer();
+        auto cmd = device->CreateImmediateCommandBuffer();
 
         vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, m->m_vertexBuffer.m_buffer, 1, &vertexRegion);
         vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, m->m_indexBuffer.m_buffer, 1, &indexRegion);

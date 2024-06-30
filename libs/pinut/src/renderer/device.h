@@ -28,7 +28,7 @@ class Device final
     const VkQueue GetGraphicsQueue() const { return graphicsQueue; }
     const u32     GetGraphicsQueueIndex() const { return graphicsQueueFamilyIndex; }
 
-    VkCommandBuffer CreateCommandBuffer();
+    VkCommandBuffer CreateImmediateCommandBuffer();
     void            FlushCommandBuffer(VkCommandBuffer cmd) const;
 
     void WaitIdle() const;

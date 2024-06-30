@@ -118,6 +118,21 @@ VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags)
     return info;
 }
 
+VkCommandBufferAllocateInfo CommandBufferAllocateInfo(VkCommandPool        commandPool,
+                                                      VkCommandBufferLevel level,
+                                                      u32                  cmdCount)
+{
+    VkCommandBufferAllocateInfo info{
+      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .pNext              = nullptr,
+      .commandPool        = commandPool,
+      .level              = level,
+      .commandBufferCount = cmdCount,
+    };
+
+    return info;
+}
+
 VkRenderingAttachmentInfo RenderingAttachmentInfo(VkImageView         imageView,
                                                   VkImageLayout       layout,
                                                   VkAttachmentLoadOp  loadOp,
@@ -182,6 +197,18 @@ bool load_shader_module(const char* filename, VkDevice device, VkShaderModule* o
 
     *out_shader_module = module;
     return true;
+}
+
+VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags)
+{
+    VkCommandPoolCreateInfo info{
+      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .pNext            = nullptr,
+      .flags            = flags,
+      .queueFamilyIndex = queueFamilyIndex,
+    };
+
+    return info;
 }
 } // namespace vkinit
 } // namespace Pinut

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "src/renderer/commandBufferManager.h"
 #include "src/renderer/device.h"
 #include "src/renderer/pipelines/forward.h"
 #include "src/renderer/swapchain.h"
@@ -42,9 +43,7 @@ class Application
     Swapchain       m_swapchain;
     ForwardPipeline m_forwardPipeline;
 
-    // Temporal
-    VkCommandBuffer cmds[3] = {};
-    VkCommandPool   m_commandPool{VK_NULL_HANDLE};
+    CommandBufferManager m_commandBufferManager;
 };
 } // namespace Pinut
 

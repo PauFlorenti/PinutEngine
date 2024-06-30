@@ -38,6 +38,8 @@ VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet         set,
 
 VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
 
+VkCommandBufferAllocateInfo CommandBufferAllocateInfo(VkCommandPool commandPool, VkCommandBufferLevel level, u32 cmdCount);
+
 VkRenderingAttachmentInfo RenderingAttachmentInfo(VkImageView         imageView,
                                                   VkImageLayout       layout,
                                                   VkAttachmentLoadOp  loadOp,
@@ -50,5 +52,7 @@ VkRenderingInfo RenderingInfo(uint32_t                   attachmentCount,
                               VkRenderingAttachmentInfo* depthAttachment = VK_NULL_HANDLE);
 
 bool load_shader_module(const char* filename, VkDevice device, VkShaderModule* out_shader_module);
+
+VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags);
 } // namespace vkinit
 } // namespace Pinut

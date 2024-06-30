@@ -118,28 +118,10 @@ void Application::Init(GLFWwindow* window)
     m_width  = w;
     m_height = h;
 
+    // TODO Make number backbuffers a variable.
     m_device.OnCreate("Sandbox", "PinutEngine", ENABLE_GPU_VALIDATION_DEFAULT, m_window);
     m_swapchain.OnCreate(&m_device, 3, m_window);
-
-    // TODO Temporal. We should create a commandBufferManager.
-    VkCommandPoolCreateInfo commandPoolInfo{
-      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-      .queueFamilyIndex = m_device.GetGraphicsQueueIndex(),
-    };
-
-    auto ok = vkCreateCommandPool(m_device.GetDevice(), &commandPoolInfo, nullptr, &m_commandPool);
-    assert(ok == VK_SUCCESS);
-
-    VkCommandBufferAllocateInfo allocateInfo{
-      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = m_commandPool,
-      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      .commandBufferCount = 3,
-    };
-
-    ok = vkAllocateCommandBuffers(m_device.GetDevice(), &allocateInfo, cmds);
-    assert(ok == VK_SUCCESS);
-    // TODO Finish Temporal.
+    m_commandBufferManager.OnCreate(&m_device, 3);
 
     UpdateDisplay();
     Primitives::InitializeDefaultPrimitives(&m_device);
@@ -155,7 +137,7 @@ void Application::Shutdown()
 
     m_forwardPipeline.Shutdown();
 
-    vkDestroyCommandPool(m_device.GetDevice(), m_commandPool, nullptr);
+    m_commandBufferManager.OnDestroy();
 
     m_swapchain.OnDestroy();
     m_device.OnDestroy();
@@ -171,10 +153,8 @@ void Application::Render()
     VkFence     fence{VK_NULL_HANDLE};
     m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
 
-    auto ok = vkResetCommandPool(m_device.GetDevice(), m_commandPool, 0);
-    assert(ok == VK_SUCCESS);
-
-    auto& cmd = cmds[m_swapchain.GetImageIndex()];
+    m_commandBufferManager.OnBeginFrame();
+    auto cmd = m_commandBufferManager.GetNewCommandBuffer();
 
     auto cmdBeginInfo = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
@@ -281,7 +261,7 @@ void Application::Render()
       .pSignalSemaphores    = &renderFinishedSemaphore,
     };
 
-    ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
+    auto ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
     assert(ok == VK_SUCCESS);
 
     m_swapchain.Present();

@@ -126,7 +126,7 @@ void Device::OnDestroy()
     m_instance = VK_NULL_HANDLE;
 }
 
-VkCommandBuffer Device::CreateCommandBuffer()
+VkCommandBuffer Device::CreateImmediateCommandBuffer()
 {
     VkCommandBufferAllocateInfo info{
       .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,

@@ -7,6 +7,8 @@ set(Pinut_core
 set(Pinut_renderer
     src/renderer/buffer.cpp
     src/renderer/buffer.h
+    src/renderer/commandBufferManager.cpp
+    src/renderer/commandBufferManager.h
     src/renderer/device.cpp
     src/renderer/device.h
     src/renderer/mesh.cpp
