@@ -9,6 +9,9 @@ set(Pinut_renderer
     src/renderer/buffer.h
     src/renderer/commandBufferManager.cpp
     src/renderer/commandBufferManager.h
+    src/renderer/common.h
+    src/renderer/descriptorSetManager.cpp
+    src/renderer/descriptorSetManager.h
     src/renderer/device.cpp
     src/renderer/device.h
     src/renderer/mesh.cpp

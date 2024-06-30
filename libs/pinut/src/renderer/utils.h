@@ -21,6 +21,13 @@ DescriptorSetLayoutCreateInfo(uint32_t bindingCount, VkDescriptorSetLayoutBindin
 VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo(uint32_t               layoutCount,
                                                     VkDescriptorSetLayout* layouts);
 
+VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(u32 numberSets,
+                                                    const std::vector<VkDescriptorPoolSize>& sizes);
+
+VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(VkDescriptorPool descriptorPool,
+                                                      u32              descriptorSetCount,
+                                                      const VkDescriptorSetLayout& layout);
+
 VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer     buffer,
                                             VkDeviceSize offset,
                                             VkDeviceSize range);
@@ -38,7 +45,9 @@ VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet         set,
 
 VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
 
-VkCommandBufferAllocateInfo CommandBufferAllocateInfo(VkCommandPool commandPool, VkCommandBufferLevel level, u32 cmdCount);
+VkCommandBufferAllocateInfo CommandBufferAllocateInfo(VkCommandPool        commandPool,
+                                                      VkCommandBufferLevel level,
+                                                      u32                  cmdCount);
 
 VkRenderingAttachmentInfo RenderingAttachmentInfo(VkImageView         imageView,
                                                   VkImageLayout       layout,

@@ -3,7 +3,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
 
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+
 #include "application.h"
+#include "src/renderer/common.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/primitives.h"
 #include "src/renderer/utils.h"
@@ -123,21 +127,42 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
+    std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+    };
+    m_descriptorSetManager.OnCreate(m_device.GetDevice(), 3, 2, std::move(descriptorPoolSizes));
+
     UpdateDisplay();
     Primitives::InitializeDefaultPrimitives(&m_device);
 
     m_forwardPipeline.Init(&m_device);
+
+    m_perFrameBuffer.Create(&m_device,
+                            sizeof(PerFrameData),
+                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VMA_MEMORY_USAGE_AUTO);
+
+    m_perObjectBuffer.Create(&m_device,
+                             sizeof(glm::mat4),
+                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                             VMA_MEMORY_USAGE_AUTO);
 }
 
 void Application::Shutdown()
 {
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
 
+    // TODO temporal
+    m_perFrameBuffer.Destroy();
+    m_perObjectBuffer.Destroy();
+    // TODO end temporal
+
     Primitives::DestroyDefaultPrimitives();
 
     m_forwardPipeline.Shutdown();
 
     m_commandBufferManager.OnDestroy();
+    m_descriptorSetManager.OnDestroy();
 
     m_swapchain.OnDestroy();
     m_device.OnDestroy();
@@ -147,6 +172,7 @@ void Application::Shutdown()
 void Application::Render()
 {
     auto frameIndex = m_swapchain.WaitForSwapchain();
+    m_descriptorSetManager.Clear();
 
     // Draw
     VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
@@ -215,6 +241,55 @@ void Application::Render()
     vkCmdSetScissor(cmd, 0, 1, &scissors);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_forwardPipeline.Pipeline());
+
+    const auto perFrameDescriptorSet =
+      m_descriptorSetManager.Allocate(m_forwardPipeline.PerFrameDescriptorSetLayout());
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_forwardPipeline.PipelineLayout(),
+                            0,
+                            1,
+                            &perFrameDescriptorSet,
+                            0,
+                            nullptr);
+
+    auto perFrameData = (PerFrameData*)m_perFrameBuffer.AllocationInfo().pMappedData;
+    perFrameData->view =
+      glm::lookAt(glm::vec3(0.0f, 5.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    perFrameData->projection =
+      glm::perspective(glm::radians(60.0f), (float)m_width / m_height, 0.01f, 10000.0f);
+
+    auto perFrameBufferInfo =
+      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, VK_WHOLE_SIZE);
+    auto perFrameWrite = vkinit::WriteDescriptorSet(perFrameDescriptorSet,
+                                                    0,
+                                                    1,
+                                                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                    &perFrameBufferInfo);
+    vkUpdateDescriptorSets(m_device.GetDevice(), 1, &perFrameWrite, 0, nullptr);
+
+    const auto perObjectDescriptorSet =
+      m_descriptorSetManager.Allocate(m_forwardPipeline.PerObjectDescriptorSetLayout());
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_forwardPipeline.PipelineLayout(),
+                            1,
+                            1,
+                            &perObjectDescriptorSet,
+                            0,
+                            nullptr);
+
+    auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData;
+    *perObjectData     = glm::mat4(1.0f);
+
+    auto perObjectBufferInfo =
+      vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, 0, VK_WHOLE_SIZE);
+    auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                                     0,
+                                                     1,
+                                                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                     &perObjectBufferInfo);
+    vkUpdateDescriptorSets(m_device.GetDevice(), 1, &perObjectWrite, 0, nullptr);
 
     VkDeviceSize offset{0};
     auto         cube = Primitives::GetUnitCube();

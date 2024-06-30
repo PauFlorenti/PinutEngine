@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include <array>
+
 #include "forward.h"
 #include "src/renderer/device.h"
 #include "src/renderer/mesh.h"
@@ -36,7 +38,33 @@ void ForwardPipeline::Init(Device* device)
     };
     // clang-format on
 
-    auto layout_info = vkinit::PipelineLayoutCreateInfo(0, nullptr);
+    auto perFrameBinding = vkinit::DescriptorSetLayoutBinding(0,
+                                                              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                              1,
+                                                              VK_SHADER_STAGE_VERTEX_BIT);
+    auto perFrameDescriptorSetLayoutCreateInfo =
+      vkinit::DescriptorSetLayoutCreateInfo(1, &perFrameBinding);
+
+    vkCreateDescriptorSetLayout(logicalDevice,
+                                &perFrameDescriptorSetLayoutCreateInfo,
+                                nullptr,
+                                &m_perFrameDescriptorSetLayout);
+
+    auto perObjectBinding = vkinit::DescriptorSetLayoutBinding(0,
+                                                               VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                               1,
+                                                               VK_SHADER_STAGE_VERTEX_BIT);
+    auto perObjectDescriptorSetLayoutCreateInfo =
+      vkinit::DescriptorSetLayoutCreateInfo(1, &perObjectBinding);
+
+    vkCreateDescriptorSetLayout(logicalDevice,
+                                &perObjectDescriptorSetLayoutCreateInfo,
+                                nullptr,
+                                &m_perObjectDescriptorSetLayout);
+
+    std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {m_perFrameDescriptorSetLayout,
+                                                                 m_perObjectDescriptorSetLayout};
+    auto layout_info = vkinit::PipelineLayoutCreateInfo(2, descriptorSetLayouts.data());
 
     auto ok = vkCreatePipelineLayout(logicalDevice, &layout_info, nullptr, &m_pipelineLayout);
     assert(ok == VK_SUCCESS);
@@ -68,6 +96,8 @@ void ForwardPipeline::Render() {}
 void ForwardPipeline::Shutdown()
 {
     auto device = m_device->GetDevice();
+    vkDestroyDescriptorSetLayout(device, m_perFrameDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device, m_perObjectDescriptorSetLayout, nullptr);
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 }

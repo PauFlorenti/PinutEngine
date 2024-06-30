@@ -62,6 +62,32 @@ VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo(uint32_t               layou
     return info;
 }
 
+VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(u32 numberSets,
+                                                    const std::vector<VkDescriptorPoolSize>& sizes)
+{
+    VkDescriptorPoolCreateInfo info{
+      .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+      .pNext         = nullptr,
+      .maxSets       = numberSets,
+      .poolSizeCount = static_cast<u32>(sizes.size()),
+      .pPoolSizes    = sizes.data(),
+    };
+
+    return info;
+}
+
+VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(VkDescriptorPool descriptorPool,
+                                                      u32              descriptorSetCount,
+                                                      const VkDescriptorSetLayout& layout)
+{
+    VkDescriptorSetAllocateInfo info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                                     .descriptorPool     = descriptorPool,
+                                     .descriptorSetCount = descriptorSetCount,
+                                     .pSetLayouts        = &layout};
+
+    return info;
+}
+
 VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer     buffer,
                                             VkDeviceSize offset,
                                             VkDeviceSize range)
