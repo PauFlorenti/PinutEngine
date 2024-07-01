@@ -48,6 +48,7 @@ set(Pinut_pipelines
 # src/scene/scene.h)
 add_library(Pinut STATIC ${Pinut_core} ${Pinut_renderer} ${Pinut_pipelines})
 
+add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 add_subdirectory(external/vkbootstrap)
 add_subdirectory(external/vma)
