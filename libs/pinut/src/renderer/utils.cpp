@@ -191,7 +191,7 @@ VkRenderingInfo RenderingInfo(uint32_t                   attachmentCount,
       .colorAttachmentCount = attachmentCount,
       .pColorAttachments    = attachments,
       .pDepthAttachment     = depthAttachment,
-      .pStencilAttachment   = depthAttachment,
+      .pStencilAttachment   = nullptr,
     };
 
     return info;

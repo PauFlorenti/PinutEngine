@@ -2,6 +2,7 @@
 
 // TODO Temporal
 #include "src/renderer/buffer.h"
+#include "src/renderer/texture.h"
 // TODO End temporal
 #include "src/renderer/commandBufferManager.h"
 #include "src/renderer/descriptorSetManager.h"
@@ -53,6 +54,7 @@ class Application
     // TODO Temporal
     GPUBuffer m_perFrameBuffer;
     GPUBuffer m_perObjectBuffer;
+    Texture   m_depthTexture;
     // TODO End Temporal
 };
 } // namespace Pinut

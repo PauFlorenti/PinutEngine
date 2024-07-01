@@ -101,6 +101,8 @@ void PipelineBuilder::enable_depth_test(bool        depth_test_enable,
     depth_stencil.depthWriteEnable = write_enable ? VK_TRUE : VK_FALSE;
     depth_stencil.depthCompareOp   = depth_test_enable ? compare_operation : VK_COMPARE_OP_NEVER;
     depth_stencil.back.compareOp   = VK_COMPARE_OP_ALWAYS;
+    depth_stencil.minDepthBounds   = 0.0f;
+    depth_stencil.maxDepthBounds   = 1.0f;
 }
 
 void PipelineBuilder::disable_depth_test()

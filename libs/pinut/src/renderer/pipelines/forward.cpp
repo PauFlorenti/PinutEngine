@@ -80,8 +80,8 @@ void ForwardPipeline::Init(Device* device)
     builder.set_input_attribute(std::move(input_attributes), sizeof(Vertex));
     builder.set_multisampling_none();
     builder.disable_blending();
-    builder.enable_depth_test(false, false, VK_COMPARE_OP_NEVER);
-    builder.set_depth_format(VK_FORMAT_UNDEFINED);
+    builder.enable_depth_test(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
     builder.set_stencil_format(VK_FORMAT_UNDEFINED);
     builder.set_color_attachment_format(VK_FORMAT_B8G8R8A8_UNORM);
 

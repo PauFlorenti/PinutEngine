@@ -147,6 +147,25 @@ void Application::Init(GLFWwindow* window)
                              sizeof(glm::mat4),
                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                              VMA_MEMORY_USAGE_AUTO);
+
+    VkImageCreateInfo depthTextureInfo{
+      .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+      .pNext                 = nullptr,
+      .imageType             = VK_IMAGE_TYPE_2D,
+      .format                = VK_FORMAT_D32_SFLOAT,
+      .extent                = {m_width, m_height, 1},
+      .mipLevels             = 1,
+      .arrayLayers           = 1,
+      .samples               = VK_SAMPLE_COUNT_1_BIT,
+      .tiling                = VK_IMAGE_TILING_OPTIMAL,
+      .usage                 = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+      .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices   = nullptr,
+      .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    m_depthTexture.Create(&m_device, depthTextureInfo);
 }
 
 void Application::Shutdown()
@@ -154,6 +173,7 @@ void Application::Shutdown()
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
 
     // TODO temporal
+    m_depthTexture.Destroy();
     m_perFrameBuffer.Destroy();
     m_perObjectBuffer.Destroy();
     // TODO end temporal
@@ -196,29 +216,38 @@ void Application::Render()
                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
+    Texture::TransitionImageLayout(cmd,
+                                   m_depthTexture.Image(),
+                                   0,
+                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                   VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
+
     auto attachment = vkinit::RenderingAttachmentInfo(m_swapchain.GetCurrentImageView(),
                                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                                       VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                       VK_ATTACHMENT_STORE_OP_STORE,
                                                       {0.f, 0.f, 0.f, 0.f});
 
-    auto renderingInfo = vkinit::RenderingInfo(1, &attachment, {{0, 0}, {m_width, m_height}});
+    auto depthAttachment = vkinit::RenderingAttachmentInfo(m_depthTexture.ImageView(),
+                                                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                                                           VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                                           VK_ATTACHMENT_STORE_OP_STORE,
+                                                           {1.0, 0});
+
+    auto renderingInfo =
+      vkinit::RenderingInfo(1, &attachment, {0, 0, m_width, m_height}, &depthAttachment);
+
+    vkCmdBeginRendering(cmd, &renderingInfo);
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_forwardPipeline.Pipeline());
 
     VkRect2D scissors{};
     scissors.extent = {m_width, m_height};
     scissors.offset = {0, 0};
-
-    VkRenderingInfo renderingInfoTest{
-      .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-      .renderArea           = {0, 0, m_width, m_height},
-      .layerCount           = 1,
-      .colorAttachmentCount = 1,
-      .pColorAttachments    = &attachment,
-      .pDepthAttachment     = nullptr,
-      .pStencilAttachment   = nullptr,
-    };
-
-    vkCmdBeginRendering(cmd, &renderingInfo);
 
     VkViewport viewport{};
     viewport.width    = static_cast<float>(m_width);
@@ -228,8 +257,6 @@ void Application::Render()
 
     vkCmdSetViewport(cmd, 0, 1, &viewport);
     vkCmdSetScissor(cmd, 0, 1, &scissors);
-
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_forwardPipeline.Pipeline());
 
     const auto perFrameDescriptorSet =
       m_descriptorSetManager.Allocate(m_forwardPipeline.PerFrameDescriptorSetLayout());
