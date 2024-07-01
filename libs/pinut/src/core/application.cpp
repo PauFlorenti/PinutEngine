@@ -10,6 +10,7 @@
 #include "src/renderer/common.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/primitives.h"
+#include "src/renderer/texture.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -185,27 +186,15 @@ void Application::Render()
     auto cmdBeginInfo = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
 
-    {
-        VkImageMemoryBarrier2 barrier{
-          .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-          .srcStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .srcAccessMask    = 0,
-          .dstStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .dstAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-          .oldLayout        = VK_IMAGE_LAYOUT_UNDEFINED,
-          .newLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-          .image            = m_swapchain.GetCurrentImage(),
-          .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-        };
-
-        VkDependencyInfo dependencyInfo{
-          .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-          .imageMemoryBarrierCount = 1,
-          .pImageMemoryBarriers    = &barrier,
-        };
-
-        vkCmdPipelineBarrier2(cmd, &dependencyInfo);
-    }
+    Texture::TransitionImageLayout(cmd,
+                                   m_swapchain.GetCurrentImage(),
+                                   0,
+                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                   VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
     auto attachment = vkinit::RenderingAttachmentInfo(m_swapchain.GetCurrentImageView(),
                                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -299,27 +288,15 @@ void Application::Render()
 
     vkCmdEndRendering(cmd);
 
-    {
-        VkImageMemoryBarrier2 barrier{
-          .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-          .srcStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .srcAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-          .dstStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .dstAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-          .oldLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-          .newLayout        = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-          .image            = m_swapchain.GetCurrentImage(),
-          .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-        };
-
-        VkDependencyInfo dependencyInfo{
-          .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-          .imageMemoryBarrierCount = 1,
-          .pImageMemoryBarriers    = &barrier,
-        };
-
-        vkCmdPipelineBarrier2(cmd, &dependencyInfo);
-    }
+    Texture::TransitionImageLayout(cmd,
+                                   m_swapchain.GetCurrentImage(),
+                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                   VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
     vkEndCommandBuffer(cmd);
 

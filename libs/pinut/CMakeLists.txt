@@ -22,6 +22,8 @@ set(Pinut_renderer
     src/renderer/primitives.h
     src/renderer/swapchain.cpp
     src/renderer/swapchain.h
+    src/renderer/texture.cpp
+    src/renderer/texture.h
     src/renderer/utils.cpp
     src/renderer/utils.h)
 
