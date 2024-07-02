@@ -230,7 +230,7 @@ void Application::Render()
                                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                                       VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                       VK_ATTACHMENT_STORE_OP_STORE,
-                                                      {0.f, 0.f, 0.f, 0.f});
+                                                      {0.0f, 0.f, 0.f, 0.f});
 
     auto depthAttachment = vkinit::RenderingAttachmentInfo(m_depthTexture.ImageView(),
                                                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
@@ -250,8 +250,10 @@ void Application::Render()
     scissors.offset = {0, 0};
 
     VkViewport viewport{};
+    viewport.x        = 0.0f;
+    viewport.y        = static_cast<float>(m_height);
     viewport.width    = static_cast<float>(m_width);
-    viewport.height   = static_cast<float>(m_height);
+    viewport.height   = -static_cast<float>(m_height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -271,7 +273,7 @@ void Application::Render()
 
     auto perFrameData = (PerFrameData*)m_perFrameBuffer.AllocationInfo().pMappedData;
     perFrameData->view =
-      glm::lookAt(glm::vec3(0.0f, 5.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+      glm::lookAt(glm::vec3(3.0f, 3.0f, 3.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     perFrameData->projection =
       glm::perspective(glm::radians(60.0f), (float)m_width / m_height, 0.01f, 10000.0f);
 
