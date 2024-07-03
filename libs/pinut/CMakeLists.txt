@@ -14,6 +14,8 @@ set(Pinut_renderer
     src/renderer/descriptorSetManager.h
     src/renderer/device.cpp
     src/renderer/device.h
+    src/renderer/material.cpp
+    src/renderer/material.h
     src/renderer/mesh.cpp
     src/renderer/mesh.h
     src/renderer/pipeline.cpp
@@ -38,16 +40,10 @@ set(Pinut_pipelines
 # src/misc/camera.h)
 
 # set(Pinut_pipelines
-# src/pipelines/forward.cpp
-# src/pipelines/forward.h
 # src/pipelines/pipelineBuilder.cpp
 # src/pipelines/pipelineBuilder.h)
 
 # set(Pinut_scene
-# src/scene/material.cpp
-# src/scene/material.h
-# src/scene/mesh.cpp
-# src/scene/mesh.h
 # src/scene/scene.cpp
 # src/scene/scene.h)
 add_library(Pinut STATIC ${Pinut_core} ${Pinut_renderer} ${Pinut_pipelines})
