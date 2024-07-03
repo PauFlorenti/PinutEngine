@@ -8,6 +8,7 @@
 namespace Pinut
 {
 class Device;
+class Renderable;
 struct PerFrameData;
 class ForwardPipeline
 {
@@ -16,7 +17,7 @@ class ForwardPipeline
     void Shutdown();
     void BindPipeline(VkCommandBuffer cmd);
     void UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data);
-    void Render(VkCommandBuffer cmd);
+    void Render(VkCommandBuffer cmd, Renderable* r);
 
     VkPipeline Pipeline() const;
 

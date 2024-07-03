@@ -9,6 +9,7 @@
 #include "src/renderer/common.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/primitives.h"
+#include "src/renderer/renderable.h"
 #include "src/renderer/texture.h"
 #include "src/renderer/utils.h"
 
@@ -21,6 +22,8 @@ static constexpr bool ENABLE_GPU_VALIDATION_DEFAULT = false;
 #endif
 
 static bool bMinimized{false};
+
+Pinut::Renderable* renderable{nullptr};
 
 i32 Run(Pinut::Application* application)
 {
@@ -150,6 +153,9 @@ void Application::Init(GLFWwindow* window)
     };
 
     m_depthTexture.Create(&m_device, depthTextureInfo);
+
+    renderable = new Renderable();
+    renderable->SetMesh(Primitives::GetUnitCube());
 }
 
 void Application::Shutdown()
@@ -250,7 +256,7 @@ void Application::Render()
 
     m_forwardPipeline.UpdatePerFrameData(cmd, std::move(perFrameData));
 
-    m_forwardPipeline.Render(cmd);
+    m_forwardPipeline.Render(cmd, renderable);
 
     vkCmdEndRendering(cmd);
 

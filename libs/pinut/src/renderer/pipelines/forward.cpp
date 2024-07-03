@@ -7,7 +7,8 @@
 #include "src/renderer/device.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/pipeline.h"
-#include "src/renderer/primitives.h"
+// #include "src/renderer/primitives.h"
+#include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
@@ -149,7 +150,7 @@ void ForwardPipeline::UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data)
     vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
 }
 
-void ForwardPipeline::Render(VkCommandBuffer cmd)
+void ForwardPipeline::Render(VkCommandBuffer cmd, Renderable* r)
 {
     const auto device = m_device->GetDevice();
 
@@ -185,11 +186,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd)
                                                      &perObjectBufferInfo);
     vkUpdateDescriptorSets(device, 1, &perObjectWrite, 0, nullptr);
 
-    VkDeviceSize offset{0};
-    auto         cube = Primitives::GetUnitCube();
-    vkCmdBindVertexBuffers(cmd, 0, 1, &cube->m_vertexBuffer.m_buffer, &offset);
-    vkCmdBindIndexBuffer(cmd, cube->m_indexBuffer.m_buffer, offset, VK_INDEX_TYPE_UINT16);
-    vkCmdDrawIndexed(cmd, cube->GetIndexCount(), 1, 0, 0, 0);
+    r->Draw(cmd);
 }
 
 VkPipeline ForwardPipeline::Pipeline() const { return m_pipeline; }

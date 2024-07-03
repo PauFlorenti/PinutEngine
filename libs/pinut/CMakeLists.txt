@@ -20,6 +20,8 @@ set(Pinut_renderer
     src/renderer/pipeline.h
     src/renderer/primitives.cpp
     src/renderer/primitives.h
+    src/renderer/renderable.cpp
+    src/renderer/renderable.h
     src/renderer/swapchain.cpp
     src/renderer/swapchain.h
     src/renderer/texture.cpp
