@@ -3,9 +3,11 @@
 #include <array>
 
 #include "forward.h"
+#include "src/renderer/common.h"
 #include "src/renderer/device.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/pipeline.h"
+#include "src/renderer/primitives.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
@@ -89,20 +91,106 @@ void ForwardPipeline::Init(Device* device)
 
     vkDestroyShaderModule(logicalDevice, vertex_shader, nullptr);
     vkDestroyShaderModule(logicalDevice, fragment_shader, nullptr);
-}
 
-void ForwardPipeline::Render() {}
+    std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+    };
+    m_descriptorSetManager.OnCreate(logicalDevice, 3, 2, std::move(descriptorPoolSizes));
+
+    m_perFrameBuffer.Create(m_device,
+                            sizeof(PerFrameData),
+                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VMA_MEMORY_USAGE_AUTO);
+
+    m_perObjectBuffer.Create(m_device,
+                             sizeof(glm::mat4),
+                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                             VMA_MEMORY_USAGE_AUTO);
+}
 
 void ForwardPipeline::Shutdown()
 {
-    auto device = m_device->GetDevice();
+    const auto device = m_device->GetDevice();
+
+    m_perFrameBuffer.Destroy();
+    m_perObjectBuffer.Destroy();
+
+    m_descriptorSetManager.OnDestroy();
+
     vkDestroyDescriptorSetLayout(device, m_perFrameDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(device, m_perObjectDescriptorSetLayout, nullptr);
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 }
 
-VkPipeline ForwardPipeline::Pipeline() const { return m_pipeline; }
+void ForwardPipeline::BindPipeline(VkCommandBuffer cmd)
+{
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    m_descriptorSetManager.Clear();
+}
 
-VkPipelineLayout ForwardPipeline::PipelineLayout() const { return m_pipelineLayout; }
+void ForwardPipeline::UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data)
+{
+    auto set = m_descriptorSetManager.Allocate(m_perFrameDescriptorSetLayout);
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_pipelineLayout,
+                            0,
+                            1,
+                            &set,
+                            0,
+                            nullptr);
+
+    memcpy(m_perFrameBuffer.AllocationInfo().pMappedData, &data, sizeof(PerFrameData));
+
+    auto bufferInfo = vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, VK_WHOLE_SIZE);
+    VkWriteDescriptorSet write =
+      vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
+    vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
+}
+
+void ForwardPipeline::Render(VkCommandBuffer cmd)
+{
+    const auto device = m_device->GetDevice();
+
+    const auto perObjectDescriptorSet =
+      m_descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_pipelineLayout,
+                            1,
+                            1,
+                            &perObjectDescriptorSet,
+                            0,
+                            nullptr);
+
+    auto perFrameBufferInfo =
+      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, VK_WHOLE_SIZE);
+    const auto perFrameWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                                          0,
+                                                          1,
+                                                          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                          &perFrameBufferInfo);
+    vkUpdateDescriptorSets(device, 1, &perFrameWrite, 0, nullptr);
+
+    auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData;
+    *perObjectData     = glm::mat4(1.0f);
+
+    auto perObjectBufferInfo =
+      vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, 0, VK_WHOLE_SIZE);
+    auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                                     0,
+                                                     1,
+                                                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                     &perObjectBufferInfo);
+    vkUpdateDescriptorSets(device, 1, &perObjectWrite, 0, nullptr);
+
+    VkDeviceSize offset{0};
+    auto         cube = Primitives::GetUnitCube();
+    vkCmdBindVertexBuffers(cmd, 0, 1, &cube->m_vertexBuffer.m_buffer, &offset);
+    vkCmdBindIndexBuffer(cmd, cube->m_indexBuffer.m_buffer, offset, VK_INDEX_TYPE_UINT16);
+    vkCmdDrawIndexed(cmd, cube->GetIndexCount(), 1, 0, 0, 0);
+}
+
+VkPipeline ForwardPipeline::Pipeline() const { return m_pipeline; }
 } // namespace Pinut

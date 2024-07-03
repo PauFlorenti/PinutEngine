@@ -1,11 +1,9 @@
 #pragma once
 
 // TODO Temporal
-#include "src/renderer/buffer.h"
 #include "src/renderer/texture.h"
 // TODO End temporal
 #include "src/renderer/commandBufferManager.h"
-#include "src/renderer/descriptorSetManager.h"
 #include "src/renderer/device.h"
 #include "src/renderer/pipelines/forward.h"
 #include "src/renderer/swapchain.h"
@@ -49,11 +47,8 @@ class Application
     ForwardPipeline m_forwardPipeline;
 
     CommandBufferManager m_commandBufferManager;
-    DescriptorSetManager m_descriptorSetManager;
 
     // TODO Temporal
-    GPUBuffer m_perFrameBuffer;
-    GPUBuffer m_perObjectBuffer;
     Texture   m_depthTexture;
     // TODO End Temporal
 };

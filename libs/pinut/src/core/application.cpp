@@ -2,7 +2,6 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
-
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
@@ -128,25 +127,10 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
-    std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-    };
-    m_descriptorSetManager.OnCreate(m_device.GetDevice(), 3, 2, std::move(descriptorPoolSizes));
-
     UpdateDisplay();
     Primitives::InitializeDefaultPrimitives(&m_device);
 
     m_forwardPipeline.Init(&m_device);
-
-    m_perFrameBuffer.Create(&m_device,
-                            sizeof(PerFrameData),
-                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VMA_MEMORY_USAGE_AUTO);
-
-    m_perObjectBuffer.Create(&m_device,
-                             sizeof(glm::mat4),
-                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                             VMA_MEMORY_USAGE_AUTO);
 
     VkImageCreateInfo depthTextureInfo{
       .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -174,8 +158,6 @@ void Application::Shutdown()
 
     // TODO temporal
     m_depthTexture.Destroy();
-    m_perFrameBuffer.Destroy();
-    m_perObjectBuffer.Destroy();
     // TODO end temporal
 
     Primitives::DestroyDefaultPrimitives();
@@ -183,7 +165,6 @@ void Application::Shutdown()
     m_forwardPipeline.Shutdown();
 
     m_commandBufferManager.OnDestroy();
-    m_descriptorSetManager.OnDestroy();
 
     m_swapchain.OnDestroy();
     m_device.OnDestroy();
@@ -193,7 +174,6 @@ void Application::Shutdown()
 void Application::Render()
 {
     auto frameIndex = m_swapchain.WaitForSwapchain();
-    m_descriptorSetManager.Clear();
 
     // Draw
     VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
@@ -201,9 +181,10 @@ void Application::Render()
     m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
 
     m_commandBufferManager.OnBeginFrame();
-    auto cmd = m_commandBufferManager.GetNewCommandBuffer();
+    const auto cmd = m_commandBufferManager.GetNewCommandBuffer();
 
-    auto cmdBeginInfo = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    const auto cmdBeginInfo =
+      vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
 
     Texture::TransitionImageLayout(cmd,
@@ -238,12 +219,12 @@ void Application::Render()
                                                            VK_ATTACHMENT_STORE_OP_STORE,
                                                            {1.0, 0});
 
-    auto renderingInfo =
+    const auto renderingInfo =
       vkinit::RenderingInfo(1, &attachment, {0, 0, m_width, m_height}, &depthAttachment);
 
     vkCmdBeginRendering(cmd, &renderingInfo);
 
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_forwardPipeline.Pipeline());
+    m_forwardPipeline.BindPipeline(cmd);
 
     VkRect2D scissors{};
     scissors.extent = {m_width, m_height};
@@ -260,60 +241,16 @@ void Application::Render()
     vkCmdSetViewport(cmd, 0, 1, &viewport);
     vkCmdSetScissor(cmd, 0, 1, &scissors);
 
-    const auto perFrameDescriptorSet =
-      m_descriptorSetManager.Allocate(m_forwardPipeline.PerFrameDescriptorSetLayout());
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_forwardPipeline.PipelineLayout(),
-                            0,
-                            1,
-                            &perFrameDescriptorSet,
-                            0,
-                            nullptr);
+    PerFrameData perFrameData{};
 
-    auto perFrameData = (PerFrameData*)m_perFrameBuffer.AllocationInfo().pMappedData;
-    perFrameData->view =
+    perFrameData.view =
       glm::lookAt(glm::vec3(3.0f, 3.0f, 3.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    perFrameData->projection =
+    perFrameData.projection =
       glm::perspective(glm::radians(60.0f), (float)m_width / m_height, 0.01f, 10000.0f);
 
-    auto perFrameBufferInfo =
-      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, VK_WHOLE_SIZE);
-    auto perFrameWrite = vkinit::WriteDescriptorSet(perFrameDescriptorSet,
-                                                    0,
-                                                    1,
-                                                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                    &perFrameBufferInfo);
-    vkUpdateDescriptorSets(m_device.GetDevice(), 1, &perFrameWrite, 0, nullptr);
+    m_forwardPipeline.UpdatePerFrameData(cmd, std::move(perFrameData));
 
-    const auto perObjectDescriptorSet =
-      m_descriptorSetManager.Allocate(m_forwardPipeline.PerObjectDescriptorSetLayout());
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_forwardPipeline.PipelineLayout(),
-                            1,
-                            1,
-                            &perObjectDescriptorSet,
-                            0,
-                            nullptr);
-
-    auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData;
-    *perObjectData     = glm::mat4(1.0f);
-
-    auto perObjectBufferInfo =
-      vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, 0, VK_WHOLE_SIZE);
-    auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
-                                                     0,
-                                                     1,
-                                                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                     &perObjectBufferInfo);
-    vkUpdateDescriptorSets(m_device.GetDevice(), 1, &perObjectWrite, 0, nullptr);
-
-    VkDeviceSize offset{0};
-    auto         cube = Primitives::GetUnitCube();
-    vkCmdBindVertexBuffers(cmd, 0, 1, &cube->m_vertexBuffer.m_buffer, &offset);
-    vkCmdBindIndexBuffer(cmd, cube->m_indexBuffer.m_buffer, offset, VK_INDEX_TYPE_UINT16);
-    vkCmdDrawIndexed(cmd, cube->GetIndexCount(), 1, 0, 0, 0);
+    m_forwardPipeline.Render(cmd);
 
     vkCmdEndRendering(cmd);
 
