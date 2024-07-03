@@ -130,29 +130,10 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
-    UpdateDisplay();
     Primitives::InitializeDefaultPrimitives(&m_device);
-
     m_forwardPipeline.Init(&m_device);
 
-    VkImageCreateInfo depthTextureInfo{
-      .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-      .pNext                 = nullptr,
-      .imageType             = VK_IMAGE_TYPE_2D,
-      .format                = VK_FORMAT_D32_SFLOAT,
-      .extent                = {m_width, m_height, 1},
-      .mipLevels             = 1,
-      .arrayLayers           = 1,
-      .samples               = VK_SAMPLE_COUNT_1_BIT,
-      .tiling                = VK_IMAGE_TILING_OPTIMAL,
-      .usage                 = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-      .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-      .queueFamilyIndexCount = 0,
-      .pQueueFamilyIndices   = nullptr,
-      .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
-    };
-
-    m_depthTexture.Create(&m_device, depthTextureInfo);
+    UpdateDisplay();
 
     renderable = new Renderable();
     renderable->SetMesh(Primitives::GetUnitCube());
@@ -161,10 +142,6 @@ void Application::Init(GLFWwindow* window)
 void Application::Shutdown()
 {
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
-
-    // TODO temporal
-    m_depthTexture.Destroy();
-    // TODO end temporal
 
     Primitives::DestroyDefaultPrimitives();
 
@@ -193,6 +170,8 @@ void Application::Render()
       vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
 
+    auto depthTexture = m_forwardPipeline.GetDepthAttachment();
+
     Texture::TransitionImageLayout(cmd,
                                    m_swapchain.GetCurrentImage(),
                                    0,
@@ -204,7 +183,7 @@ void Application::Render()
                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
     Texture::TransitionImageLayout(cmd,
-                                   m_depthTexture.Image(),
+                                   depthTexture->Image(),
                                    0,
                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                    VK_IMAGE_LAYOUT_UNDEFINED,
@@ -219,7 +198,7 @@ void Application::Render()
                                                       VK_ATTACHMENT_STORE_OP_STORE,
                                                       {0.0f, 0.f, 0.f, 0.f});
 
-    auto depthAttachment = vkinit::RenderingAttachmentInfo(m_depthTexture.ImageView(),
+    auto depthAttachment = vkinit::RenderingAttachmentInfo(depthTexture->ImageView(),
                                                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
                                                            VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                            VK_ATTACHMENT_STORE_OP_STORE,
@@ -294,6 +273,8 @@ void Application::Render()
 void Application::UpdateDisplay()
 {
     m_swapchain.OnDestroyWindowDependantResources();
+    m_forwardPipeline.OnDestroyWindowDependantResources();
     m_swapchain.OnCreateWindowDependantResources(m_width, m_height);
+    m_forwardPipeline.OnCreateWindowDependantResources(m_width, m_height);
 }
 } // namespace Pinut

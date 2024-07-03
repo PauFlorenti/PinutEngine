@@ -47,10 +47,6 @@ class Application
     ForwardPipeline m_forwardPipeline;
 
     CommandBufferManager m_commandBufferManager;
-
-    // TODO Temporal
-    Texture   m_depthTexture;
-    // TODO End Temporal
 };
 } // namespace Pinut
 

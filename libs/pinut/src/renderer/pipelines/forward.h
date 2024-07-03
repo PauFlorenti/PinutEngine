@@ -9,12 +9,19 @@ namespace Pinut
 {
 class Device;
 class Renderable;
+class Texture;
 struct PerFrameData;
 class ForwardPipeline
 {
   public:
     void Init(Device* device);
     void Shutdown();
+
+    void OnDestroyWindowDependantResources();
+    void OnCreateWindowDependantResources(u32 width, u32 height);
+
+    const Texture* GetDepthAttachment() const { return m_depthTexture; }
+
     void BindPipeline(VkCommandBuffer cmd);
     void UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data);
     void Render(VkCommandBuffer cmd, Renderable* r);
@@ -32,5 +39,6 @@ class ForwardPipeline
 
     GPUBuffer m_perFrameBuffer;
     GPUBuffer m_perObjectBuffer;
+    Texture*  m_depthTexture{nullptr};
 };
 } // namespace Pinut

@@ -7,8 +7,8 @@
 #include "src/renderer/device.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/pipeline.h"
-// #include "src/renderer/primitives.h"
 #include "src/renderer/renderable.h"
+#include "src/renderer/texture.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
@@ -113,6 +113,8 @@ void ForwardPipeline::Shutdown()
 {
     const auto device = m_device->GetDevice();
 
+    OnDestroyWindowDependantResources();
+
     m_perFrameBuffer.Destroy();
     m_perObjectBuffer.Destroy();
 
@@ -122,6 +124,40 @@ void ForwardPipeline::Shutdown()
     vkDestroyDescriptorSetLayout(device, m_perObjectDescriptorSetLayout, nullptr);
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
+}
+
+void ForwardPipeline::OnCreateWindowDependantResources(u32 width, u32 height)
+{
+    VkImageCreateInfo depthTextureInfo{
+      .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+      .pNext                 = nullptr,
+      .imageType             = VK_IMAGE_TYPE_2D,
+      .format                = VK_FORMAT_D32_SFLOAT,
+      .extent                = {width, height, 1},
+      .mipLevels             = 1,
+      .arrayLayers           = 1,
+      .samples               = VK_SAMPLE_COUNT_1_BIT,
+      .tiling                = VK_IMAGE_TILING_OPTIMAL,
+      .usage                 = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+      .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices   = nullptr,
+      .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    m_depthTexture = new Texture();
+    m_depthTexture->Create(m_device, depthTextureInfo);
+}
+
+void ForwardPipeline::OnDestroyWindowDependantResources()
+{
+    m_device->WaitIdle();
+
+    if (m_depthTexture != nullptr)
+    {
+        m_depthTexture->Destroy();
+        m_depthTexture = nullptr;
+    }
 }
 
 void ForwardPipeline::BindPipeline(VkCommandBuffer cmd)
