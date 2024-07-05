@@ -2,10 +2,10 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/matrix_transform.hpp>
 
 #include "application.h"
+#include "src/core/camera.h"
+#include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/mesh.h"
 #include "src/renderer/primitives.h"
@@ -64,6 +64,7 @@ i32 Run(Pinut::Application* application)
 
         if (!bMinimized)
         {
+            application->Update();
             application->OnUpdate();
             application->OnRender();
             application->Render();
@@ -154,6 +155,15 @@ void Application::Shutdown()
     glfwDestroyWindow(m_window);
 }
 
+void Application::Update()
+{
+    static auto startTime = glfwGetTime();
+
+    auto currentTime = glfwGetTime();
+    m_deltaTime      = currentTime - m_lastFrameTime;
+    m_lastFrameTime  = currentTime;
+}
+
 void Application::Render()
 {
     auto frameIndex = m_swapchain.WaitForSwapchain();
@@ -228,14 +238,13 @@ void Application::Render()
 
     PerFrameData perFrameData{};
 
-    perFrameData.view =
-      glm::lookAt(glm::vec3(3.0f, 3.0f, 3.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    perFrameData.projection =
-      glm::perspective(glm::radians(60.0f), (float)m_width / m_height, 0.01f, 10000.0f);
+    perFrameData.view           = m_currentCamera->View();
+    perFrameData.projection     = m_currentCamera->Projection();
+    perFrameData.cameraPosition = m_currentCamera->Position();
 
     m_forwardPipeline.UpdatePerFrameData(cmd, std::move(perFrameData));
 
-    m_forwardPipeline.Render(cmd, renderable);
+    m_forwardPipeline.Render(cmd, m_currentScene);
 
     vkCmdEndRendering(cmd);
 
@@ -276,5 +285,13 @@ void Application::UpdateDisplay()
     m_forwardPipeline.OnDestroyWindowDependantResources();
     m_swapchain.OnCreateWindowDependantResources(m_width, m_height);
     m_forwardPipeline.OnCreateWindowDependantResources(m_width, m_height);
+}
+
+Camera* Application::GetCamera()
+{
+    if (!m_currentCamera)
+        m_currentCamera = new Camera();
+
+    return m_currentCamera;
 }
 } // namespace Pinut

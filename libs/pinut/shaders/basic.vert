@@ -7,11 +7,13 @@ layout(location = 3) in vec4 inColor;
 
 layout(location = 0) out vec3 outNormal;
 layout(location = 1) out vec3 outPosition;
+layout(location = 2) out vec3 outCameraPosition;
 
 layout(set = 0, binding = 0) uniform perFrame
 {
     mat4 view;
     mat4 projection;
+    vec3 cameraPosition;
 } perFrameData;
 
 layout(set = 1, binding = 0) uniform perInstance
@@ -28,8 +30,9 @@ void main()
     vec4 world_position = model * vec4(inPosition, 1.0);
     vec3 N = mat3(transpose(inverse(model))) * inNormal;
 
+    gl_Position = projection * view * world_position;
+
     outNormal = N;
     outPosition = world_position.xyz;
-
-    gl_Position = projection * view * world_position;
+    outCameraPosition = perFrameData.cameraPosition;
 }

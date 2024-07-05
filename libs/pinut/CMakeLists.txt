@@ -2,7 +2,12 @@
 set(Pinut_core
     src/core/application.cpp
     src/core/application.h
-    src/core/defines.h)
+    src/core/camera.cpp
+    src/core/camera.h
+    src/core/defines.h
+    src/core/light.h
+    src/core/scene.cpp
+    src/core/scene.h)
 
 set(Pinut_renderer
     src/renderer/buffer.cpp
@@ -34,14 +39,6 @@ set(Pinut_renderer
 set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
-
-# set(Pinut_misc
-# src/misc/camera.cpp
-# src/misc/camera.h)
-
-# set(Pinut_pipelines
-# src/pipelines/pipelineBuilder.cpp
-# src/pipelines/pipelineBuilder.h)
 
 # set(Pinut_scene
 # src/scene/scene.cpp

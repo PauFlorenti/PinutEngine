@@ -3,6 +3,7 @@
 #include <array>
 
 #include "forward.h"
+#include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/device.h"
 #include "src/renderer/mesh.h"
@@ -94,9 +95,9 @@ void ForwardPipeline::Init(Device* device)
     vkDestroyShaderModule(logicalDevice, fragment_shader, nullptr);
 
     std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4},
     };
-    m_descriptorSetManager.OnCreate(logicalDevice, 3, 2, std::move(descriptorPoolSizes));
+    m_descriptorSetManager.OnCreate(logicalDevice, 3, 3, std::move(descriptorPoolSizes));
 
     m_perFrameBuffer.Create(m_device,
                             sizeof(PerFrameData),
@@ -104,7 +105,7 @@ void ForwardPipeline::Init(Device* device)
                             VMA_MEMORY_USAGE_AUTO);
 
     m_perObjectBuffer.Create(m_device,
-                             sizeof(glm::mat4),
+                             sizeof(glm::mat4) * 2,
                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                              VMA_MEMORY_USAGE_AUTO);
 }
@@ -186,43 +187,39 @@ void ForwardPipeline::UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data)
     vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
 }
 
-void ForwardPipeline::Render(VkCommandBuffer cmd, Renderable* r)
+void ForwardPipeline::Render(VkCommandBuffer cmd, Scene* scene)
 {
     const auto device = m_device->GetDevice();
 
-    const auto perObjectDescriptorSet =
-      m_descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_pipelineLayout,
-                            1,
-                            1,
-                            &perObjectDescriptorSet,
-                            0,
-                            nullptr);
+    u32 index = 0;
+    for (auto& r : scene->Renderables())
+    {
+        const auto perObjectDescriptorSet =
+          m_descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
+        vkCmdBindDescriptorSets(cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_pipelineLayout,
+                                1,
+                                1,
+                                &perObjectDescriptorSet,
+                                0,
+                                nullptr);
+        // TODO if material is same, change it.
 
-    auto perFrameBufferInfo =
-      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, VK_WHOLE_SIZE);
-    const auto perFrameWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
-                                                          0,
-                                                          1,
-                                                          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                          &perFrameBufferInfo);
-    vkUpdateDescriptorSets(device, 1, &perFrameWrite, 0, nullptr);
+        auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData + index * sizeof(glm::mat4);
+        *perObjectData     = r->Model();
 
-    auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData;
-    *perObjectData     = glm::mat4(1.0f);
+        auto perObjectBufferInfo =
+          vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, index * sizeof(glm::mat4), VK_WHOLE_SIZE);
+        auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                                         0,
+                                                         1,
+                                                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                         &perObjectBufferInfo);
+        vkUpdateDescriptorSets(device, 1, &perObjectWrite, 0, nullptr);
 
-    auto perObjectBufferInfo =
-      vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, 0, VK_WHOLE_SIZE);
-    auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
-                                                     0,
-                                                     1,
-                                                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                     &perObjectBufferInfo);
-    vkUpdateDescriptorSets(device, 1, &perObjectWrite, 0, nullptr);
-
-    r->Draw(cmd);
+        r->Draw(cmd);
+    }
 }
 
 VkPipeline ForwardPipeline::Pipeline() const { return m_pipeline; }
