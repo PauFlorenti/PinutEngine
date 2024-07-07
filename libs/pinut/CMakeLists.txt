@@ -9,6 +9,10 @@ set(Pinut_core
     src/core/scene.cpp
     src/core/scene.h)
 
+set(Pinut_imgui
+    src/imgui/pinutImgui.cpp
+    src/imgui/pinutImgui.h)
+
 set(Pinut_renderer
     src/renderer/buffer.cpp
     src/renderer/buffer.h
@@ -40,19 +44,17 @@ set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
 
-# set(Pinut_scene
-# src/scene/scene.cpp
-# src/scene/scene.h)
-add_library(Pinut STATIC ${Pinut_core} ${Pinut_renderer} ${Pinut_pipelines})
+add_library(Pinut STATIC ${Pinut_core} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines})
 
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
+add_subdirectory(external/imgui)
 add_subdirectory(external/vkbootstrap)
 add_subdirectory(external/vma)
 
 # add_subdirectory(external/glm)
 # add_subdirectory(external/stb)
-target_link_libraries(Pinut PUBLIC GLFW VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
+target_link_libraries(Pinut PUBLIC GLFW IMGUI VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
 
 # target_link_libraries(Pinut PUBLIC GLFW GLM STB VMA VKBOOTSTRAP ${Vulkan_LIBRARY})
 target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Vulkan_INCLUDE_DIR})

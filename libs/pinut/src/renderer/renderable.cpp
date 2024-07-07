@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "renderable.h"
+#include "src/renderer/buffer.h"
 #include "src/renderer/mesh.h"
 
 namespace Pinut

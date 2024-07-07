@@ -19,6 +19,7 @@ class Device final
                   GLFWwindow*        window);
     void OnDestroy();
 
+    const VkInstance       Instance() const { return m_instance; }
     const VkDevice         GetDevice() const { return m_device; }
     const VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
     const VkSurfaceKHR     GetSurface() const { return m_surface; }

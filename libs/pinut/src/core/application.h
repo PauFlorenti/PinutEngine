@@ -4,6 +4,9 @@
 #include "src/renderer/device.h"
 #include "src/renderer/pipelines/forward.h"
 #include "src/renderer/swapchain.h"
+#ifdef _DEBUG
+#include "src/imgui/pinutImgui.h"
+#endif
 
 struct GLFWwindow;
 namespace Pinut
@@ -54,6 +57,10 @@ class Application
     Device          m_device;
     Swapchain       m_swapchain;
     ForwardPipeline m_forwardPipeline;
+
+#ifdef _DEBUG
+    PinutImGUI m_imgui;
+#endif
 
     CommandBufferManager m_commandBufferManager;
 };

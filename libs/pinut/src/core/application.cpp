@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
+#include <imgui.h>
 
 #include "application.h"
 #include "src/core/camera.h"
@@ -138,18 +139,23 @@ void Application::Init(GLFWwindow* window)
 
     renderable = new Renderable();
     renderable->SetMesh(Primitives::GetUnitCube());
+
+#ifdef _DEBUG
+    m_imgui.Init(&m_device, &m_swapchain, window);
+#endif
 }
 
 void Application::Shutdown()
 {
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
 
+#ifdef _DEBUG
+    m_imgui.Shutdown();
+#endif
+
     Primitives::DestroyDefaultPrimitives();
-
     m_forwardPipeline.Shutdown();
-
     m_commandBufferManager.OnDestroy();
-
     m_swapchain.OnDestroy();
     m_device.OnDestroy();
     glfwDestroyWindow(m_window);
@@ -247,6 +253,12 @@ void Application::Render()
     m_forwardPipeline.Render(cmd, m_currentScene);
 
     vkCmdEndRendering(cmd);
+
+#ifdef _DEBUG
+    m_imgui.BeginImGUIRender(cmd);
+    ImGui::ShowDemoWindow();
+    m_imgui.EndImGUIRender(cmd, m_width, m_height, m_swapchain.GetCurrentImageView());
+#endif
 
     Texture::TransitionImageLayout(cmd,
                                    m_swapchain.GetCurrentImage(),

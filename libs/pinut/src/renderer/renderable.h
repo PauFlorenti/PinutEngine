@@ -4,6 +4,7 @@ namespace Pinut
 {
 class Mesh;
 class Material;
+class GPUBuffer;
 class Renderable final
 {
   public:
@@ -19,9 +20,9 @@ class Renderable final
     bool IsValid() const;
 
   private:
-    Mesh*     m_mesh{nullptr};
-    Material* m_material{nullptr};
-    glm::mat4 m_model{};
-    GPUBuffer m_buffer;
+    Mesh*      m_mesh{nullptr};
+    Material*  m_material{nullptr};
+    glm::mat4  m_model{};
+    GPUBuffer* m_buffer{nullptr};
 };
 } // namespace Pinut
