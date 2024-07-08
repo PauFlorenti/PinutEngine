@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 
+#include "src/assets/asset.h"
 #include "src/renderer/buffer.h"
 
 namespace Pinut
@@ -22,11 +23,13 @@ struct Vertex
     inline bool operator!=(const Vertex& other) { return !(*this == other); }
 };
 
-class Mesh
+class Mesh final : public Asset
 {
   public:
     static Mesh* Create(Device* device, std::vector<Vertex> vertices, std::vector<u16> indices);
-    void         Destroy();
+
+    Mesh() = default;
+    void Destroy();
 
     const u32& GetVertexCount() const;
     const u32& GetIndexCount() const;

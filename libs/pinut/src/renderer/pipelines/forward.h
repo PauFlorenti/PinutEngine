@@ -7,6 +7,7 @@
 
 namespace Pinut
 {
+class Camera;
 class Device;
 class Scene;
 class Texture;
@@ -23,8 +24,7 @@ class ForwardPipeline
     const Texture* GetDepthAttachment() const { return m_depthTexture; }
 
     void BindPipeline(VkCommandBuffer cmd);
-    void UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data);
-    void Render(VkCommandBuffer cmd, Scene* r);
+    void Render(VkCommandBuffer cmd, Camera* camera, Scene* scene);
 
     VkPipeline Pipeline() const;
 

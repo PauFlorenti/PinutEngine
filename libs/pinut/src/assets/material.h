@@ -1,9 +1,11 @@
 #pragma once
 
+#include "src/assets/asset.h"
+
 namespace Pinut
 {
 class Texture;
-class Material
+class Material final : public Asset
 {
   public:
     void Destroy();

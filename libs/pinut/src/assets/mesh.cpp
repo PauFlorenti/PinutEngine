@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "device.h"
 #include "mesh.h"
+#include "src/renderer/device.h"
 
 namespace Pinut
 {

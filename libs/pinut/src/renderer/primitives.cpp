@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "mesh.h"
 #include "primitives.h"
+#include "src/assets/mesh.h"
 
 namespace Pinut
 {
@@ -126,7 +126,7 @@ void DestroyDefaultPrimitives()
     unitCube->Destroy();
 
     unitPlane = nullptr;
-    unitCube = nullptr;
+    unitCube  = nullptr;
 }
 } // namespace Primitives
 } // namespace Pinut

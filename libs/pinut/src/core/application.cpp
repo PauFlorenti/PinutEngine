@@ -5,13 +5,13 @@
 #include <imgui.h>
 
 #include "application.h"
+#include "src/assets/mesh.h"
+#include "src/assets/texture.h"
 #include "src/core/camera.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
-#include "src/renderer/mesh.h"
 #include "src/renderer/primitives.h"
 #include "src/renderer/renderable.h"
-#include "src/renderer/texture.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -242,15 +242,7 @@ void Application::Render()
     vkCmdSetViewport(cmd, 0, 1, &viewport);
     vkCmdSetScissor(cmd, 0, 1, &scissors);
 
-    PerFrameData perFrameData{};
-
-    perFrameData.view           = m_currentCamera->View();
-    perFrameData.projection     = m_currentCamera->Projection();
-    perFrameData.cameraPosition = m_currentCamera->Position();
-
-    m_forwardPipeline.UpdatePerFrameData(cmd, std::move(perFrameData));
-
-    m_forwardPipeline.Render(cmd, m_currentScene);
+    m_forwardPipeline.Render(cmd, m_currentCamera, m_currentScene);
 
     vkCmdEndRendering(cmd);
 

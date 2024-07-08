@@ -2,7 +2,7 @@
 
 #include "renderable.h"
 #include "src/renderer/buffer.h"
-#include "src/renderer/mesh.h"
+#include "src/assets/mesh.h"
 
 namespace Pinut
 {

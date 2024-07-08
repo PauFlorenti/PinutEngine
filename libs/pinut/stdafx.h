@@ -3,7 +3,9 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <cassert>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/ext/matrix_clip_space.hpp>

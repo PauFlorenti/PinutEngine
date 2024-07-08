@@ -3,13 +3,14 @@
 #include <array>
 
 #include "forward.h"
+#include "src/assets/mesh.h"
+#include "src/assets/texture.h"
+#include "src/core/camera.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/device.h"
-#include "src/renderer/mesh.h"
 #include "src/renderer/pipeline.h"
 #include "src/renderer/renderable.h"
-#include "src/renderer/texture.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
@@ -167,8 +168,15 @@ void ForwardPipeline::BindPipeline(VkCommandBuffer cmd)
     m_descriptorSetManager.Clear();
 }
 
-void ForwardPipeline::UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data)
+void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 {
+    const auto device = m_device->GetDevice();
+
+    PerFrameData data{};
+    data.view           = camera->View();
+    data.projection     = camera->Projection();
+    data.cameraPosition = camera->Position();
+
     auto set = m_descriptorSetManager.Allocate(m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -185,15 +193,12 @@ void ForwardPipeline::UpdatePerFrameData(VkCommandBuffer cmd, PerFrameData data)
     VkWriteDescriptorSet write =
       vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
     vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
-}
 
-void ForwardPipeline::Render(VkCommandBuffer cmd, Scene* scene)
-{
-    const auto device = m_device->GetDevice();
-
-    u32 index = 0;
+    const auto sizeOfMatrix = sizeof(glm::mat4);
+    u32        index        = 0;
     for (auto& r : scene->Renderables())
     {
+        // TODO if material is same, change it.
         const auto perObjectDescriptorSet =
           m_descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
         vkCmdBindDescriptorSets(cmd,
@@ -204,13 +209,14 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Scene* scene)
                                 &perObjectDescriptorSet,
                                 0,
                                 nullptr);
-        // TODO if material is same, change it.
 
-        auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData + index * sizeof(glm::mat4);
+        const auto offset = index * sizeOfMatrix;
+
+        auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData + offset;
         *perObjectData     = r->Model();
 
         auto perObjectBufferInfo =
-          vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, index * sizeof(glm::mat4), VK_WHOLE_SIZE);
+          vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, offset, sizeOfMatrix);
         auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
                                                          0,
                                                          1,
@@ -219,6 +225,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Scene* scene)
         vkUpdateDescriptorSets(device, 1, &perObjectWrite, 0, nullptr);
 
         r->Draw(cmd);
+        ++index;
     }
 }
 

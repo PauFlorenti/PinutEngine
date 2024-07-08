@@ -1,7 +1,17 @@
 
+set(Pinut_assets
+    src/assets/material.cpp
+    src/assets/material.h
+    src/assets/mesh.cpp
+    src/assets/mesh.h
+    src/assets/texture.cpp
+    src/assets/texture.h)
+
 set(Pinut_core
     src/core/application.cpp
     src/core/application.h
+    src/core/assetManager.cpp
+    src/core/assetManager.h
     src/core/camera.cpp
     src/core/camera.h
     src/core/defines.h
@@ -23,10 +33,6 @@ set(Pinut_renderer
     src/renderer/descriptorSetManager.h
     src/renderer/device.cpp
     src/renderer/device.h
-    src/renderer/material.cpp
-    src/renderer/material.h
-    src/renderer/mesh.cpp
-    src/renderer/mesh.h
     src/renderer/pipeline.cpp
     src/renderer/pipeline.h
     src/renderer/primitives.cpp
@@ -35,8 +41,6 @@ set(Pinut_renderer
     src/renderer/renderable.h
     src/renderer/swapchain.cpp
     src/renderer/swapchain.h
-    src/renderer/texture.cpp
-    src/renderer/texture.h
     src/renderer/utils.cpp
     src/renderer/utils.h)
 
@@ -44,7 +48,7 @@ set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
 
-add_library(Pinut STATIC ${Pinut_core} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines})
+add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines})
 
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)

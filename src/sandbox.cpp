@@ -3,6 +3,7 @@
 #include <glfw3.h>
 
 #include "sandbox.h"
+#include "src/core/assetManager.h"
 #include "src/core/camera.h"
 #include "src/core/scene.h"
 #include "src/renderer/primitives.h"
