@@ -13,7 +13,7 @@ void Scene::AddLight(Light l)
     m_lights[m_lightCount++] = std::move(l);
 }
 
-void Scene::AddRenderable(Renderable* r)
+void Scene::AddRenderable(std::shared_ptr<Renderable> r)
 {
     assert(r);
     m_renderables.push_back(r);

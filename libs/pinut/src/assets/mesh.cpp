@@ -1,14 +1,19 @@
 #include "stdafx.h"
 
 #include "mesh.h"
+#include "src/core/assetManager.h"
 #include "src/renderer/device.h"
 
 namespace Pinut
 {
-Mesh* Mesh::Create(Device* device, std::vector<Vertex> vertices, std::vector<u16> indices)
+std::shared_ptr<Mesh> Mesh::Create(const std::string&  name,
+                                   std::vector<Vertex> vertices,
+                                   std::vector<u16>    indices)
 {
+    auto assetManager = AssetManager::Get();
+    auto device       = assetManager->m_device;
     assert(device);
-    auto m = new Mesh();
+    auto m = std::make_shared<Mesh>();
 
     m->m_vertexCount = static_cast<u32>(vertices.size());
     m->m_indexCount  = static_cast<u32>(indices.size());
@@ -71,7 +76,8 @@ Mesh* Mesh::Create(Device* device, std::vector<Vertex> vertices, std::vector<u16
         stagingBuffer.Destroy();
     }
 
-    return m;
+    assetManager->RegisterAsset(name, m);
+    return assetManager->GetAsset<Mesh>(name);
 }
 
 void Mesh::Destroy()

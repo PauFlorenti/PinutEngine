@@ -13,10 +13,6 @@ enum AssetType
 class Asset
 {
   public:
-    // explicit Asset(std::string name) : m_name(std::move(name)) {}
-
-  private:
-    std::string m_name{};
-    AssetType   m_type = COUNT;
+    virtual ~Asset() = default;
 };
 } // namespace Pinut

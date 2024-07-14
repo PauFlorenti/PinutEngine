@@ -7,11 +7,11 @@
 #include "application.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
+#include "src/core/assetManager.h"
 #include "src/core/camera.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/primitives.h"
-#include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -23,8 +23,6 @@ static constexpr bool ENABLE_GPU_VALIDATION_DEFAULT = false;
 #endif
 
 static bool bMinimized{false};
-
-Pinut::Renderable* renderable{nullptr};
 
 i32 Run(Pinut::Application* application)
 {
@@ -132,13 +130,11 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
-    Primitives::InitializeDefaultPrimitives(&m_device);
+    AssetManager::Get()->Init(&m_device);
+    Primitives::InitializeDefaultPrimitives();
     m_forwardPipeline.Init(&m_device);
 
     UpdateDisplay();
-
-    renderable = new Renderable();
-    renderable->SetMesh(Primitives::GetUnitCube());
 
 #ifdef _DEBUG
     m_imgui.Init(&m_device, &m_swapchain, window);
@@ -153,7 +149,7 @@ void Application::Shutdown()
     m_imgui.Shutdown();
 #endif
 
-    Primitives::DestroyDefaultPrimitives();
+    // Primitives::DestroyDefaultPrimitives();
     m_forwardPipeline.Shutdown();
     m_commandBufferManager.OnDestroy();
     m_swapchain.OnDestroy();

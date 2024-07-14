@@ -5,24 +5,46 @@
 namespace Pinut
 {
 class Asset;
+class Device;
+class Mesh;
 class AssetManager
 {
+    friend Mesh;
+
   public:
     AssetManager()  = default;
     ~AssetManager() = default;
 
-    static AssetManager& Get();
+    static AssetManager* Get();
 
-    void Init();
+    void Init(Device* device);
     void Shutdown();
 
-    void   LoadAsset(const std::string& filename);
-    void   RegisterAsset(const std::string& name, Asset* asset);
-    Asset* GetAsset(const std::string& name);
-    void   ReleaseAsset(const std::string& name);
+    void LoadAsset(const std::string& filename);
+    void RegisterAsset(const std::string& name, std::shared_ptr<Asset> asset);
+    void ReleaseAsset(const std::string& name);
+
+    template <typename T>
+    std::shared_ptr<T> GetAsset(const std::string& name)
+    {
+        assert(!name.empty());
+        const auto it = m_assets.find(name);
+
+        if (it != m_assets.end())
+        {
+            std::shared_ptr<Asset> asset        = it->second;
+            std::shared_ptr<T>     assetDerived = std::dynamic_pointer_cast<T>(asset);
+            if (assetDerived)
+                return assetDerived;
+        }
+
+        printf("[ERROR]: Asset not registered in AssetManager. Could not retrieve it.");
+        return nullptr;
+    }
 
   private:
-    static AssetManager*                          m_instance;
-    std::map<std::string, std::pair<Asset*, u64>> m_assets;
+    Device*                                       m_device{nullptr};
+    static AssetManager*                          m_managerInstance;
+    std::map<std::string, std::shared_ptr<Asset>> m_assets;
 };
 } // namespace Pinut

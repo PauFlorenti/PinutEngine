@@ -1,11 +1,13 @@
 #include "stdafx.h"
 
 #include "renderable.h"
-#include "src/renderer/buffer.h"
 #include "src/assets/mesh.h"
+#include "src/renderer/buffer.h"
 
 namespace Pinut
 {
+Renderable::Renderable() {}
+
 void Renderable::Draw(VkCommandBuffer cmd) const
 {
     VkDeviceSize offset{0};

@@ -9,16 +9,16 @@ class Scene
 {
   public:
     void LoadScene();
-    void AddRenderable(Renderable* r);
+    void AddRenderable(std::shared_ptr<Renderable> r);
     void AddLight(Light l);
 
-    const std::vector<Renderable*>& Renderables() const { return m_renderables; }
-    const Light*                    Lights() const { return m_lights; }
-    const u32                       LightsCount() const { return m_lightCount; }
+    const std::vector<std::shared_ptr<Renderable>>& Renderables() const { return m_renderables; }
+    const Light*                                    Lights() const { return m_lights; }
+    const u32                                       LightsCount() const { return m_lightCount; }
 
   private:
-    std::vector<Renderable*> m_renderables;
-    Light                    m_lights[MAX_LIGHTS];
-    u32                      m_lightCount{0};
+    std::vector<std::shared_ptr<Renderable>> m_renderables;
+    Light                                    m_lights[MAX_LIGHTS];
+    u32                                      m_lightCount{0};
 };
 } // namespace Pinut

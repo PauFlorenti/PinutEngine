@@ -2,19 +2,16 @@
 
 namespace Pinut
 {
-class Device;
 class Mesh;
 
 namespace Primitives
 {
-static Mesh* CreateUnitPlane(Device* device);
-static Mesh* CreateUnitCube(Device* device);
+static void CreateUnitPlane();
+static void CreateUnitCube();
 
-Mesh* GetUnitPlane();
-Mesh* GetUnitCube();
+std::shared_ptr<Mesh> GetUnitPlane();
+std::shared_ptr<Mesh> GetUnitCube();
 
-void InitializeDefaultPrimitives(Device* device);
-void DestroyDefaultPrimitives();
-
+void InitializeDefaultPrimitives();
 } // namespace Primitives
 } // namespace Pinut

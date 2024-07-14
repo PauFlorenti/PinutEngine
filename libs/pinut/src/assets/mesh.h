@@ -8,6 +8,7 @@
 namespace Pinut
 {
 class Device;
+class AssetManager;
 struct Vertex
 {
     glm::vec3 position;
@@ -26,9 +27,12 @@ struct Vertex
 class Mesh final : public Asset
 {
   public:
-    static Mesh* Create(Device* device, std::vector<Vertex> vertices, std::vector<u16> indices);
+    static std::shared_ptr<Mesh> Create(const std::string&  name,
+                                        std::vector<Vertex> vertices,
+                                        std::vector<u16>    indices);
 
     Mesh() = default;
+    ~Mesh() { Destroy(); }
     void Destroy();
 
     const u32& GetVertexCount() const;

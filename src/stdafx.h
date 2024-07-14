@@ -1,6 +1,7 @@
 // pch.h precompiled header
 
 #include <cassert>
+#include <memory>
 #include <string>
 #include <vector>
 

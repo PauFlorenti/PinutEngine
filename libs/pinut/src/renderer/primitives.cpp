@@ -2,19 +2,14 @@
 
 #include "primitives.h"
 #include "src/assets/mesh.h"
+#include "src/core/assetManager.h"
 
 namespace Pinut
 {
 namespace Primitives
 {
-static Mesh* unitPlane{nullptr};
-static Mesh* unitCube{nullptr};
-
-Mesh* CreateUnitPlane(Device* device)
+void CreateUnitPlane()
 {
-    if (unitPlane)
-        return unitPlane;
-
     std::vector<Vertex> vertices = {
       {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, glm::vec4(1.0f), {0.0f, 1.0f}},
       {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, glm::vec4(1.0f), {1.0f, 1.0f}},
@@ -24,15 +19,11 @@ Mesh* CreateUnitPlane(Device* device)
 
     std::vector<uint16_t> indices = {0, 1, 3, 3, 1, 2};
 
-    unitPlane = Mesh::Create(device, std::move(vertices), std::move(indices));
-    return unitPlane;
+    Mesh::Create("UnitPlane", std::move(vertices), std::move(indices));
 }
 
-Mesh* CreateUnitCube(Device* device)
+void CreateUnitCube()
 {
-    if (unitCube)
-        return unitCube;
-
     // clang-format off
     std::vector<Vertex> vertices = {
         //Top
@@ -98,35 +89,16 @@ Mesh* CreateUnitCube(Device* device)
         22, 23, 21 };
     // clang-format on
 
-    unitCube = Mesh::Create(device, std::move(vertices), std::move(indices));
-    return unitCube;
+    Mesh::Create("UnitCube", std::move(vertices), std::move(indices));
 }
 
-Mesh* GetUnitPlane()
-{
-    assert(unitPlane);
-    return unitPlane;
-}
+std::shared_ptr<Mesh> GetUnitPlane() { return AssetManager::Get()->GetAsset<Mesh>("UnitPlane"); }
+std::shared_ptr<Mesh> GetUnitCube() { return AssetManager::Get()->GetAsset<Mesh>("UnitCube"); }
 
-Mesh* GetUnitCube()
+void InitializeDefaultPrimitives()
 {
-    assert(unitCube);
-    return unitCube;
-}
-
-void InitializeDefaultPrimitives(Device* device)
-{
-    unitPlane = CreateUnitPlane(device);
-    unitCube  = CreateUnitCube(device);
-}
-
-void DestroyDefaultPrimitives()
-{
-    unitPlane->Destroy();
-    unitCube->Destroy();
-
-    unitPlane = nullptr;
-    unitCube  = nullptr;
+    CreateUnitPlane();
+    CreateUnitCube();
 }
 } // namespace Primitives
 } // namespace Pinut
