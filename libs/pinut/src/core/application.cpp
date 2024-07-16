@@ -145,11 +145,14 @@ void Application::Shutdown()
 {
     assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
 
+    if (m_currentScene)
+        m_currentScene->Clear();
+
 #ifdef _DEBUG
     m_imgui.Shutdown();
 #endif
 
-    // Primitives::DestroyDefaultPrimitives();
+    AssetManager::Get()->Shutdown();
     m_forwardPipeline.Shutdown();
     m_commandBufferManager.OnDestroy();
     m_swapchain.OnDestroy();

@@ -1,8 +1,9 @@
-#version 450
+#version 460
 
 layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec3 inPosition;
 layout(location = 2) in vec3 inCameraPosition;
+layout(location = 3) in vec4 inColor;
 
 layout(location = 0) out vec4 outColor;
 
@@ -23,7 +24,7 @@ void main()
     vec3 diffuse = light_color * dotNL;
     vec3 specular = specular_strengh * pow(dotVR, 2) * light_color;
 
-    vec3 light = (diffuse + specular) * vec3(1.0, 0.0, 0.0);
+    vec3 light = (diffuse + specular) * inColor.xyz;
 
     outColor = vec4(light, 1.0);
 }

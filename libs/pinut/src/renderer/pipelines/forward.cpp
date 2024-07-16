@@ -55,12 +55,19 @@ void ForwardPipeline::Init(Device* device)
                                 nullptr,
                                 &m_perFrameDescriptorSetLayout);
 
-    auto perObjectBinding = vkinit::DescriptorSetLayoutBinding(0,
-                                                               VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                               1,
-                                                               VK_SHADER_STAGE_VERTEX_BIT);
+    VkDescriptorSetLayoutBinding perObjectBindings[2] = {
+      vkinit::DescriptorSetLayoutBinding(0,
+                                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                         1,
+                                         VK_SHADER_STAGE_VERTEX_BIT),
+      vkinit::DescriptorSetLayoutBinding(1,
+                                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                         1,
+                                         VK_SHADER_STAGE_VERTEX_BIT),
+    };
+
     auto perObjectDescriptorSetLayoutCreateInfo =
-      vkinit::DescriptorSetLayoutCreateInfo(1, &perObjectBinding);
+      vkinit::DescriptorSetLayoutCreateInfo(2, perObjectBindings);
 
     vkCreateDescriptorSetLayout(logicalDevice,
                                 &perObjectDescriptorSetLayoutCreateInfo,
@@ -97,6 +104,7 @@ void ForwardPipeline::Init(Device* device)
 
     std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
     };
     m_descriptorSetManager.OnCreate(logicalDevice, 3, 3, std::move(descriptorPoolSizes));
 
@@ -106,9 +114,14 @@ void ForwardPipeline::Init(Device* device)
                             VMA_MEMORY_USAGE_AUTO);
 
     m_perObjectBuffer.Create(m_device,
-                             sizeof(glm::mat4) * 2,
+                             sizeof(u32),
                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                              VMA_MEMORY_USAGE_AUTO);
+
+    m_transformsBuffer.Create(m_device,
+                              sizeof(glm::mat4) * MAX_ENTITIES,
+                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                              VMA_MEMORY_USAGE_AUTO);
 }
 
 void ForwardPipeline::Shutdown()
@@ -117,8 +130,9 @@ void ForwardPipeline::Shutdown()
 
     OnDestroyWindowDependantResources();
 
-    m_perFrameBuffer.Destroy();
+    m_transformsBuffer.Destroy();
     m_perObjectBuffer.Destroy();
+    m_perFrameBuffer.Destroy();
 
     m_descriptorSetManager.OnDestroy();
 
@@ -194,8 +208,18 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
       vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
     vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
 
-    const auto sizeOfMatrix = sizeof(glm::mat4);
-    u32        index        = 0;
+    if (!scene)
+        return;
+
+    auto& renderables = scene->Renderables();
+    for (u32 i = 0; i < renderables.size(); i++)
+    {
+        auto& renderable = renderables[i];
+        auto  transforms = (glm::mat4*)m_transformsBuffer.AllocationInfo().pMappedData;
+        transforms[i]    = renderable->Model();
+        renderable->SetInstanceIndex(i);
+    }
+
     for (auto& r : scene->Renderables())
     {
         // TODO if material is same, change it.
@@ -210,22 +234,32 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                 0,
                                 nullptr);
 
-        const auto offset = index * sizeOfMatrix;
-
-        auto perObjectData = (glm::mat4*)m_perObjectBuffer.AllocationInfo().pMappedData + offset;
-        *perObjectData     = r->Model();
+        auto perObjectData = (u32*)m_perObjectBuffer.AllocationInfo().pMappedData;
+        *perObjectData     = 0x0000FFFF;
 
         auto perObjectBufferInfo =
-          vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, offset, sizeOfMatrix);
-        auto perObjectWrite = vkinit::WriteDescriptorSet(perObjectDescriptorSet,
-                                                         0,
-                                                         1,
-                                                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                         &perObjectBufferInfo);
-        vkUpdateDescriptorSets(device, 1, &perObjectWrite, 0, nullptr);
+          vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, 0, sizeof(u32));
+
+        auto transformBufferInfo = vkinit::DescriptorBufferInfo(m_transformsBuffer.m_buffer,
+                                                                0,
+                                                                sizeof(glm::mat4) * MAX_ENTITIES);
+
+        VkWriteDescriptorSet writes[2] = {
+          vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                     0,
+                                     1,
+                                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                     &perObjectBufferInfo),
+          vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                     1,
+                                     1,
+                                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                     &transformBufferInfo),
+        };
+
+        vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
 
         r->Draw(cmd);
-        ++index;
     }
 }
 

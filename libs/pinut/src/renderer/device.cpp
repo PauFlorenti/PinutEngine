@@ -4,6 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include "glfw3.h"
 #define VMA_IMPLEMENTATION
+#define VMA_DEBUG_LOG_FORMAT
 #include "vk_mem_alloc.h"
 
 #include "device.h"
@@ -69,8 +70,14 @@ void Device::OnCreate(const std::string& applicationName,
 
     auto gpu = gpu_result.value();
 
+    VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_features = {
+      .sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES,
+      .shaderDrawParameters = VK_TRUE,
+    };
+
     vkb::DeviceBuilder device_builder{gpu};
-    vkb::Device        vkb_device = device_builder.build().value();
+    vkb::Device        vkb_device =
+      device_builder.add_pNext(&shader_draw_parameters_features).build().value();
 
     m_device                 = vkb_device.device;
     m_physicalDevice         = vkb_device.physical_device;

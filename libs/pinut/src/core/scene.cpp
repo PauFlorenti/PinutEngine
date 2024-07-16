@@ -18,4 +18,10 @@ void Scene::AddRenderable(std::shared_ptr<Renderable> r)
     assert(r);
     m_renderables.push_back(r);
 }
+
+void Scene::Clear()
+{
+    //delete[] &m_lights;
+    m_renderables.clear();
+}
 } // namespace Pinut

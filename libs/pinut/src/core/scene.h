@@ -11,6 +11,7 @@ class Scene
     void LoadScene();
     void AddRenderable(std::shared_ptr<Renderable> r);
     void AddLight(Light l);
+    void Clear();
 
     const std::vector<std::shared_ptr<Renderable>>& Renderables() const { return m_renderables; }
     const Light*                                    Lights() const { return m_lights; }

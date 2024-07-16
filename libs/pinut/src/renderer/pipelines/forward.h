@@ -36,9 +36,11 @@ class ForwardPipeline
 
     VkDescriptorSetLayout m_perFrameDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorSetLayout m_perObjectDescriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorSetLayout m_transformsDescriptorSetLayout{VK_NULL_HANDLE};
 
     GPUBuffer m_perFrameBuffer;
     GPUBuffer m_perObjectBuffer;
+    GPUBuffer m_transformsBuffer;
     Texture*  m_depthTexture{nullptr};
 };
 } // namespace Pinut

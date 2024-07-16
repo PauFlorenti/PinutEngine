@@ -14,6 +14,7 @@ class Renderable final
     void             SetMesh(std::shared_ptr<Mesh> m) { m_mesh = m; }
     void             SetMaterial(std::shared_ptr<Material> m) { m_material = m; }
     void             SetModel(glm::mat4 m) { m_model = m; }
+    void             SetInstanceIndex(u32 index) { m_instanceIndex = index; }
 
     void Draw(VkCommandBuffer cmd) const;
     void Destroy();
@@ -23,6 +24,6 @@ class Renderable final
     std::shared_ptr<Mesh>     m_mesh{nullptr};
     std::shared_ptr<Material> m_material{nullptr};
     glm::mat4                 m_model{};
-    GPUBuffer*                m_buffer{nullptr};
+    u32                       m_instanceIndex{0}; // Used to map the model in the StorageBuffer
 };
 } // namespace Pinut
