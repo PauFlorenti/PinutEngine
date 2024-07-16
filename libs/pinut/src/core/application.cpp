@@ -12,6 +12,7 @@
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/primitives.h"
+#include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -248,6 +249,26 @@ void Application::Render()
 #ifdef _DEBUG
     m_imgui.BeginImGUIRender(cmd);
     ImGui::ShowDemoWindow();
+    ImGui::Begin("DebugWindow");
+    if (ImGui::TreeNode("Renderables"))
+    {
+        for (const auto& r : m_currentScene->Renderables())
+        {
+            ImGui::PushID(&r);
+            if (ImGui::TreeNode("Entity Name"))
+            {
+                ImGui::DragFloat3("Position", &r->Position()[0]);
+                ImGui::DragFloat3("Scale", &r->Scale()[0]);
+                ImGui::DragFloat4("Rotation", &r->Rotation()[0]);
+
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+
+        ImGui::TreePop();
+    }
+    ImGui::End();
     m_imgui.EndImGUIRender(cmd, m_width, m_height, m_swapchain.GetCurrentImageView());
 #endif
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
 #include "src/assets/asset.h"
 #include "src/renderer/buffer.h"
 

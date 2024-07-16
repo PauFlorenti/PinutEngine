@@ -9,9 +9,13 @@
 #include <utility>
 #include <vector>
 
+#include <glm/ext.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+// #include <glm/gtx/quaternion.hpp>
+// #include <glm/gtx/quaternion.inl>
 #include <vulkan/vulkan.h>
 
 #include "src/core/defines.h"

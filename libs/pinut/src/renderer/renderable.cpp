@@ -8,6 +8,20 @@ namespace Pinut
 {
 Renderable::Renderable() {}
 
+const glm::mat4 Renderable::Model() const
+{
+    return glm::translate(glm::mat4(1.0f), m_position) * glm::toMat4(m_rotation) *
+           glm::scale(glm::mat4(1.0f), m_scale);
+}
+
+void Renderable::SetModel(glm::mat4 model)
+{
+    glm::vec3 skew{};
+    glm::vec4 perspective{};
+    auto      ok = glm::decompose(model, m_scale, m_rotation, m_position, skew, perspective);
+    assert(ok == true);
+}
+
 void Renderable::Draw(VkCommandBuffer cmd) const
 {
     VkDeviceSize offset{0};
