@@ -23,6 +23,7 @@ class Renderable final
     void SetInstanceIndex(u32 index) { m_instanceIndex = index; }
 
     void Draw(VkCommandBuffer cmd) const;
+    void DrawImGui();
     void Destroy();
     bool IsValid() const;
 

@@ -43,12 +43,18 @@ void ForwardPipeline::Init(Device* device)
     };
     // clang-format on
 
-    auto perFrameBinding = vkinit::DescriptorSetLayoutBinding(0,
-                                                              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                              1,
-                                                              VK_SHADER_STAGE_VERTEX_BIT);
+    VkDescriptorSetLayoutBinding perFrameBindings[2] = {
+      vkinit::DescriptorSetLayoutBinding(0,
+                                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                         1,
+                                         VK_SHADER_STAGE_VERTEX_BIT),
+      vkinit::DescriptorSetLayoutBinding(1,
+                                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                         1,
+                                         VK_SHADER_STAGE_FRAGMENT_BIT),
+    };
     auto perFrameDescriptorSetLayoutCreateInfo =
-      vkinit::DescriptorSetLayoutCreateInfo(1, &perFrameBinding);
+      vkinit::DescriptorSetLayoutCreateInfo(2, perFrameBindings);
 
     vkCreateDescriptorSetLayout(logicalDevice,
                                 &perFrameDescriptorSetLayoutCreateInfo,
@@ -122,6 +128,11 @@ void ForwardPipeline::Init(Device* device)
                               sizeof(glm::mat4) * MAX_ENTITIES,
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                               VMA_MEMORY_USAGE_AUTO);
+
+    m_lightsBuffer.Create(m_device,
+                          sizeof(Light) * MAX_LIGHTS,
+                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                          VMA_MEMORY_USAGE_AUTO);
 }
 
 void ForwardPipeline::Shutdown()
@@ -130,6 +141,7 @@ void ForwardPipeline::Shutdown()
 
     OnDestroyWindowDependantResources();
 
+    m_lightsBuffer.Destroy();
     m_transformsBuffer.Destroy();
     m_perObjectBuffer.Destroy();
     m_perFrameBuffer.Destroy();
@@ -186,10 +198,22 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 {
     const auto device = m_device->GetDevice();
 
-    PerFrameData data{};
-    data.view           = camera->View();
-    data.projection     = camera->Projection();
-    data.cameraPosition = camera->Position();
+    // Camera
+    {
+        auto data = (PerFrameData*)m_perFrameBuffer.AllocationInfo().pMappedData;
+
+        data->view           = camera->View();
+        data->projection     = camera->Projection();
+        data->cameraPosition = camera->Position();
+    }
+
+    // Lights
+    {
+        const auto lightsCount = static_cast<u32>(scene->Lights().size());
+        auto       lightData   = (LightData*)m_lightsBuffer.AllocationInfo().pMappedData;
+        lightData->lightsCount = lightsCount;
+        memcpy(lightData->lights, scene->Lights().data(), sizeof(Light) * lightsCount);
+    }
 
     auto set = m_descriptorSetManager.Allocate(m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
@@ -201,12 +225,14 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                             0,
                             nullptr);
 
-    memcpy(m_perFrameBuffer.AllocationInfo().pMappedData, &data, sizeof(PerFrameData));
-
-    auto bufferInfo = vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, VK_WHOLE_SIZE);
-    VkWriteDescriptorSet write =
-      vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
-    vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
+    auto bufferVertexInfo =
+      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, sizeof(PerFrameData));
+    auto lightsBufferInfo = vkinit::DescriptorBufferInfo(m_lightsBuffer.m_buffer, 0, VK_WHOLE_SIZE);
+    VkWriteDescriptorSet perFrameWrites[2] = {
+      vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferVertexInfo),
+      vkinit::WriteDescriptorSet(set, 1, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &lightsBufferInfo),
+    };
+    vkUpdateDescriptorSets(m_device->GetDevice(), 2, perFrameWrites, 0, nullptr);
 
     if (!scene)
         return;
@@ -235,7 +261,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                 nullptr);
 
         auto perObjectData = (u32*)m_perObjectBuffer.AllocationInfo().pMappedData;
-        *perObjectData     = 0x0000FFFF;
+        *perObjectData     = 0xFFFFFFFF;
 
         auto perObjectBufferInfo =
           vkinit::DescriptorBufferInfo(m_perObjectBuffer.m_buffer, 0, sizeof(u32));

@@ -40,6 +40,7 @@ class ForwardPipeline
 
     GPUBuffer m_perFrameBuffer;
     GPUBuffer m_perObjectBuffer;
+    GPUBuffer m_lightsBuffer;
     GPUBuffer m_transformsBuffer;
     Texture*  m_depthTexture{nullptr};
 };

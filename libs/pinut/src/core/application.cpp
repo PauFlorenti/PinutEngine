@@ -248,24 +248,28 @@ void Application::Render()
 
 #ifdef _DEBUG
     m_imgui.BeginImGUIRender(cmd);
-    ImGui::ShowDemoWindow();
     ImGui::Begin("DebugWindow");
     if (ImGui::TreeNode("Renderables"))
     {
         for (const auto& r : m_currentScene->Renderables())
         {
             ImGui::PushID(&r);
-            if (ImGui::TreeNode("Entity Name"))
-            {
-                ImGui::DragFloat3("Position", &r->Position()[0]);
-                ImGui::DragFloat3("Scale", &r->Scale()[0]);
-                ImGui::DragFloat4("Rotation", &r->Rotation()[0]);
-
-                ImGui::TreePop();
-            }
+            r->DrawImGui();
             ImGui::PopID();
         }
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Lights"))
+    {
+        auto& lights = m_currentScene->Lights();
+        for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)
+        {
+            auto& light = lights.at(i);
 
+            ImGui::PushID(&light);
+            light.DrawImGUI();
+            ImGui::PopID();
+        }
         ImGui::TreePop();
     }
     ImGui::End();

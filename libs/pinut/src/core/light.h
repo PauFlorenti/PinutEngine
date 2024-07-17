@@ -9,5 +9,7 @@ struct Light
     f32       intensity = 1.0f;
     glm::vec3 position{};
     f32       radius{1.0f};
+
+    void DrawImGUI();
 };
 } // namespace Pinut

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "src/core/light.h"
 
 namespace Pinut
@@ -14,12 +16,12 @@ class Scene
     void Clear();
 
     const std::vector<std::shared_ptr<Renderable>>& Renderables() const { return m_renderables; }
-    const Light*                                    Lights() const { return m_lights; }
     const u32                                       LightsCount() const { return m_lightCount; }
+    std::array<Light, MAX_LIGHTS>&            Lights() { return m_lights; }
 
   private:
     std::vector<std::shared_ptr<Renderable>> m_renderables;
-    Light                                    m_lights[MAX_LIGHTS];
+    std::array<Light, MAX_LIGHTS>            m_lights;
     u32                                      m_lightCount{0};
 };
 } // namespace Pinut

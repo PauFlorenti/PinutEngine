@@ -7,24 +7,58 @@ layout(location = 3) in vec4 inColor;
 
 layout(location = 0) out vec4 outColor;
 
-vec3 light_position = vec3(2, 5, 1);
-vec3 light_color = vec3(0.8, 0.5, 0.1);
+struct Light
+{
+    vec3    color;
+    float   intensity;
+    vec3    position;
+    float   radius;
+};
+
+layout(set = 0, binding = 1) uniform perFrame
+{
+    uint count;
+    Light lights[10];
+} lightData;
 
 float specular_strengh = 0.5f;
 
 void main()
 {
     vec3 N = normalize(inNormal);
-    vec3 L = normalize(light_position - inPosition);
     vec3 V = normalize(inCameraPosition - inPosition);
-    vec3 R = reflect(-L, N);
 
-    float dotNL = max(dot(N, L), 0.0);
-    float dotVR = max(dot(V, R), 0.0);
-    vec3 diffuse = light_color * dotNL;
-    vec3 specular = specular_strengh * pow(dotVR, 2) * light_color;
+    vec3 output_light = vec3(0.0f);
+    for (int i = 0; i < lightData.count; ++i)
+    {
+        Light light = lightData.lights[i];
 
-    vec3 light = (diffuse + specular) * inColor.xyz;
+        vec3 light_position     = light.position;
+        vec3 light_color        = light.color;
+        float light_intensity   = light.intensity;
+        float light_radius      = light.radius;
 
-    outColor = vec4(light, 1.0);
+        // If near zero, skip it.
+        if (light_intensity < 0.001f)
+            continue;
+
+        vec3 L                  = light_position - inPosition;
+        float light_distance    = length(L);
+        
+        if (light_distance > light_radius)
+            continue;
+
+        L                       = normalize(L);
+        vec3 R                  = reflect(-L, N);
+
+        float dotNL = max(dot(N, L), 0.0);
+        float dotVR = max(dot(V, R), 0.0);
+
+        vec3 diffuse = light_color * dotNL;
+        vec3 specular = specular_strengh * pow(dotVR, 2) * light_color;
+
+        output_light += (diffuse + specular) * inColor.xyz;
+    }
+
+    outColor = vec4(output_light, 1.0);
 }

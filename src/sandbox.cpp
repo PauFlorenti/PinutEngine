@@ -24,21 +24,35 @@ void Sandbox::OnCreate()
     m_currentCamera->LookAt(glm::vec3(3.0f, 2.0f, 3.0f), glm::vec3(0.0f));
     m_currentCamera->SetProjection(glm::radians(45.0f), (f32)m_width / m_height, 0.01f, 1000.0f);
 
-     auto assetManager = Pinut::AssetManager::Get();
+    auto assetManager = Pinut::AssetManager::Get();
 
-     auto floor = std::make_shared<Pinut::Renderable>();
-     auto m     = assetManager->GetAsset<Pinut::Mesh>("UnitCube");
-     floor->SetMesh(m);
-     floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, 0.0f)),
-                                glm::vec3(5.0f, 0.5f, 5.0f)));
+    auto floor = std::make_shared<Pinut::Renderable>();
+    auto m     = assetManager->GetAsset<Pinut::Mesh>("UnitCube");
+    floor->SetMesh(m);
+    floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, 0.0f)),
+                               glm::vec3(5.0f, 0.5f, 5.0f)));
 
-     auto cube = std::make_shared<Pinut::Renderable>();
-     cube->SetMesh(assetManager->GetAsset<Pinut::Mesh>("UnitCube"));
-     cube->SetModel(glm::mat4(1.0f));
+    auto cube = std::make_shared<Pinut::Renderable>();
+    cube->SetMesh(assetManager->GetAsset<Pinut::Mesh>("UnitCube"));
+    cube->SetModel(glm::mat4(1.0f));
 
-     m_currentScene = new Pinut::Scene();
-     m_currentScene->AddRenderable(std::move(floor));
-     m_currentScene->AddRenderable(std::move(cube));
+    Pinut::Light l;
+    l.color     = glm::vec3(1.0f, 0.0f, 1.0f);
+    l.position  = glm::vec3(1.0f, 1.0f, 0.0f);
+    l.radius    = 100.0f;
+    l.intensity = 100.0f;
+
+    Pinut::Light l2;
+    l2.color     = glm::vec3(0.0f, 0.0f, 1.0f);
+    l2.position  = glm::vec3(-1.0f, 2.0f, 0.0f);
+    l2.radius    = 100.0f;
+    l2.intensity = 100.0f;
+
+    m_currentScene = new Pinut::Scene();
+    m_currentScene->AddRenderable(std::move(floor));
+    m_currentScene->AddRenderable(std::move(cube));
+    m_currentScene->AddLight(l);
+    m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()

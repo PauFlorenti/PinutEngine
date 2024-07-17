@@ -1,5 +1,6 @@
 // pch.h precompiled header
 
+#include <array>
 #include <cassert>
 #include <memory>
 #include <string>

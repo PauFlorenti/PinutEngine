@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include <imgui.h>
+
 #include "renderable.h"
 #include "src/assets/mesh.h"
 #include "src/renderer/buffer.h"
@@ -37,6 +39,18 @@ void Renderable::Draw(VkCommandBuffer cmd) const
     {
         vkCmdBindVertexBuffers(cmd, 0, 1, &m_mesh->m_vertexBuffer.m_buffer, &offset);
         vkCmdDraw(cmd, m_mesh->GetVertexCount(), 1, 0, m_instanceIndex);
+    }
+}
+
+void Renderable::DrawImGui()
+{
+    if (ImGui::TreeNode("Entity Name"))
+    {
+        ImGui::DragFloat3("Position", &m_position.x);
+        ImGui::DragFloat3("Scale", &m_scale.x);
+        ImGui::DragFloat4("Rotation", &m_rotation[0]);
+
+        ImGui::TreePop();
     }
 }
 
