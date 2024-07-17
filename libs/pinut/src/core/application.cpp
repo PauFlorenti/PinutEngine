@@ -86,7 +86,7 @@ Application::Application(const std::string& name, i32 width, i32 height)
 {
 }
 
-void Application::OnWindowMoved(GLFWwindow* window, int x, int y) { printf("Window moved\n"); }
+void Application::OnWindowMoved(GLFWwindow* window, int x, int y) { printf("Window moved to x: %d y: %d\n", x, y); }
 
 void Application::OnWindowResized(GLFWwindow* window, int width, int height)
 {
@@ -144,7 +144,8 @@ void Application::Init(GLFWwindow* window)
 
 void Application::Shutdown()
 {
-    assert(vkDeviceWaitIdle(m_device.GetDevice()) == VK_SUCCESS);
+    auto ok = vkDeviceWaitIdle(m_device.GetDevice());
+    assert(ok);
 
     if (m_currentScene)
         m_currentScene->Clear();
@@ -184,7 +185,8 @@ void Application::Render()
 
     const auto cmdBeginInfo =
       vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    assert(vkBeginCommandBuffer(cmd, &cmdBeginInfo) == VK_SUCCESS);
+    auto ok = vkBeginCommandBuffer(cmd, &cmdBeginInfo);
+    assert(ok);
 
     auto depthTexture = m_forwardPipeline.GetDepthAttachment();
 
@@ -301,7 +303,7 @@ void Application::Render()
       .pSignalSemaphores    = &renderFinishedSemaphore,
     };
 
-    auto ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
+    ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
     assert(ok == VK_SUCCESS);
 
     m_swapchain.Present();

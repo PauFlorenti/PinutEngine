@@ -143,14 +143,16 @@ VkCommandBuffer Device::CreateImmediateCommandBuffer()
     };
 
     VkCommandBuffer cmd;
-    assert(vkAllocateCommandBuffers(m_device, &info, &cmd) == VK_SUCCESS);
+    auto            ok = vkAllocateCommandBuffers(m_device, &info, &cmd);
+    assert(ok == VK_SUCCESS);
 
     VkCommandBufferBeginInfo beginInfo{
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
 
-    assert(vkBeginCommandBuffer(cmd, &beginInfo) == VK_SUCCESS);
+    ok = vkBeginCommandBuffer(cmd, &beginInfo);
+    assert(ok == VK_SUCCESS);
     return cmd;
 }
 

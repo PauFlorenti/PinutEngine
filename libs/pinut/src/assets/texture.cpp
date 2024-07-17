@@ -96,14 +96,15 @@ void Texture::Create(Device* device, const VkImageCreateInfo& info)
       .usage = VMA_MEMORY_USAGE_GPU_ONLY,
     };
 
-    VmaAllocationInfo allocationInfo;
+    VmaAllocationInfo allocationInfo{};
 
-    assert(vmaCreateImage(m_device->GetAllocator(),
-                          &info,
-                          &allocationCreateInfo,
-                          &m_image,
-                          &m_allocation,
-                          &allocationInfo) == VK_SUCCESS);
+    auto ok = vmaCreateImage(m_device->GetAllocator(),
+                             &info,
+                             &allocationCreateInfo,
+                             &m_image,
+                             &m_allocation,
+                             &allocationInfo);
+    assert(ok == VK_SUCCESS);
 
     VkImageSubresourceRange subresourceRange{};
     if (m_format == VK_FORMAT_D32_SFLOAT)
@@ -123,7 +124,7 @@ void Texture::Create(Device* device, const VkImageCreateInfo& info)
       .subresourceRange = subresourceRange,
     };
 
-    auto ok = vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &m_imageView);
+    ok = vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &m_imageView);
     assert(ok == VK_SUCCESS);
 }
 
