@@ -48,6 +48,11 @@ void main()
         if (light_distance > light_radius)
             continue;
 
+        float attenuation_factor = light_radius - light_distance;
+        attenuation_factor /= light_radius;
+        attenuation_factor = max(attenuation_factor, 0.0f);
+        attenuation_factor = attenuation_factor * attenuation_factor;
+
         L                       = normalize(L);
         vec3 R                  = reflect(-L, N);
 
@@ -57,7 +62,7 @@ void main()
         vec3 diffuse = light_color * dotNL;
         vec3 specular = specular_strengh * pow(dotVR, 2) * light_color;
 
-        output_light += (diffuse + specular) * inColor.xyz;
+        output_light += (diffuse + specular) * attenuation_factor * inColor.xyz;
     }
 
     outColor = vec4(output_light, 1.0);
