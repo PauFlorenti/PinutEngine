@@ -15,7 +15,9 @@
 
 namespace Pinut
 {
-void ForwardPipeline::Init(Device* device)
+Texture whiteTexture;
+Texture diffuseTexture;
+void    ForwardPipeline::Init(Device* device)
 {
     assert(device);
     m_device = device;
@@ -61,7 +63,7 @@ void ForwardPipeline::Init(Device* device)
                                 nullptr,
                                 &m_perFrameDescriptorSetLayout);
 
-    VkDescriptorSetLayoutBinding perObjectBindings[2] = {
+    VkDescriptorSetLayoutBinding perObjectBindings[3] = {
       vkinit::DescriptorSetLayoutBinding(0,
                                          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                          1,
@@ -70,10 +72,14 @@ void ForwardPipeline::Init(Device* device)
                                          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                          1,
                                          VK_SHADER_STAGE_VERTEX_BIT),
+      vkinit::DescriptorSetLayoutBinding(2,
+                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                         1,
+                                         VK_SHADER_STAGE_FRAGMENT_BIT),
     };
 
     auto perObjectDescriptorSetLayoutCreateInfo =
-      vkinit::DescriptorSetLayoutCreateInfo(2, perObjectBindings);
+      vkinit::DescriptorSetLayoutCreateInfo(3, perObjectBindings);
 
     vkCreateDescriptorSetLayout(logicalDevice,
                                 &perObjectDescriptorSetLayoutCreateInfo,
@@ -114,25 +120,29 @@ void ForwardPipeline::Init(Device* device)
     };
     m_descriptorSetManager.OnCreate(logicalDevice, 3, 3, std::move(descriptorPoolSizes));
 
-    m_perFrameBuffer.Create(m_device,
-                            sizeof(PerFrameData),
-                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VMA_MEMORY_USAGE_AUTO);
+    m_perFrameBuffer.Create(m_device, sizeof(PerFrameData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-    m_perObjectBuffer.Create(m_device,
-                             sizeof(u32),
-                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                             VMA_MEMORY_USAGE_AUTO);
+    m_perObjectBuffer.Create(m_device, sizeof(u32), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     m_transformsBuffer.Create(m_device,
                               sizeof(glm::mat4) * MAX_ENTITIES,
-                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                              VMA_MEMORY_USAGE_AUTO);
+                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
-    m_lightsBuffer.Create(m_device,
-                          sizeof(Light) * MAX_LIGHTS,
-                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                          VMA_MEMORY_USAGE_AUTO);
+    m_lightsBuffer.Create(m_device, sizeof(Light) * MAX_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+    VkImageCreateInfo whiteTextureInfo{};
+
+    u32 whiteData = 0xFFFFFFFF;
+    whiteTexture.CreateFromData(m_device,
+                                1,
+                                1,
+                                4,
+                                VK_FORMAT_R8G8B8A8_SRGB,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                &whiteData,
+                                "WhiteTexture");
+
+    diffuseTexture.CreateFromFile(m_device, "../assets/wall/wall_albedo.jpg");
 }
 
 void ForwardPipeline::Shutdown()
@@ -141,6 +151,8 @@ void ForwardPipeline::Shutdown()
 
     OnDestroyWindowDependantResources();
 
+    diffuseTexture.Destroy();
+    whiteTexture.Destroy();
     m_lightsBuffer.Destroy();
     m_transformsBuffer.Destroy();
     m_perObjectBuffer.Destroy();
@@ -270,7 +282,11 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                                                 0,
                                                                 sizeof(glm::mat4) * MAX_ENTITIES);
 
-        VkWriteDescriptorSet writes[2] = {
+        auto textureInfo = vkinit::DescriptorImageInfo(diffuseTexture.ImageView(),
+                                                       diffuseTexture.Sampler(),
+                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        VkWriteDescriptorSet writes[3] = {
           vkinit::WriteDescriptorSet(perObjectDescriptorSet,
                                      0,
                                      1,
@@ -281,9 +297,15 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                      1,
                                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                      &transformBufferInfo),
+          vkinit::WriteDescriptorSet(perObjectDescriptorSet,
+                                     2,
+                                     1,
+                                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                     nullptr,
+                                     &textureInfo),
         };
 
-        vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
+        vkUpdateDescriptorSets(device, 3, writes, 0, nullptr);
 
         r->Draw(cmd);
     }

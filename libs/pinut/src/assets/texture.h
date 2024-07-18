@@ -27,10 +27,20 @@ class Texture final : public Asset
                                                         VkExtent2D      dstExtent);
 
     void Create(Device* device, const VkImageCreateInfo& info);
+    void CreateFromData(Device*            device,
+                        const u32          width,
+                        const u32          height,
+                        const u32          channels,
+                        VkFormat           format,
+                        VkImageUsageFlags  usage,
+                        void*              data,
+                        const std::string& name = "");
+    void CreateFromFile(Device* device, const std::string& filename, const std::string& name = "");
     void Destroy();
 
     VkImage     Image() const { return m_image; }
     VkImageView ImageView() const { return m_imageView; }
+    VkSampler   Sampler() const { return m_sampler; }
 
   private:
     Device*       m_device{nullptr};
@@ -38,6 +48,9 @@ class Texture final : public Asset
     VkImageView   m_imageView{VK_NULL_HANDLE};
     VmaAllocation m_allocation{nullptr};
     VkFormat      m_format{};
+
+    // Temp ...
+    VkSampler m_sampler{VK_NULL_HANDLE};
 
     u32 m_width{0};
     u32 m_height{0};

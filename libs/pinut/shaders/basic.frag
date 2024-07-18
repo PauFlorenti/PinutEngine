@@ -4,6 +4,7 @@ layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec3 inPosition;
 layout(location = 2) in vec3 inCameraPosition;
 layout(location = 3) in vec4 inColor;
+layout(location = 4) in vec2 inUv;
 
 layout(location = 0) out vec4 outColor;
 
@@ -21,12 +22,17 @@ layout(set = 0, binding = 1) uniform perFrame
     Light lights[10];
 } lightData;
 
+layout(set = 1, binding = 2) uniform sampler2D diffuseTexture;
+
 float specular_strengh = 0.5f;
 
 void main()
 {
     vec3 N = normalize(inNormal);
     vec3 V = normalize(inCameraPosition - inPosition);
+
+    vec3 diffuseTextureValue = texture(diffuseTexture, inUv).xyz;
+    vec3 materialColor = diffuseTextureValue * inColor.xyz;
 
     vec3 output_light = vec3(0.0f);
     for (int i = 0; i < lightData.count; ++i)
@@ -62,7 +68,7 @@ void main()
         vec3 diffuse = light_color * dotNL;
         vec3 specular = specular_strengh * pow(dotVR, 2) * light_color;
 
-        output_light += (diffuse + specular) * attenuation_factor * inColor.xyz;
+        output_light += (diffuse + specular) * attenuation_factor * materialColor;
     }
 
     outColor = vec4(output_light, 1.0);

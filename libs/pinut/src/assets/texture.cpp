@@ -1,5 +1,9 @@
 #include "stdafx.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
+#include "src/renderer/buffer.h"
 #include "src/renderer/device.h"
 #include "texture.h"
 
@@ -126,6 +130,123 @@ void Texture::Create(Device* device, const VkImageCreateInfo& info)
 
     ok = vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &m_imageView);
     assert(ok == VK_SUCCESS);
+}
+
+void Texture::CreateFromData(Device*            device,
+                             const u32          width,
+                             const u32          height,
+                             const u32          channels,
+                             VkFormat           format,
+                             VkImageUsageFlags  usage,
+                             void*              data,
+                             const std::string& name)
+{
+    VkImageCreateInfo info{
+      .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+      .pNext                 = nullptr,
+      .imageType             = VK_IMAGE_TYPE_2D,
+      .format                = format,
+      .extent                = {width, height, 1},
+      .mipLevels             = 1,
+      .arrayLayers           = 1,
+      .samples               = VK_SAMPLE_COUNT_1_BIT,
+      .tiling                = VK_IMAGE_TILING_OPTIMAL,
+      .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+      .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+      .queueFamilyIndexCount = 0,
+      .pQueueFamilyIndices   = nullptr,
+      .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    Create(device, info);
+
+    const auto   cmd         = device->CreateImmediateCommandBuffer();
+    const size_t textureSize = width * height * channels;
+    GPUBuffer    buffer;
+    buffer.Create(device, textureSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    memcpy(buffer.AllocationInfo().pMappedData, data, textureSize);
+
+    TransitionImageLayout(cmd,
+                          m_image,
+                          VK_ACCESS_TRANSFER_WRITE_BIT,
+                          VK_ACCESS_TRANSFER_READ_BIT,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+    VkBufferImageCopy region{
+      .bufferOffset = 0,
+      .imageSubresource{
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .layerCount = 1,
+      },
+      .imageOffset = 0,
+      .imageExtent = info.extent,
+    };
+
+    vkCmdCopyBufferToImage(cmd,
+                           buffer.m_buffer,
+                           m_image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           1,
+                           &region);
+
+    TransitionImageLayout(cmd,
+                          m_image,
+                          VK_ACCESS_TRANSFER_READ_BIT,
+                          VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                          VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+    device->FlushCommandBuffer(cmd);
+
+    buffer.Destroy();
+
+    VkSamplerCreateInfo samplerInfo{
+      .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+      .magFilter               = VK_FILTER_LINEAR,
+      .minFilter               = VK_FILTER_LINEAR,
+      .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+      .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+      .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+      .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+      .mipLodBias              = 0.0f,
+      .anisotropyEnable        = VK_FALSE,
+      .compareEnable           = VK_TRUE,
+      .compareOp               = VK_COMPARE_OP_ALWAYS,
+      .minLod                  = 0.0f,
+      .maxLod                  = 0.0f,
+      .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+      .unnormalizedCoordinates = VK_FALSE,
+    };
+
+    auto ok = vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr, &m_sampler);
+    assert(ok == VK_SUCCESS);
+}
+
+void Texture::CreateFromFile(Device* device, const std::string& filename, const std::string& name)
+{
+    int32_t  w, h, channels;
+    stbi_uc* pixels = stbi_load(filename.c_str(), &w, &h, &channels, STBI_rgb_alpha);
+
+    if (!pixels)
+      return;
+
+    CreateFromData(device,
+                   w,
+                   h,
+                   4,
+                   VK_FORMAT_R8G8B8A8_SRGB,
+                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                   pixels,
+                   name);
+
+    stbi_image_free(pixels);
 }
 
 void Texture::Destroy()

@@ -145,7 +145,7 @@ void Application::Init(GLFWwindow* window)
 void Application::Shutdown()
 {
     auto ok = vkDeviceWaitIdle(m_device.GetDevice());
-    assert(ok);
+    assert(ok == VK_SUCCESS);
 
     if (m_currentScene)
         m_currentScene->Clear();
@@ -186,7 +186,7 @@ void Application::Render()
     const auto cmdBeginInfo =
       vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     auto ok = vkBeginCommandBuffer(cmd, &cmdBeginInfo);
-    assert(ok);
+    assert(ok == VK_SUCCESS);
 
     auto depthTexture = m_forwardPipeline.GetDepthAttachment();
 

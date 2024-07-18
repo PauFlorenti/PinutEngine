@@ -9,6 +9,7 @@ layout(location = 0) out vec3 outNormal;
 layout(location = 1) out vec3 outPosition;
 layout(location = 2) out vec3 outCameraPosition;
 layout(location = 3) out vec4 outColor;
+layout(location = 4) out vec2 outUv;
 
 layout(set = 0, binding = 0) uniform perFrame
 {
@@ -49,4 +50,5 @@ void main()
     outPosition = world_position.xyz;
     outCameraPosition = perFrameData.cameraPosition;
     outColor = unpackedColor * inColor;
+    outUv = inUv;
 }
