@@ -15,9 +15,9 @@ struct MaterialData
 {
     u32 color;
 
-    Texture* diffuse{nullptr};
-    Texture* normal{nullptr};
-    Texture* metallicRoughness{nullptr};
+    std::shared_ptr<Texture> diffuse{nullptr};
+    std::shared_ptr<Texture> normal{nullptr};
+    std::shared_ptr<Texture> metallicRoughness{nullptr};
 };
 
 struct Material

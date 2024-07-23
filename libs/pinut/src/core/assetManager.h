@@ -7,9 +7,11 @@ namespace Pinut
 class Asset;
 class Device;
 class Mesh;
+class Texture;
 class AssetManager
 {
     friend Mesh;
+    friend Texture;
 
   public:
     AssetManager()  = default;

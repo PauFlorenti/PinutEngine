@@ -26,21 +26,25 @@ class Texture final : public Asset
                                                         VkExtent2D      srcExtent,
                                                         VkExtent2D      dstExtent);
 
-    void Create(Device* device, const VkImageCreateInfo& info);
-    void CreateFromData(Device*            device,
-                        const u32          width,
-                        const u32          height,
-                        const u32          channels,
-                        VkFormat           format,
-                        VkImageUsageFlags  usage,
-                        void*              data,
-                        const std::string& name = "");
-    void CreateFromFile(Device* device, const std::string& filename, const std::string& name = "");
-    void Destroy();
+    ~Texture() { Destroy(); }
+
+    void                            Create(Device* device, const VkImageCreateInfo& info);
+    static std::shared_ptr<Texture> CreateFromData(const u32          width,
+                                                   const u32          height,
+                                                   const u32          channels,
+                                                   VkFormat           format,
+                                                   VkImageUsageFlags  usage,
+                                                   void*              data,
+                                                   const std::string& name = "");
+    static std::shared_ptr<Texture> CreateFromFile(const std::string& filename,
+                                                   const std::string& name = "");
+    void                            Destroy();
 
     VkImage     Image() const { return m_image; }
     VkImageView ImageView() const { return m_imageView; }
     VkSampler   Sampler() const { return m_sampler; }
+
+    void SetSampler(VkSampler s) { m_sampler = std::move(s); }
 
   private:
     Device*       m_device{nullptr};

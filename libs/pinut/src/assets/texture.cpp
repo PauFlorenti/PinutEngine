@@ -3,6 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include "src/core/assetManager.h"
 #include "src/renderer/buffer.h"
 #include "src/renderer/device.h"
 #include "texture.h"
@@ -132,15 +133,18 @@ void Texture::Create(Device* device, const VkImageCreateInfo& info)
     assert(ok == VK_SUCCESS);
 }
 
-void Texture::CreateFromData(Device*            device,
-                             const u32          width,
-                             const u32          height,
-                             const u32          channels,
-                             VkFormat           format,
-                             VkImageUsageFlags  usage,
-                             void*              data,
-                             const std::string& name)
+std::shared_ptr<Texture> Texture::CreateFromData(const u32          width,
+                                                 const u32          height,
+                                                 const u32          channels,
+                                                 VkFormat           format,
+                                                 VkImageUsageFlags  usage,
+                                                 void*              data,
+                                                 const std::string& name)
 {
+    auto       assetManager = AssetManager::Get();
+    const auto device       = assetManager->m_device;
+    auto       t            = std::make_shared<Texture>();
+
     VkImageCreateInfo info{
       .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
       .pNext                 = nullptr,
@@ -158,7 +162,7 @@ void Texture::CreateFromData(Device*            device,
       .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    Create(device, info);
+    t->Create(device, info);
 
     const auto   cmd         = device->CreateImmediateCommandBuffer();
     const size_t textureSize = width * height * channels;
@@ -167,7 +171,7 @@ void Texture::CreateFromData(Device*            device,
     memcpy(buffer.AllocationInfo().pMappedData, data, textureSize);
 
     TransitionImageLayout(cmd,
-                          m_image,
+                          t->Image(),
                           VK_ACCESS_TRANSFER_WRITE_BIT,
                           VK_ACCESS_TRANSFER_READ_BIT,
                           VK_IMAGE_LAYOUT_UNDEFINED,
@@ -188,13 +192,13 @@ void Texture::CreateFromData(Device*            device,
 
     vkCmdCopyBufferToImage(cmd,
                            buffer.m_buffer,
-                           m_image,
+                           t->Image(),
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            1,
                            &region);
 
     TransitionImageLayout(cmd,
-                          m_image,
+                          t->Image(),
                           VK_ACCESS_TRANSFER_READ_BIT,
                           VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -225,28 +229,36 @@ void Texture::CreateFromData(Device*            device,
       .unnormalizedCoordinates = VK_FALSE,
     };
 
-    auto ok = vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr, &m_sampler);
+    VkSampler sampler;
+    auto      ok = vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr, &sampler);
     assert(ok == VK_SUCCESS);
+
+    t->SetSampler(std::move(sampler));
+
+    assetManager->RegisterAsset(name, t);
+    return assetManager->GetAsset<Texture>(name);
 }
 
-void Texture::CreateFromFile(Device* device, const std::string& filename, const std::string& name)
+std::shared_ptr<Texture> Texture::CreateFromFile(const std::string& filename,
+                                                 const std::string& name)
 {
     int32_t  w, h, channels;
     stbi_uc* pixels = stbi_load(filename.c_str(), &w, &h, &channels, STBI_rgb_alpha);
 
     if (!pixels)
-      return;
+        return nullptr;
 
-    CreateFromData(device,
-                   w,
-                   h,
-                   4,
-                   VK_FORMAT_R8G8B8A8_SRGB,
-                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                   pixels,
-                   name);
+    auto t = CreateFromData(w,
+                            h,
+                            4,
+                            VK_FORMAT_R8G8B8A8_SRGB,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            pixels,
+                            name);
 
     stbi_image_free(pixels);
+
+    return t;
 }
 
 void Texture::Destroy()
@@ -254,6 +266,9 @@ void Texture::Destroy()
     vmaDestroyImage(m_device->GetAllocator(), m_image, m_allocation);
     if (m_imageView)
         vkDestroyImageView(m_device->GetDevice(), m_imageView, nullptr);
+
+    if (m_sampler)
+        vkDestroySampler(m_device->GetDevice(), m_sampler, nullptr);
 }
 
 } // namespace Pinut

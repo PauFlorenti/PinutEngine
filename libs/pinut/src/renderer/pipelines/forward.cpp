@@ -15,9 +15,7 @@
 
 namespace Pinut
 {
-Texture whiteTexture;
-Texture diffuseTexture;
-void    ForwardPipeline::Init(Device* device)
+void ForwardPipeline::Init(Device* device)
 {
     assert(device);
     m_device = device;
@@ -39,20 +37,6 @@ void    ForwardPipeline::Init(Device* device)
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
     m_lightsBuffer.Create(m_device, sizeof(Light) * MAX_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
-    VkImageCreateInfo whiteTextureInfo{};
-
-    u32 whiteData = 0xFFFFFFFF;
-    whiteTexture.CreateFromData(m_device,
-                                1,
-                                1,
-                                4,
-                                VK_FORMAT_R8G8B8A8_SRGB,
-                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                &whiteData,
-                                "WhiteTexture");
-
-    diffuseTexture.CreateFromFile(m_device, "../assets/wall/wall_albedo.jpg");
 }
 
 void ForwardPipeline::Shutdown()
@@ -61,8 +45,8 @@ void ForwardPipeline::Shutdown()
 
     OnDestroyWindowDependantResources();
 
-    diffuseTexture.Destroy();
-    whiteTexture.Destroy();
+    m_descriptorSetManager.OnDestroy();
+
     m_lightsBuffer.Destroy();
     m_transformsBuffer.Destroy();
     m_perObjectBuffer.Destroy();

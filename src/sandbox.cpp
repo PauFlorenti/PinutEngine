@@ -38,19 +38,19 @@ void Sandbox::OnCreate()
     cube->SetMesh(assetManager->GetAsset<Pinut::Mesh>("UnitCube"));
     cube->SetModel(glm::mat4(1.0f));
 
-    u32            whiteData = 0xFFFFFFFF;
-    Pinut::Texture whiteTexture =
-      CreateTextureFromData(1,
-                            1,
-                            4,
-                            VK_FORMAT_R8G8B8A8_SRGB,
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                            &whiteData,
-                            "WhiteTexture");
+    u32  whiteData    = 0xFFFFFFFF;
+    auto whiteTexture = Pinut::Texture::CreateFromData(1,
+                                                       1,
+                                                       4,
+                                                       VK_FORMAT_R8G8B8A8_SRGB,
+                                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                         VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                       &whiteData,
+                                                       "WhiteTexture");
 
     Pinut::MaterialData whiteMaterialData;
     whiteMaterialData.color   = whiteData;
-    whiteMaterialData.diffuse = &whiteTexture;
+    whiteMaterialData.diffuse = whiteTexture;
 
     auto whiteMaterial = m_materialManager.CreateMaterialInstance("WhiteMAT",
                                                                   Pinut::MaterialType::OPAQUE,
