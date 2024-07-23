@@ -49,7 +49,9 @@ set(Pinut_materials
     src/renderer/materials/materialManager.cpp
     src/renderer/materials/materialManager.h
     src/renderer/materials/opaqueMaterial.cpp
-    src/renderer/materials/opaqueMaterial.h)
+    src/renderer/materials/opaqueMaterial.h
+    src/renderer/materials/transparentMaterial.cpp
+    src/renderer/materials/transparentMaterial.h)
 
 set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp

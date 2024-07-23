@@ -3,18 +3,13 @@
 #include "src/renderer/buffer.h"
 #include "src/renderer/descriptorSetManager.h"
 #include "src/renderer/materials/opaqueMaterial.h"
+#include "src/renderer/materials/transparentMaterial.h"
 
 namespace Pinut
 {
 class Device;
 struct MaterialInstance;
 struct MaterialResources;
-
-enum class MaterialType
-{
-    OPAQUE,
-    COUNT
-};
 
 u32 constexpr MAX_MATERIALS = 1000;
 
@@ -36,5 +31,6 @@ class MaterialManager
 
     DescriptorSetManager m_descriptorSetManager;
     OpaqueMaterial       m_opaqueMaterial;
+    TransparentMaterial  m_transparentMaterial;
 };
 } // namespace Pinut

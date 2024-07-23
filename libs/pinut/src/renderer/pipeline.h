@@ -30,6 +30,7 @@ struct PipelineBuilder
     void       set_input_attribute(std::vector<VkVertexInputAttributeDescription> attr_descriptions,
                                    size_t                                         stride_size);
     void       disable_blending();
+    void       enable_alpha_blending();
     void       set_color_attachment_format(VkFormat format);
     void       set_depth_format(VkFormat format);
     void       set_stencil_format(VkFormat format);

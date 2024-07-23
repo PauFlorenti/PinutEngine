@@ -220,7 +220,7 @@ void Application::Render()
                                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                                       VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                       VK_ATTACHMENT_STORE_OP_STORE,
-                                                      {0.0f, 0.f, 0.f, 0.f});
+                                                      {0.2f, 0.f, 0.f, 0.f});
 
     auto depthAttachment = vkinit::RenderingAttachmentInfo(depthTexture->ImageView(),
                                                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
@@ -257,7 +257,7 @@ void Application::Render()
     ImGui::Begin("DebugWindow");
     if (ImGui::TreeNode("Renderables"))
     {
-        for (const auto& r : m_currentScene->Renderables())
+        for (const auto& r : m_currentScene->OpaqueRenderables())
         {
             ImGui::PushID(&r);
             r->DrawImGui();

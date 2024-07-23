@@ -92,8 +92,9 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     assert(camera);
     assert(scene);
 
-    const auto  device      = m_device->GetDevice();
-    const auto& renderables = scene->Renderables();
+    const auto  device                 = m_device->GetDevice();
+    const auto& renderables            = scene->OpaqueRenderables();
+    const auto& transparentRenderables = scene->TransparentRenderables();
 
     assert(!renderables.empty());
 
@@ -129,6 +130,16 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         renderable->SetInstanceIndex(i);
     }
 
+    const auto offset = renderables.size();
+    for (u32 i = 0; i < transparentRenderables.size(); ++i)
+    {
+        auto&      renderable = transparentRenderables.at(i);
+        const auto index      = offset + i;
+        auto       data       = (glm::mat4*)m_transformsBuffer.AllocationInfo().pMappedData;
+        data[index]           = renderable->Model();
+        renderable->SetInstanceIndex(index);
+    }
+
     auto opaqueMaterial = (OpaqueMaterial*)opaqueMaterialInstance->GetMaterial();
     auto set = m_descriptorSetManager.Allocate(opaqueMaterial->m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
@@ -157,7 +168,18 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     };
     vkUpdateDescriptorSets(m_device->GetDevice(), 3, perFrameWrites, 0, nullptr);
 
-    for (auto& r : scene->Renderables())
+    for (auto& r : scene->OpaqueRenderables())
+    {
+        // TODO if material is same, change it.
+        r->Material()->Bind(cmd);
+        r->Draw(cmd);
+    }
+
+    if (transparentRenderables.empty())
+        return;
+
+    transparentRenderables.at(0)->Material()->BindPipeline(cmd);
+    for (auto& r : scene->TransparentRenderables())
     {
         // TODO if material is same, change it.
         r->Material()->Bind(cmd);

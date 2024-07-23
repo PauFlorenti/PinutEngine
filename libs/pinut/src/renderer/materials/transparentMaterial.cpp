@@ -3,22 +3,22 @@
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
 #include "src/renderer/descriptorSetManager.h"
-#include "src/renderer/materials/opaqueMaterial.h"
+#include "src/renderer/materials/transparentMaterial.h"
 #include "src/renderer/pipeline.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
 {
-void OpaqueMaterial::BuildPipeline(VkDevice device)
+void TransparentMaterial::BuildPipeline(VkDevice device)
 {
     VkShaderModule vertex_shader;
-    if (!vkinit::load_shader_module("shaders/basic.vert.spv", device, &vertex_shader))
+    if (!vkinit::load_shader_module("shaders/transparent.vert.spv", device, &vertex_shader))
     {
         printf("[ERROR]: Error building the forward vertex shader.");
     }
 
     VkShaderModule fragment_shader;
-    if (!vkinit::load_shader_module("shaders/basic.frag.spv", device, &fragment_shader))
+    if (!vkinit::load_shader_module("shaders/transparent.frag.spv", device, &fragment_shader))
     {
         printf("[ERROR]: Error building the forward fragment shader.");
     }
@@ -90,7 +90,7 @@ void OpaqueMaterial::BuildPipeline(VkDevice device)
                            VK_FRONT_FACE_COUNTER_CLOCKWISE);
     builder.set_input_attribute(std::move(input_attributes), sizeof(Vertex));
     builder.set_multisampling_none();
-    builder.disable_blending();
+    builder.enable_alpha_blending();
     builder.enable_depth_test(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
     builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
     builder.set_stencil_format(VK_FORMAT_UNDEFINED);
@@ -102,7 +102,7 @@ void OpaqueMaterial::BuildPipeline(VkDevice device)
     vkDestroyShaderModule(device, fragment_shader, nullptr);
 }
 
-void OpaqueMaterial::Destroy(VkDevice device)
+void TransparentMaterial::Destroy(VkDevice device)
 {
     vkDestroyDescriptorSetLayout(device, m_perFrameDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(device, m_perObjectDescriptorSetLayout, nullptr);
@@ -111,7 +111,7 @@ void OpaqueMaterial::Destroy(VkDevice device)
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 }
 
-std::shared_ptr<MaterialInstance> OpaqueMaterial::CreateMaterialInstance(
+std::shared_ptr<MaterialInstance> TransparentMaterial::CreateMaterialInstance(
   VkDevice              device,
   MaterialData          materialData,
   const GPUBuffer&      buffer,
@@ -146,6 +146,6 @@ std::shared_ptr<MaterialInstance> OpaqueMaterial::CreateMaterialInstance(
 
     vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
 
-    return std::make_shared<MaterialInstance>(this, set, MaterialType::OPAQUE);
+    return std::make_shared<MaterialInstance>(this, set, MaterialType::TRANSPARENT);
 }
 } // namespace Pinut

@@ -48,6 +48,16 @@ void Sandbox::OnCreate()
                                                        &whiteData,
                                                        "WhiteTexture");
 
+    u32  redColor   = 0xFF0000FF;
+    auto redTexture = Pinut::Texture::CreateFromData(1,
+                                                     1,
+                                                     4,
+                                                     VK_FORMAT_R8G8B8A8_SRGB,
+                                                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                       VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                     &redColor,
+                                                     "RedTexture");
+
     Pinut::MaterialData whiteMaterialData;
     whiteMaterialData.color   = whiteData;
     whiteMaterialData.diffuse = whiteTexture;
@@ -56,11 +66,19 @@ void Sandbox::OnCreate()
                                                                   Pinut::MaterialType::OPAQUE,
                                                                   std::move(whiteMaterialData));
 
+    Pinut::MaterialData glassMaterialData;
+    glassMaterialData.color   = 0x7FFF0000;
+    glassMaterialData.diffuse = redTexture;
+
+    auto glassMaterial = m_materialManager.CreateMaterialInstance("GlassMAT",
+                                                                  Pinut::MaterialType::TRANSPARENT,
+                                                                  std::move(glassMaterialData));
+
     floor->SetMaterial(whiteMaterial);
-    cube->SetMaterial(whiteMaterial);
+    cube->SetMaterial(glassMaterial);
 
     Pinut::Light l;
-    l.color     = glm::vec3(1.0f, 0.0f, 1.0f);
+    l.color     = glm::vec3(1.0f, 1.0f, 1.0f);
     l.position  = glm::vec3(1.0f, 1.0f, 0.0f);
     l.radius    = 100.0f;
     l.intensity = 100.0f;
@@ -75,7 +93,7 @@ void Sandbox::OnCreate()
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(cube));
     m_currentScene->AddLight(l);
-    m_currentScene->AddLight(l2);
+    // m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()

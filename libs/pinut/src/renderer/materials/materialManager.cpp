@@ -22,6 +22,7 @@ void MaterialManager::Init(Device* device)
                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     m_opaqueMaterial.BuildPipeline(m_device);
+    m_transparentMaterial.BuildPipeline(m_device);
 }
 
 void MaterialManager::Shutdown()
@@ -29,6 +30,7 @@ void MaterialManager::Shutdown()
     m_materialBuffer.Destroy();
     m_descriptorSetManager.OnDestroy();
     m_opaqueMaterial.Destroy(m_device);
+    m_transparentMaterial.Destroy(m_device);
 }
 
 std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const std::string& name,
@@ -51,6 +53,18 @@ std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const 
                                                               m_materialBuffer,
                                                               m_materialCount,
                                                               m_descriptorSetManager);
+            m_materials[name] = mi;
+            m_materialCount++;
+            return mi;
+            break;
+        }
+        case MaterialType::TRANSPARENT:
+        {
+            auto mi           = m_transparentMaterial.CreateMaterialInstance(m_device,
+                                                                   std::move(materialData),
+                                                                   m_materialBuffer,
+                                                                   m_materialCount,
+                                                                   m_descriptorSetManager);
             m_materials[name] = mi;
             m_materialCount++;
             return mi;

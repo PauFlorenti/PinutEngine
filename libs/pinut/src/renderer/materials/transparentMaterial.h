@@ -4,9 +4,9 @@
 
 namespace Pinut
 {
-class Texture;
-struct OpaqueMaterial : public Material
+class TransparentMaterial : public Material
 {
+  public:
     void                              BuildPipeline(VkDevice device) override;
     void                              Destroy(VkDevice device) override;
     std::shared_ptr<MaterialInstance> CreateMaterialInstance(

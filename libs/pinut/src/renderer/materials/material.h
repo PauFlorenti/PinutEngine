@@ -4,13 +4,12 @@ namespace Pinut
 {
 class GPUBuffer;
 class Texture;
-struct MaterialResources
+enum class MaterialType
 {
-    std::unordered_map<std::string, GPUBuffer*>  m_buffers;
-    std::unordered_map<std::string, VkImageView> m_imageViews;
-    std::unordered_map<std::string, VkSampler>   m_samplers;
+    OPAQUE,
+    TRANSPARENT,
+    COUNT
 };
-
 struct MaterialData
 {
     u32 color;
@@ -18,6 +17,12 @@ struct MaterialData
     std::shared_ptr<Texture> diffuse{nullptr};
     std::shared_ptr<Texture> normal{nullptr};
     std::shared_ptr<Texture> metallicRoughness{nullptr};
+};
+
+struct GPUMaterialData
+{
+    glm::vec3 padding;
+    u32 color;
 };
 
 struct Material
@@ -34,19 +39,23 @@ struct Material
 
 struct MaterialInstance
 {
-    MaterialInstance(Material* material, VkDescriptorSet set)
+    MaterialInstance(Material* material, VkDescriptorSet set, MaterialType type)
     : m_material(material),
-      m_descriptorSet(set)
+      m_descriptorSet(set),
+      m_type(type)
     {
         assert(m_material);
+        assert(m_type != MaterialType::COUNT);
     }
 
     const Material* GetMaterial() const { return m_material; }
     void            Bind(VkCommandBuffer cmd);
     void            BindPipeline(VkCommandBuffer cmd) { m_material->BindPipeline(cmd); }
+    MaterialType    Type() const { return m_type; }
 
   private:
     Material*       m_material{nullptr};
     VkDescriptorSet m_descriptorSet{VK_NULL_HANDLE};
+    MaterialType    m_type;
 };
 } // namespace Pinut
