@@ -2,7 +2,7 @@
 
 namespace Pinut
 {
-enum AssetType
+enum class AssetType
 {
     MATERIAL = 0,
     MESH,

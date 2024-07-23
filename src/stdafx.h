@@ -2,8 +2,10 @@
 
 #include <array>
 #include <cassert>
+#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <glm/ext/matrix_clip_space.hpp>

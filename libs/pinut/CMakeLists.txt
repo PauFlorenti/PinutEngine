@@ -1,7 +1,5 @@
 
 set(Pinut_assets
-    src/assets/material.cpp
-    src/assets/material.h
     src/assets/mesh.cpp
     src/assets/mesh.h
     src/assets/texture.cpp
@@ -15,6 +13,7 @@ set(Pinut_core
     src/core/camera.cpp
     src/core/camera.h
     src/core/defines.h
+    src/core/light.cpp
     src/core/light.h
     src/core/scene.cpp
     src/core/scene.h)
@@ -44,11 +43,19 @@ set(Pinut_renderer
     src/renderer/utils.cpp
     src/renderer/utils.h)
 
+set(Pinut_materials
+    src/renderer/materials/material.cpp
+    src/renderer/materials/material.h
+    src/renderer/materials/materialManager.cpp
+    src/renderer/materials/materialManager.h
+    src/renderer/materials/opaqueMaterial.cpp
+    src/renderer/materials/opaqueMaterial.h)
+
 set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
 
-add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines})
+add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_materials} ${Pinut_pipelines})
 
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)

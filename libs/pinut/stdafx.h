@@ -2,10 +2,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 
+#include <array>
 #include <cassert>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -14,8 +16,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
-// #include <glm/gtx/quaternion.hpp>
-// #include <glm/gtx/quaternion.inl>
 #include <vulkan/vulkan.h>
 
 #include "src/core/defines.h"

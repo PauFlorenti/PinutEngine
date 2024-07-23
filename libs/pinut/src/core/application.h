@@ -1,7 +1,9 @@
 #pragma once
 
 #include "src/renderer/commandBufferManager.h"
+#include "src/renderer/descriptorSetManager.h"
 #include "src/renderer/device.h"
+#include "src/renderer/materials/materialManager.h"
 #include "src/renderer/pipelines/forward.h"
 #include "src/renderer/swapchain.h"
 #ifdef _DEBUG
@@ -36,6 +38,16 @@ class Application
     const i32         GetHeight() const { return m_height; }
     const f64         GetDeltaTime() const { return m_deltaTime; }
 
+    GPUBuffer CreateBufferWithData(u8* data, u64 size);
+
+    Texture CreateTextureFromData(const u32          width,
+                                  const u32          height,
+                                  const u32          channels,
+                                  VkFormat           format,
+                                  VkImageUsageFlags  usage,
+                                  void*              data,
+                                  const std::string& name = "");
+
     Camera* GetCamera();
 
   protected:
@@ -45,8 +57,9 @@ class Application
 
     GLFWwindow* m_window{nullptr};
 
-    Camera* m_currentCamera = nullptr;
-    Scene*  m_currentScene  = nullptr;
+    Camera*         m_currentCamera = nullptr;
+    Scene*          m_currentScene  = nullptr;
+    MaterialManager m_materialManager;
 
   private:
     void UpdateDisplay();
@@ -63,6 +76,7 @@ class Application
 #endif
 
     CommandBufferManager m_commandBufferManager;
+    DescriptorSetManager m_descriptorSetManager;
 };
 } // namespace Pinut
 

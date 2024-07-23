@@ -8,6 +8,7 @@
 namespace Pinut
 {
 class Camera;
+class DescriptorSetManager;
 class Device;
 class Scene;
 class Texture;
@@ -23,20 +24,13 @@ class ForwardPipeline
 
     const Texture* GetDepthAttachment() const { return m_depthTexture; }
 
-    void BindPipeline(VkCommandBuffer cmd);
     void Render(VkCommandBuffer cmd, Camera* camera, Scene* scene);
 
-    VkPipeline Pipeline() const;
-
   private:
-    Device*              m_device{nullptr};
-    VkPipeline           m_pipeline{VK_NULL_HANDLE};
-    VkPipelineLayout     m_pipelineLayout{VK_NULL_HANDLE};
-    DescriptorSetManager m_descriptorSetManager;
-
-    VkDescriptorSetLayout m_perFrameDescriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorSetLayout m_perObjectDescriptorSetLayout{VK_NULL_HANDLE};
+    Device*               m_device{nullptr};
     VkDescriptorSetLayout m_transformsDescriptorSetLayout{VK_NULL_HANDLE};
+
+    DescriptorSetManager m_descriptorSetManager; // Used for global data.
 
     GPUBuffer m_perFrameBuffer;
     GPUBuffer m_perObjectBuffer;

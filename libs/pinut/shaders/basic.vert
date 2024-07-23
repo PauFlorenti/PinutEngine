@@ -18,15 +18,15 @@ layout(set = 0, binding = 0) uniform perFrame
     vec3 cameraPosition;
 } perFrameData;
 
+layout(set = 0, binding = 1) readonly buffer transformsBuffer
+{
+    mat4 models[];
+} transforms;
+
 layout(set = 1, binding = 0) uniform perInstance
 {
     uint color;
 } perInstanceData;
-
-layout(set = 1, binding = 1) readonly buffer transformsBuffer
-{
-    mat4 models[];
-} transforms;
 
 void main() 
 {

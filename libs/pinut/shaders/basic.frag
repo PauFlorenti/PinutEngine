@@ -16,13 +16,13 @@ struct Light
     float   radius;
 };
 
-layout(set = 0, binding = 1) uniform perFrame
+layout(set = 0, binding = 2) uniform perFrame
 {
     uint count;
     Light lights[10];
 } lightData;
 
-layout(set = 1, binding = 2) uniform sampler2D diffuseTexture;
+layout(set = 1, binding = 1) uniform sampler2D diffuseTexture;
 
 float specular_strengh = 0.5f;
 

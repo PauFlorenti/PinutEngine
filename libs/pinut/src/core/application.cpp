@@ -9,6 +9,7 @@
 #include "src/assets/texture.h"
 #include "src/core/assetManager.h"
 #include "src/core/camera.h"
+#include "src/core/light.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/primitives.h"
@@ -86,7 +87,10 @@ Application::Application(const std::string& name, i32 width, i32 height)
 {
 }
 
-void Application::OnWindowMoved(GLFWwindow* window, int x, int y) { printf("Window moved to x: %d y: %d\n", x, y); }
+void Application::OnWindowMoved(GLFWwindow* window, int x, int y)
+{
+    printf("Window moved to x: %d y: %d\n", x, y);
+}
 
 void Application::OnWindowResized(GLFWwindow* window, int width, int height)
 {
@@ -131,8 +135,15 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
+    std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
+    };
+    m_descriptorSetManager.OnCreate(m_device.GetDevice(), 3, 2, std::move(descriptorPoolSizes));
+
     AssetManager::Get()->Init(&m_device);
     Primitives::InitializeDefaultPrimitives();
+    m_materialManager.Init(&m_device);
     m_forwardPipeline.Init(&m_device);
 
     UpdateDisplay();
@@ -155,6 +166,7 @@ void Application::Shutdown()
 #endif
 
     AssetManager::Get()->Shutdown();
+    m_materialManager.Shutdown();
     m_forwardPipeline.Shutdown();
     m_commandBufferManager.OnDestroy();
     m_swapchain.OnDestroy();
@@ -226,8 +238,6 @@ void Application::Render()
       vkinit::RenderingInfo(1, &attachment, {0, 0, m_width, m_height}, &depthAttachment);
 
     vkCmdBeginRendering(cmd, &renderingInfo);
-
-    m_forwardPipeline.BindPipeline(cmd);
 
     VkRect2D scissors{};
     scissors.extent = {m_width, m_height};
@@ -315,6 +325,20 @@ void Application::UpdateDisplay()
     m_forwardPipeline.OnDestroyWindowDependantResources();
     m_swapchain.OnCreateWindowDependantResources(m_width, m_height);
     m_forwardPipeline.OnCreateWindowDependantResources(m_width, m_height);
+}
+
+Texture Application::CreateTextureFromData(const u32          width,
+                                           const u32          height,
+                                           const u32          channels,
+                                           VkFormat           format,
+                                           VkImageUsageFlags  usage,
+                                           void*              data,
+                                           const std::string& name)
+{
+    // TODO Handled by asset manager ... should be stored in manager and returnd a pointer.
+    Texture t;
+    t.CreateFromData(&m_device, width, height, channels, format, usage, data, name);
+    return t;
 }
 
 Camera* Application::GetCamera()
