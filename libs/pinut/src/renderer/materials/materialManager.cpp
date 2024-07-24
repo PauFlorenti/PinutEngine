@@ -19,7 +19,7 @@ void MaterialManager::Init(Device* device)
 
     m_materialBuffer.Create(device,
                             sizeof(u32) * MAX_MATERIALS,
-                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+                            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
     m_opaqueMaterial.BuildPipeline(m_device);
     m_transparentMaterial.BuildPipeline(m_device);

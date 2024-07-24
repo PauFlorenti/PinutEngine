@@ -18,6 +18,8 @@ void Scene::AddRenderable(std::shared_ptr<Renderable> r)
 {
     assert(r);
 
+    m_renderables.push_back(r);
+
     switch (r->Material()->Type())
     {
         case MaterialType::OPAQUE:
@@ -33,6 +35,7 @@ void Scene::Clear()
 {
     m_lightCount = 0;
     memset(m_lights.data(), 0, sizeof(Light) * m_lights.size());
+    m_renderables.clear();
     m_opaqueRenderables.clear();
     m_transparentRenderables.clear();
 }

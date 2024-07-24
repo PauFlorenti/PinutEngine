@@ -23,7 +23,7 @@ layout(set = 0, binding = 1) readonly buffer transformsBuffer
     mat4 models[];
 } transforms;
 
-layout(set = 1, binding = 0) uniform perInstance
+layout(set = 1, binding = 0) readonly buffer perInstance
 {
     vec3 padding;
     uint color;

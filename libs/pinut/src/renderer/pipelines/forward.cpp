@@ -122,22 +122,13 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     }
 
     // Transforms
-    for (u32 i = 0; i < renderables.size(); i++)
+    u32 i = 0;
+    for (const auto& r : scene->Renderables())
     {
-        auto& renderable = renderables[i];
-        auto  transforms = (glm::mat4*)m_transformsBuffer.AllocationInfo().pMappedData;
-        transforms[i]    = renderable->Model();
-        renderable->SetInstanceIndex(i);
-    }
-
-    const auto offset = renderables.size();
-    for (u32 i = 0; i < transparentRenderables.size(); ++i)
-    {
-        auto&      renderable = transparentRenderables.at(i);
-        const auto index      = offset + i;
-        auto       data       = (glm::mat4*)m_transformsBuffer.AllocationInfo().pMappedData;
-        data[index]           = renderable->Model();
-        renderable->SetInstanceIndex(index);
+        auto transforms = (glm::mat4*)m_transformsBuffer.AllocationInfo().pMappedData;
+        transforms[i]   = r->Model();
+        r->SetInstanceIndex(i);
+        ++i;
     }
 
     auto opaqueMaterial = (OpaqueMaterial*)opaqueMaterialInstance->GetMaterial();
@@ -168,10 +159,17 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     };
     vkUpdateDescriptorSets(m_device->GetDevice(), 3, perFrameWrites, 0, nullptr);
 
+    // Draw
+
+    std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
     for (auto& r : scene->OpaqueRenderables())
     {
-        // TODO if material is same, change it.
-        r->Material()->Bind(cmd);
+        if (currentMaterial != r->Material())
+        {
+            currentMaterial = r->Material();
+            currentMaterial->Bind(cmd);
+        }
+
         r->Draw(cmd);
     }
 
@@ -181,8 +179,12 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     transparentRenderables.at(0)->Material()->BindPipeline(cmd);
     for (auto& r : scene->TransparentRenderables())
     {
-        // TODO if material is same, change it.
-        r->Material()->Bind(cmd);
+        if (currentMaterial != r->Material())
+        {
+            currentMaterial = r->Material();
+            currentMaterial->Bind(cmd);
+        }
+
         r->Draw(cmd);
     }
 }

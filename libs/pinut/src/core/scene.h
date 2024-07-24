@@ -15,6 +15,7 @@ class Scene
     void AddLight(Light l);
     void Clear();
 
+    const std::vector<std::shared_ptr<Renderable>>& Renderables() const { return m_renderables; }
     const std::vector<std::shared_ptr<Renderable>>& OpaqueRenderables() const
     {
         return m_opaqueRenderables;
@@ -29,6 +30,7 @@ class Scene
   private:
     std::vector<std::shared_ptr<Renderable>> m_opaqueRenderables;
     std::vector<std::shared_ptr<Renderable>> m_transparentRenderables;
+    std::vector<std::shared_ptr<Renderable>> m_renderables;
     std::array<Light, MAX_LIGHTS>            m_lights;
     u32                                      m_lightCount{0};
 };
