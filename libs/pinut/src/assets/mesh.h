@@ -1,5 +1,8 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
 #include "src/assets/asset.h"
 #include "src/renderer/buffer.h"
 
@@ -14,12 +17,12 @@ struct Vertex
     glm::vec4 color;
     glm::vec2 uv;
 
-    inline bool operator==(const Vertex& other)
+    inline bool operator==(const Vertex& other) const
     {
         return position == other.position && normal == other.normal && color == other.color &&
                uv == other.uv;
     }
-    inline bool operator!=(const Vertex& other) { return !(*this == other); }
+    inline bool operator!=(const Vertex& other) const { return !(*this == other); }
 };
 
 class Mesh final : public Asset
@@ -44,3 +47,20 @@ class Mesh final : public Asset
     u32 m_indexCount;
 };
 } // namespace Pinut
+
+namespace std
+{
+using namespace Pinut;
+template <>
+struct hash<Vertex>
+{
+    size_t operator()(Vertex const& vertex) const
+    {
+        return ((((hash<glm::vec3>()(vertex.position) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >>
+                  1) ^
+                 (hash<glm::vec3>()(vertex.color) << 1)) >>
+                1) ^
+               (hash<glm::vec2>()(vertex.uv) << 1);
+    }
+};
+} // namespace std

@@ -8,7 +8,7 @@
 
 namespace Pinut
 {
-Renderable::Renderable() {}
+Renderable::Renderable(std::string name) : m_name(name) {}
 
 const glm::mat4 Renderable::Model() const
 {
@@ -44,7 +44,7 @@ void Renderable::Draw(VkCommandBuffer cmd) const
 
 void Renderable::DrawImGui()
 {
-    if (ImGui::TreeNode("Entity Name"))
+    if (ImGui::TreeNode(m_name.c_str()))
     {
         ImGui::DragFloat3("Position", &m_position.x);
         ImGui::DragFloat3("Scale", &m_scale.x);

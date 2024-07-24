@@ -10,7 +10,7 @@ struct MaterialInstance;
 class Renderable final
 {
   public:
-    Renderable();
+    explicit Renderable(std::string name);
 
     const glm::mat4 Model() const;
     glm::vec3&      Position() { return m_position; }
@@ -30,6 +30,7 @@ class Renderable final
     bool IsValid() const;
 
   private:
+    std::string                       m_name;
     std::shared_ptr<Mesh>             m_mesh{nullptr};
     std::shared_ptr<MaterialInstance> m_material{nullptr};
     u32       m_instanceIndex{0}; // Used to map the model in the StorageBuffer

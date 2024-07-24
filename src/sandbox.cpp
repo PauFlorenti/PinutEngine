@@ -28,15 +28,26 @@ void Sandbox::OnCreate()
 
     auto assetManager = Pinut::AssetManager::Get();
 
-    auto floor = std::make_shared<Pinut::Renderable>();
+    assetManager->LoadAsset("../assets/monkey_smooth.obj", "MonkeySmooth");
+    assetManager->LoadAsset("../assets/viking_room.obj", "VikingRoom");
+
+    auto floor = std::make_shared<Pinut::Renderable>("Floor");
     auto m     = assetManager->GetAsset<Pinut::Mesh>("UnitCube");
     floor->SetMesh(m);
     floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, 0.0f)),
                                glm::vec3(5.0f, 0.5f, 5.0f)));
 
-    auto cube = std::make_shared<Pinut::Renderable>();
-    cube->SetMesh(assetManager->GetAsset<Pinut::Mesh>("UnitCube"));
+    auto cube = std::make_shared<Pinut::Renderable>("Glass plane");
+    cube->SetMesh(assetManager->GetAsset<Pinut::Mesh>("UnitPlane"));
     cube->SetModel(glm::mat4(1.0f));
+
+    auto monkey = std::make_shared<Pinut::Renderable>("Monkey");
+    monkey->SetMesh(assetManager->GetAsset<Pinut::Mesh>("MonkeySmooth"));
+    monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
+
+    auto vikingRoom = std::make_shared<Pinut::Renderable>("VikingRoom");
+    vikingRoom->SetMesh(assetManager->GetAsset<Pinut::Mesh>("VikingRoom"));
+    vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
     u32  whiteData    = 0xFFFFFFFF;
     auto whiteTexture = Pinut::Texture::CreateFromData(1,
@@ -74,8 +85,21 @@ void Sandbox::OnCreate()
                                                                   Pinut::MaterialType::TRANSPARENT,
                                                                   std::move(glassMaterialData));
 
+    auto vikingTexture =
+      Pinut::Texture::CreateFromFile("../assets/texture.png", "VikingRoomDiffuse");
+
+    Pinut::MaterialData vikingMaterialData;
+    vikingMaterialData.color   = whiteData;
+    vikingMaterialData.diffuse = vikingTexture;
+
+    auto vikingMaterial = m_materialManager.CreateMaterialInstance("VikingRoomMaterial",
+                                                                   Pinut::MaterialType::OPAQUE,
+                                                                   std::move(vikingMaterialData));
+
     floor->SetMaterial(whiteMaterial);
     cube->SetMaterial(glassMaterial);
+    monkey->SetMaterial(whiteMaterial);
+    vikingRoom->SetMaterial(vikingMaterial);
 
     Pinut::Light l;
     l.color     = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -92,8 +116,10 @@ void Sandbox::OnCreate()
     m_currentScene = new Pinut::Scene();
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(cube));
+    m_currentScene->AddRenderable(std::move(monkey));
+    m_currentScene->AddRenderable(std::move(vikingRoom));
     m_currentScene->AddLight(l);
-    // m_currentScene->AddLight(l2);
+    m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()

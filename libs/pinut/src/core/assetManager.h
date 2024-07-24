@@ -22,7 +22,7 @@ class AssetManager
     void Init(Device* device);
     void Shutdown();
 
-    void LoadAsset(const std::string& filename);
+    void LoadAsset(const std::string& filename, const std::string& name);
     void RegisterAsset(const std::string& name, std::shared_ptr<Asset> asset);
     void ReleaseAsset(const std::string& name);
 
@@ -45,6 +45,8 @@ class AssetManager
     }
 
   private:
+    void LoadMesh(const std::string& filename, const std::string& name);
+
     Device*                                       m_device{nullptr};
     static AssetManager*                          m_managerInstance;
     std::map<std::string, std::shared_ptr<Asset>> m_assets;
