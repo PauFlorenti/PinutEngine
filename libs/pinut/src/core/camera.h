@@ -18,10 +18,13 @@ class Camera
     const glm::vec3& Forward() const { return m_forward; }
     const glm::vec3& Right() const { return m_right; }
 
+    void UpdateRotation(const f32 deltaTime, const f32 x, const f32 y);
     void UpdateCamera(float yaw, float pitch, float x, float y, float distance);
     void UpdateCameraWASD(const glm::vec3& direction);
 
-    float speed{1.0f};
+    void DrawImGUI();
+
+    float speed{2.0f};
 
   private:
     glm::mat4 m_view = glm::mat4(1.0f);
@@ -29,12 +32,7 @@ class Camera
     glm::vec3 m_position = glm::vec3(0.0f);
     glm::vec3 m_forward  = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 m_right    = glm::vec3(1.0f, 0.0f, 0.0f);
-    /*float fov;
-        float near;
-        float far;*/
 
-    // float yaw{0.0f};
-    // float pitch{0.0f};
-    // float roll{0.0f};
+    f32 m_sensibility = 2.0f;
 };
 } // namespace Pinut

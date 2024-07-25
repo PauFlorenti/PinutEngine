@@ -28,7 +28,6 @@ struct GPUMaterialData
 struct Material
 {
     virtual void BuildPipeline(VkDevice device) = 0;
-    // virtual void CreateMaterialInstance(VkDevice device, MaterialResources* resources);
     virtual void Destroy(VkDevice) = 0;
     void         BindPipeline(VkCommandBuffer cmd);
 

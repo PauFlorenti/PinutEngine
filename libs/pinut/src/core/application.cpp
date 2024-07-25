@@ -49,6 +49,8 @@ i32 Run(Pinut::Application* application)
     glfwSetWindowUserPointer(window, application);
     glfwSetWindowSizeCallback(window, &Pinut::Application::OnWindowResized);
     glfwSetWindowPosCallback(window, &Pinut::Application::OnWindowMoved);
+    glfwSetCursorPosCallback(window, &Pinut::Application::OnMouseMoved);
+    glfwSetScrollCallback(window, &Pinut::Application::OnMouseWheelRolled);
 
     application->Init(window);
     application->OnCreate();
@@ -114,6 +116,24 @@ void Application::OnWindowResized(GLFWwindow* window, int width, int height)
     app->m_height = height;
 
     app->UpdateDisplay();
+}
+
+void Application::OnMouseMoved(GLFWwindow* window, double xpos, double ypos)
+{
+    auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    assert(app != nullptr);
+
+    app->m_mouse.mouseOffset =
+      glm::vec2(xpos - app->m_mouse.mousePosition.x, ypos - app->m_mouse.mousePosition.y);
+    app->m_mouse.mousePosition = glm::vec2(xpos, ypos);
+}
+
+void Application::OnMouseWheelRolled(GLFWwindow* window, double xoffset, double yoffset)
+{
+    auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    assert(app != nullptr);
+
+    app->m_mouse.wheelSteps += yoffset;
 }
 
 void Application::Init(GLFWwindow* window)
@@ -257,7 +277,7 @@ void Application::Render()
     ImGui::Begin("DebugWindow");
     if (ImGui::TreeNode("Renderables"))
     {
-        for (const auto& r : m_currentScene->OpaqueRenderables())
+        for (const auto& r : m_currentScene->Renderables())
         {
             ImGui::PushID(&r);
             r->DrawImGui();
@@ -276,6 +296,12 @@ void Application::Render()
             light.DrawImGUI();
             ImGui::PopID();
         }
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("Camera"))
+    {
+        m_currentCamera->DrawImGUI();
         ImGui::TreePop();
     }
     ImGui::End();

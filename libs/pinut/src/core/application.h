@@ -15,6 +15,13 @@ namespace Pinut
 {
 class Camera;
 class Scene;
+
+struct Mouse
+{
+    glm::vec2 mousePosition = glm::vec2(0.0f);
+    glm::vec2 mouseOffset   = glm::vec2(0.0f);
+    f32       wheelSteps    = 0.0f;
+};
 class Application
 {
   public:
@@ -27,6 +34,8 @@ class Application
 
     static void OnWindowMoved(GLFWwindow* window, int x, int y);
     static void OnWindowResized(GLFWwindow* window, int width, int height);
+    static void OnMouseMoved(GLFWwindow* window, double xpos, double ypos);
+    static void OnMouseWheelRolled(GLFWwindow* window, double xoffset, double yoffset);
 
     void Init(GLFWwindow* window);
     void Shutdown();
@@ -50,6 +59,8 @@ class Application
     Camera*         m_currentCamera = nullptr;
     Scene*          m_currentScene  = nullptr;
     MaterialManager m_materialManager;
+
+    Mouse m_mouse;
 
   private:
     void UpdateDisplay();
