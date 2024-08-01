@@ -22,7 +22,13 @@ AssetManager* AssetManager::Get()
 
 void AssetManager::Init(Device* device) { m_device = device; }
 
-void AssetManager::Shutdown() { m_assets.clear(); }
+void AssetManager::Shutdown()
+{
+    for (auto& asset : m_assets)
+        asset.second->Destroy();
+
+    m_assets.clear();
+}
 
 void AssetManager::LoadAsset(const std::string& filename, const std::string& name)
 {
@@ -75,10 +81,22 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
 
+    //#ifdef _WIN32
+    //    const auto path = filename.substr(filename.find_last_of("\\") + 1);
+    //#else
+    //#endif
+    const auto path = filename.substr(0, filename.find_last_of("/") + 1);
+
     std::string warn;
     std::string err;
-    bool        ret =
-      tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), nullptr, true);
+    bool        ret = tinyobj::LoadObj(&attrib,
+                                &shapes,
+                                &materials,
+                                &warn,
+                                &err,
+                                filename.c_str(),
+                                path.c_str(),
+                                true);
 
     if (!warn.empty())
     {
@@ -102,6 +120,7 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
 
     for (const auto& shape : shapes)
     {
+        Mesh::DrawCall dc;
         for (const auto& index : shape.mesh.indices)
         {
             Vertex vertex{};
@@ -136,5 +155,11 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
     }
 
     Mesh::Create(name, std::move(vertices), std::move(indices));
+
+    // Create material with the same name as mesh
+
+    for (const auto& m : materials)
+    {
+    }
 }
 } // namespace Pinut

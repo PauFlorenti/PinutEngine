@@ -24,24 +24,6 @@ void Renderable::SetModel(glm::mat4 model)
     assert(ok == true);
 }
 
-void Renderable::Draw(VkCommandBuffer cmd) const
-{
-    VkDeviceSize offset{0};
-
-    if (m_mesh->m_indexBuffer.m_buffer != VK_NULL_HANDLE && m_mesh->GetIndexCount() > 0)
-    {
-        vkCmdBindVertexBuffers(cmd, 0, 1, &m_mesh->m_vertexBuffer.m_buffer, &offset);
-        vkCmdBindIndexBuffer(cmd, m_mesh->m_indexBuffer.m_buffer, offset, VK_INDEX_TYPE_UINT16);
-
-        vkCmdDrawIndexed(cmd, m_mesh->GetIndexCount(), 1, 0, 0, m_instanceIndex);
-    }
-    else
-    {
-        vkCmdBindVertexBuffers(cmd, 0, 1, &m_mesh->m_vertexBuffer.m_buffer, &offset);
-        vkCmdDraw(cmd, m_mesh->GetVertexCount(), 1, 0, m_instanceIndex);
-    }
-}
-
 void Renderable::DrawImGui()
 {
     if (ImGui::TreeNode(m_name.c_str()))

@@ -264,11 +264,19 @@ std::shared_ptr<Texture> Texture::CreateFromFile(const std::string& filename,
 void Texture::Destroy()
 {
     vmaDestroyImage(m_device->GetAllocator(), m_image, m_allocation);
+    m_image = VK_NULL_HANDLE;
+
     if (m_imageView)
+    {
         vkDestroyImageView(m_device->GetDevice(), m_imageView, nullptr);
+        m_imageView = VK_NULL_HANDLE;
+    }
 
     if (m_sampler)
+    {
         vkDestroySampler(m_device->GetDevice(), m_sampler, nullptr);
+        m_sampler = VK_NULL_HANDLE;
+    }
 }
 
 } // namespace Pinut

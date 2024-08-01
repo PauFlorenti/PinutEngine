@@ -3,20 +3,41 @@
 #include "mesh.h"
 #include "src/core/assetManager.h"
 #include "src/renderer/device.h"
+#include "src/renderer/renderable.h"
 
 namespace Pinut
 {
-std::shared_ptr<Mesh> Mesh::Create(const std::string&  name,
-                                   std::vector<Vertex> vertices,
-                                   std::vector<u16>    indices)
+
+void Mesh::DrawCall::Draw(VkCommandBuffer cmd) const
+{
+    VkDeviceSize offset{0};
+
+    if (m_indexBuffer->m_buffer != VK_NULL_HANDLE && m_indexCount > 0)
+    {
+        vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &offset);
+        vkCmdBindIndexBuffer(cmd, m_indexBuffer->m_buffer, offset, VK_INDEX_TYPE_UINT16);
+
+        vkCmdDrawIndexed(cmd, m_indexCount, 1, 0, 0, m_owner->InstanceIndex());
+    }
+    else
+    {
+        vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &offset);
+        vkCmdDraw(cmd, m_vertexCount, 1, 0, m_owner->InstanceIndex());
+    }
+}
+
+void Mesh::Create(const std::string& name, std::vector<Vertex> vertices, std::vector<u16> indices)
 {
     auto assetManager = AssetManager::Get();
     auto device       = assetManager->m_device;
     assert(device);
     auto m = std::make_shared<Mesh>();
 
-    m->m_vertexCount = static_cast<u32>(vertices.size());
-    m->m_indexCount  = static_cast<u32>(indices.size());
+    DrawCall dc;
+    dc.m_vertexCount  = static_cast<u32>(vertices.size());
+    dc.m_indexCount   = static_cast<u32>(indices.size());
+    dc.m_vertexOffset = 0;
+    dc.m_indexOffset  = 0;
 
     const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
     const size_t indexBufferSize  = indices.size() * sizeof(uint32_t);
@@ -76,17 +97,40 @@ std::shared_ptr<Mesh> Mesh::Create(const std::string&  name,
         stagingBuffer.Destroy();
     }
 
-    assetManager->RegisterAsset(name, m);
-    return assetManager->GetAsset<Mesh>(name);
+    dc.m_vertexBuffer = std::make_shared<GPUBuffer>(m->m_vertexBuffer);
+    dc.m_indexBuffer  = std::make_shared<GPUBuffer>(m->m_indexBuffer);
+    dc.m_material     = nullptr; // TODO
+    m->m_drawCalls.push_back(dc);
+
+    assetManager->RegisterAsset(name, std::move(m));
+    // return assetManager->GetAsset<Mesh>(name);
 }
 
 void Mesh::Destroy()
 {
     m_vertexBuffer.Destroy();
-    if (m_indexCount > 0)
-        m_indexBuffer.Destroy();
+    m_indexBuffer.Destroy();
+    m_drawCalls.clear();
 }
 
-const u32& Mesh::GetVertexCount() const { return m_vertexCount; }
-const u32& Mesh::GetIndexCount() const { return m_indexCount; }
+const std::vector<std::shared_ptr<MaterialInstance>> Mesh::Materials() const
+{
+    std::vector<std::shared_ptr<MaterialInstance>> materials;
+    for (const auto& dc : m_drawCalls)
+    {
+        if (dc.m_material)
+            materials.push_back(dc.m_material);
+    }
+
+    return materials;
+}
+
+void Mesh::SetMaterial(std::shared_ptr<MaterialInstance> material, u32 slot)
+{
+    assert(m_drawCalls.size() > slot);
+    m_drawCalls.at(slot).m_material = std::move(material);
+}
+
+// const u32& Mesh::GetVertexCount() const { return m_vertexCount; }
+// const u32& Mesh::GetIndexCount() const { return m_indexCount; }
 } // namespace Pinut

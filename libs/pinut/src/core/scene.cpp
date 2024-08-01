@@ -17,17 +17,22 @@ void Scene::AddLight(Light l)
 void Scene::AddRenderable(std::shared_ptr<Renderable> r)
 {
     assert(r);
-
     m_renderables.push_back(r);
 
-    switch (r->Material()->Type())
+    for (auto& dc : r->GetMesh()->DrawCalls())
     {
-        case MaterialType::OPAQUE:
-            m_opaqueRenderables.push_back(r);
-            break;
-        case MaterialType::TRANSPARENT:
-            m_transparentRenderables.push_back(r);
-            break;
+        dc.m_owner = r;
+        switch (dc.m_material->Type())
+        {
+            case MaterialType::OPAQUE:
+                m_opaqueRenderables.push_back(dc);
+                break;
+            case MaterialType::TRANSPARENT:
+                m_transparentRenderables.push_back(dc);
+                break;
+            default:
+                break;
+        }
     }
 }
 

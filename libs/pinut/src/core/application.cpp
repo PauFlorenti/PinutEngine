@@ -133,7 +133,7 @@ void Application::OnMouseWheelRolled(GLFWwindow* window, double xoffset, double 
     auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     assert(app != nullptr);
 
-    app->m_mouse.wheelSteps += yoffset;
+    app->m_mouse.wheelSteps += static_cast<f32>(yoffset);
 }
 
 void Application::Init(GLFWwindow* window)

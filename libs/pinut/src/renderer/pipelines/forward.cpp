@@ -98,7 +98,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
     assert(!renderables.empty());
 
-    const auto opaqueMaterialInstance = renderables.at(0)->Material();
+    const auto opaqueMaterialInstance = renderables.at(0).m_material;
 
     m_descriptorSetManager.Clear();
     opaqueMaterialInstance->BindPipeline(cmd);
@@ -162,30 +162,30 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     // Draw
 
     std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
-    for (auto& r : scene->OpaqueRenderables())
+    for (const auto& dc : scene->OpaqueRenderables())
     {
-        if (currentMaterial != r->Material())
+        if (currentMaterial != dc.m_material)
         {
-            currentMaterial = r->Material();
+            currentMaterial = dc.m_material;
             currentMaterial->Bind(cmd);
         }
 
-        r->Draw(cmd);
+        dc.Draw(cmd);
     }
 
     if (transparentRenderables.empty())
         return;
 
-    transparentRenderables.at(0)->Material()->BindPipeline(cmd);
-    for (auto& r : scene->TransparentRenderables())
+    transparentRenderables.at(0).m_material->BindPipeline(cmd);
+    for (auto& dc : scene->TransparentRenderables())
     {
-        if (currentMaterial != r->Material())
+        if (currentMaterial != dc.m_material)
         {
-            currentMaterial = r->Material();
+            currentMaterial = dc.m_material;
             currentMaterial->Bind(cmd);
         }
 
-        r->Draw(cmd);
+        dc.Draw(cmd);
     }
 }
 } // namespace Pinut

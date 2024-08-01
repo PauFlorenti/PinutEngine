@@ -13,6 +13,7 @@ enum class AssetType
 class Asset
 {
   public:
-    virtual ~Asset() = default;
+    virtual ~Asset()  = default;
+    virtual void Destroy() = 0;
 };
 } // namespace Pinut

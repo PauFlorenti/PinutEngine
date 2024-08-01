@@ -37,7 +37,7 @@ class AssetManager
             std::shared_ptr<Asset> asset        = it->second;
             std::shared_ptr<T>     assetDerived = std::dynamic_pointer_cast<T>(asset);
             if (assetDerived)
-                return assetDerived;
+                return std::make_shared<T>(*assetDerived);
         }
 
         printf("[ERROR]: Asset not registered in AssetManager. Could not retrieve it.");

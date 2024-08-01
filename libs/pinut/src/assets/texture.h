@@ -26,7 +26,7 @@ class Texture final : public Asset
                                                         VkExtent2D      srcExtent,
                                                         VkExtent2D      dstExtent);
 
-    ~Texture() { Destroy(); }
+    ~Texture() {}
 
     void                            Create(Device* device, const VkImageCreateInfo& info);
     static std::shared_ptr<Texture> CreateFromData(const u32          width,
@@ -38,7 +38,7 @@ class Texture final : public Asset
                                                    const std::string& name = "");
     static std::shared_ptr<Texture> CreateFromFile(const std::string& filename,
                                                    const std::string& name = "");
-    void                            Destroy();
+    void                            Destroy() override;
 
     VkImage     Image() const { return m_image; }
     VkImageView ImageView() const { return m_imageView; }

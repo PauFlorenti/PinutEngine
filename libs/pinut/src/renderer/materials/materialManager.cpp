@@ -12,10 +12,11 @@ void MaterialManager::Init(Device* device)
     m_device = device->GetDevice();
 
     std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4},
-      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10},
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
     };
-    m_descriptorSetManager.OnCreate(m_device, 3, 3, std::move(descriptorPoolSizes));
+    m_descriptorSetManager.OnCreate(m_device, 3, 10, std::move(descriptorPoolSizes));
 
     m_materialBuffer.Create(device,
                             sizeof(u32) * MAX_MATERIALS,
@@ -41,7 +42,9 @@ std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const 
     {
         printf("[WARN]: Trying to create materials that already exists with this name %s",
                name.c_str());
-        return it->second;
+
+        auto mi = std::make_shared<MaterialInstance>(*it->second);
+        return mi;
     }
 
     switch (type)
@@ -55,7 +58,7 @@ std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const 
                                                               m_descriptorSetManager);
             m_materials[name] = mi;
             m_materialCount++;
-            return mi;
+            return std::make_shared<MaterialInstance>(*mi);
             break;
         }
         case MaterialType::TRANSPARENT:
@@ -67,7 +70,7 @@ std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const 
                                                                    m_descriptorSetManager);
             m_materials[name] = mi;
             m_materialCount++;
-            return mi;
+            return std::make_shared<MaterialInstance>(*mi);
             break;
         }
 

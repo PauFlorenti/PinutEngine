@@ -8,8 +8,10 @@
 
 namespace Pinut
 {
-class Device;
 class AssetManager;
+class Device;
+class Renderable;
+struct MaterialInstance;
 struct Vertex
 {
     glm::vec3 position;
@@ -28,23 +30,38 @@ struct Vertex
 class Mesh final : public Asset
 {
   public:
-    static std::shared_ptr<Mesh> Create(const std::string&  name,
-                                        std::vector<Vertex> vertices,
-                                        std::vector<u16>    indices);
+    struct DrawCall
+    {
+        u32                               m_vertexCount;
+        u32                               m_indexCount;
+        u32                               m_vertexOffset;
+        u32                               m_indexOffset;
+        std::shared_ptr<MaterialInstance> m_material;
+        std::shared_ptr<GPUBuffer>        m_vertexBuffer;
+        std::shared_ptr<GPUBuffer>        m_indexBuffer;
+        std::shared_ptr<Renderable>       m_owner;
+
+        void Draw(VkCommandBuffer cmd) const;
+    };
+
+    static void Create(const std::string&  name,
+                       std::vector<Vertex> vertices,
+                       std::vector<u16>    indices);
 
     Mesh() = default;
-    ~Mesh() { Destroy(); }
-    void Destroy();
+    ~Mesh() {}
+    void Destroy() override;
 
-    const u32& GetVertexCount() const;
-    const u32& GetIndexCount() const;
+    const std::vector<std::shared_ptr<MaterialInstance>> Materials() const;
+    std::vector<DrawCall>&                               DrawCalls() { return m_drawCalls; };
+
+    void SetMaterial(std::shared_ptr<MaterialInstance> material, u32 slot = 0);
 
     GPUBuffer m_vertexBuffer;
     GPUBuffer m_indexBuffer;
 
   private:
-    u32 m_vertexCount;
-    u32 m_indexCount;
+    std::vector<DrawCall> m_drawCalls;
 };
 } // namespace Pinut
 
