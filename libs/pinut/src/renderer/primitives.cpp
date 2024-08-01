@@ -8,8 +8,10 @@ namespace Pinut
 {
 namespace Primitives
 {
-void CreateUnitPlane()
+std::shared_ptr<Mesh> CreateUnitPlane(Device* device)
 {
+    assert(device);
+
     std::vector<Vertex> vertices = {
       {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, glm::vec4(1.0f), {0.0f, 1.0f}},
       {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, glm::vec4(1.0f), {1.0f, 1.0f}},
@@ -19,11 +21,13 @@ void CreateUnitPlane()
 
     std::vector<uint16_t> indices = {0, 1, 3, 3, 1, 2};
 
-    Mesh::Create("UnitPlane", std::move(vertices), std::move(indices));
+    return Mesh::Create(device, std::move(vertices), std::move(indices));
 }
 
-void CreateUnitCube()
+std::shared_ptr<Mesh> CreateUnitCube(Device* device)
 {
+    assert(device);
+
     // clang-format off
     std::vector<Vertex> vertices = {
         //Top
@@ -89,16 +93,16 @@ void CreateUnitCube()
         22, 23, 21 };
     // clang-format on
 
-    Mesh::Create("UnitCube", std::move(vertices), std::move(indices));
+    return Mesh::Create(device, std::move(vertices), std::move(indices));
 }
 
-std::shared_ptr<Mesh> GetUnitPlane() { return AssetManager::Get()->GetAsset<Mesh>("UnitPlane"); }
-std::shared_ptr<Mesh> GetUnitCube() { return AssetManager::Get()->GetAsset<Mesh>("UnitCube"); }
-
-void InitializeDefaultPrimitives()
+void InitializeDefaultPrimitives(Device* device, const std::shared_ptr<AssetManager>& assetManager)
 {
-    CreateUnitPlane();
-    CreateUnitCube();
+    assert(device);
+    assert(assetManager);
+
+    assetManager->RegisterAsset("UnitPlane", CreateUnitPlane(device));
+    assetManager->RegisterAsset("UnitCube", CreateUnitCube(device));
 }
 } // namespace Primitives
 } // namespace Pinut

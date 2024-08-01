@@ -29,15 +29,14 @@ class Texture final : public Asset
     ~Texture() {}
 
     void                            Create(Device* device, const VkImageCreateInfo& info);
-    static std::shared_ptr<Texture> CreateFromData(const u32          width,
-                                                   const u32          height,
-                                                   const u32          channels,
-                                                   VkFormat           format,
-                                                   VkImageUsageFlags  usage,
-                                                   void*              data,
-                                                   const std::string& name = "");
-    static std::shared_ptr<Texture> CreateFromFile(const std::string& filename,
-                                                   const std::string& name = "");
+    static std::shared_ptr<Texture> CreateFromData(const u32         width,
+                                                   const u32         height,
+                                                   const u32         channels,
+                                                   VkFormat          format,
+                                                   VkImageUsageFlags usage,
+                                                   void*             data,
+                                                   Device*           device);
+    static std::shared_ptr<Texture> CreateFromFile(const std::string& filename, Device* device);
     void                            Destroy() override;
 
     VkImage     Image() const { return m_image; }

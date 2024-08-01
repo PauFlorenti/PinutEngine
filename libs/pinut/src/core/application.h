@@ -1,5 +1,6 @@
 #pragma once
 
+#include "src/core/assetManager.h"
 #include "src/renderer/commandBufferManager.h"
 #include "src/renderer/descriptorSetManager.h"
 #include "src/renderer/device.h"
@@ -50,15 +51,32 @@ class Application
     Camera* GetCamera();
 
   protected:
+    template <typename T>
+    std::shared_ptr<T> GetAsset(const std::string& name)
+    {
+        return m_assetManager->GetAsset<T>(name);
+    }
+
+    std::shared_ptr<Texture> CreateTextureFromData(const u32          width,
+                                                   const u32          height,
+                                                   const u32          channels,
+                                                   VkFormat           format,
+                                                   VkImageUsageFlags  usage,
+                                                   void*              data,
+                                                   const std::string& name = "");
+    std::shared_ptr<Texture> CreateTextureFromFile(const std::string& filename,
+                                                   const std::string& name = "");
+
     std::string m_name;
     u32         m_width;
     u32         m_height;
 
     GLFWwindow* m_window{nullptr};
 
-    Camera*         m_currentCamera = nullptr;
-    Scene*          m_currentScene  = nullptr;
-    MaterialManager m_materialManager;
+    Camera*                       m_currentCamera = nullptr;
+    Scene*                        m_currentScene  = nullptr;
+    MaterialManager               m_materialManager;
+    std::shared_ptr<AssetManager> m_assetManager;
 
     Mouse m_mouse;
 

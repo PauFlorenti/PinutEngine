@@ -8,19 +8,18 @@
 #include "src/assets/mesh.h"
 #include "src/core/assetManager.h"
 #include "src/renderer/device.h"
+#include "src/renderer/materials/material.h"
+#include "src/renderer/materials/materialManager.h"
 
 namespace Pinut
 {
-AssetManager* AssetManager::m_managerInstance = nullptr;
-AssetManager* AssetManager::Get()
+void AssetManager::Init(Device* device, std::shared_ptr<MaterialManager> materialManager)
 {
-    if (!m_managerInstance)
-        m_managerInstance = new AssetManager();
-
-    return m_managerInstance;
+    assert(device);
+    assert(materialManager);
+    m_device          = device;
+    m_materialManager = materialManager;
 }
-
-void AssetManager::Init(Device* device) { m_device = device; }
 
 void AssetManager::Shutdown()
 {
@@ -81,10 +80,6 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
 
-    //#ifdef _WIN32
-    //    const auto path = filename.substr(filename.find_last_of("\\") + 1);
-    //#else
-    //#endif
     const auto path = filename.substr(0, filename.find_last_of("/") + 1);
 
     std::string warn;
@@ -114,13 +109,46 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
         return;
     }
 
-    std::unordered_map<Vertex, u32> uniqueVertices{};
-    std::vector<Vertex>             vertices;
-    std::vector<u16>                indices;
+    assert(!attrib.GetVertices().empty());
+    assert(attrib.GetVertices().size() % 3 == 0);
+
+    u64 indexCount = 0;
+    for (const auto& s : shapes)
+    {
+        indexCount += s.mesh.indices.size();
+    }
+    const u64 vertexCount      = attrib.GetVertices().size() / 3;
+    const u64 vertexBufferSize = sizeof(Vertex) * vertexCount;
+    const u64 indexBufferSize  = sizeof(u16) * indexCount;
+
+    auto mesh = std::make_shared<Mesh>();
+    mesh->m_vertexBuffer.Create(m_device,
+                                vertexBufferSize,
+                                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+    mesh->m_indexBuffer.Create(m_device,
+                               indexBufferSize,
+                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                               VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
+    GPUBuffer stagingBuffer;
+    stagingBuffer.Create(m_device,
+                         vertexBufferSize + indexBufferSize,
+                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+
+    u64       vertexOffset = 0;
+    u64       indexOffset  = indexBufferSize;
+    const u8* stagingData  = static_cast<u8*>(stagingBuffer.AllocationInfo().pMappedData);
 
     for (const auto& shape : shapes)
     {
-        Mesh::DrawCall dc;
+        std::unordered_map<Vertex, u32> uniqueVertices{};
+        std::vector<Vertex>             vertices;
+        std::vector<u16>                indices;
+        Mesh::DrawCall                  dc;
+
         for (const auto& index : shape.mesh.indices)
         {
             Vertex vertex{};
@@ -152,14 +180,44 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
 
             indices.push_back(static_cast<u16>(uniqueVertices[vertex]));
         }
+
+        const auto vertexData     = stagingData + vertexOffset;
+        const auto indexData      = stagingData + indexOffset;
+        const u64  vertexDataSize = vertices.size() * sizeof(Vertex);
+        const u64  indexDataSize  = indices.size() * sizeof(u16);
+        memcpy((void*)vertexData, vertices.data(), vertexDataSize);
+        memcpy((void*)indexData, indices.data(), indexDataSize);
+
+        dc.m_vertexBuffer = std::make_shared<GPUBuffer>(mesh->m_vertexBuffer);
+        dc.m_vertexCount  = static_cast<u32>(vertices.size());
+        dc.m_vertexOffset = vertexOffset;
+
+        dc.m_indexBuffer = std::make_shared<GPUBuffer>(mesh->m_indexBuffer);
+        dc.m_indexCount  = static_cast<u32>(indices.size());
+        dc.m_indexOffset = indexOffset;
+
+        vertexOffset = vertexDataSize;
+        indexOffset  = indexDataSize;
+
+        const auto it = std::find_if(materials.begin(),
+                                     materials.end(),
+                                     [&shape](tinyobj::material_t m)
+                                     {
+                                         return m.name == shape.name;
+                                     });
+
+        if (it == materials.end())
+            continue;
+
+        MaterialData materialData;
+        // materialData.color = glm::vec3(it->diffuse[0], it->diffuse[1], it->diffuse[2]);
+
+        auto mi       = m_materialManager->CreateMaterialInstance(it->name,
+                                                            Pinut::MaterialType::OPAQUE,
+                                                            std::move(materialData));
+        dc.m_material = std::move(mi);
     }
 
-    Mesh::Create(name, std::move(vertices), std::move(indices));
-
-    // Create material with the same name as mesh
-
-    for (const auto& m : materials)
-    {
-    }
+    RegisterAsset(name, std::move(mesh));
 }
 } // namespace Pinut

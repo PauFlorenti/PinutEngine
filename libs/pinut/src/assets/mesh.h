@@ -34,8 +34,8 @@ class Mesh final : public Asset
     {
         u32                               m_vertexCount;
         u32                               m_indexCount;
-        u32                               m_vertexOffset;
-        u32                               m_indexOffset;
+        u64                               m_vertexOffset;
+        u64                               m_indexOffset;
         std::shared_ptr<MaterialInstance> m_material;
         std::shared_ptr<GPUBuffer>        m_vertexBuffer;
         std::shared_ptr<GPUBuffer>        m_indexBuffer;
@@ -44,9 +44,9 @@ class Mesh final : public Asset
         void Draw(VkCommandBuffer cmd) const;
     };
 
-    static void Create(const std::string&  name,
-                       std::vector<Vertex> vertices,
-                       std::vector<u16>    indices);
+    static std::shared_ptr<Mesh> Create(Device*             device,
+                                        std::vector<Vertex> vertices,
+                                        std::vector<u16>    indices);
 
     Mesh() = default;
     ~Mesh() {}

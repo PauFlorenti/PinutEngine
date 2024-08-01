@@ -6,6 +6,7 @@ namespace Pinut
 {
 class Asset;
 class Device;
+class MaterialManager;
 class Mesh;
 class Texture;
 class AssetManager
@@ -17,9 +18,7 @@ class AssetManager
     AssetManager()  = default;
     ~AssetManager() = default;
 
-    static AssetManager* Get();
-
-    void Init(Device* device);
+    void Init(Device* device, std::shared_ptr<MaterialManager> materialManager);
     void Shutdown();
 
     void LoadAsset(const std::string& filename, const std::string& name);
@@ -48,7 +47,7 @@ class AssetManager
     void LoadMesh(const std::string& filename, const std::string& name);
 
     Device*                                       m_device{nullptr};
-    static AssetManager*                          m_managerInstance;
+    std::shared_ptr<MaterialManager>              m_materialManager;
     std::map<std::string, std::shared_ptr<Asset>> m_assets;
 };
 } // namespace Pinut

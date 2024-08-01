@@ -16,6 +16,7 @@ u32 constexpr MAX_MATERIALS = 1000;
 class MaterialManager
 {
   public:
+    ~MaterialManager(){};
     void                              Init(Device* device);
     void                              Shutdown();
     std::shared_ptr<MaterialInstance> CreateMaterialInstance(const std::string& name,

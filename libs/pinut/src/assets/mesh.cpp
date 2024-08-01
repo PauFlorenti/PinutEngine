@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
 #include "mesh.h"
-#include "src/core/assetManager.h"
 #include "src/renderer/device.h"
 #include "src/renderer/renderable.h"
 
@@ -26,11 +25,10 @@ void Mesh::DrawCall::Draw(VkCommandBuffer cmd) const
     }
 }
 
-void Mesh::Create(const std::string& name, std::vector<Vertex> vertices, std::vector<u16> indices)
+std::shared_ptr<Mesh> Mesh::Create(Device*             device,
+                                   std::vector<Vertex> vertices,
+                                   std::vector<u16>    indices)
 {
-    auto assetManager = AssetManager::Get();
-    auto device       = assetManager->m_device;
-    assert(device);
     auto m = std::make_shared<Mesh>();
 
     DrawCall dc;
@@ -102,8 +100,7 @@ void Mesh::Create(const std::string& name, std::vector<Vertex> vertices, std::ve
     dc.m_material     = nullptr; // TODO
     m->m_drawCalls.push_back(dc);
 
-    assetManager->RegisterAsset(name, std::move(m));
-    // return assetManager->GetAsset<Mesh>(name);
+    return m;
 }
 
 void Mesh::Destroy()
@@ -130,7 +127,4 @@ void Mesh::SetMaterial(std::shared_ptr<MaterialInstance> material, u32 slot)
     assert(m_drawCalls.size() > slot);
     m_drawCalls.at(slot).m_material = std::move(material);
 }
-
-// const u32& Mesh::GetVertexCount() const { return m_vertexCount; }
-// const u32& Mesh::GetIndexCount() const { return m_indexCount; }
 } // namespace Pinut

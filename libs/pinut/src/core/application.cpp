@@ -7,7 +7,6 @@
 #include "application.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
-#include "src/core/assetManager.h"
 #include "src/core/camera.h"
 #include "src/core/light.h"
 #include "src/core/scene.h"
@@ -155,9 +154,11 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
-    AssetManager::Get()->Init(&m_device);
-    Primitives::InitializeDefaultPrimitives();
     m_materialManager.Init(&m_device);
+
+    m_assetManager = std::make_shared<AssetManager>();
+    m_assetManager->Init(&m_device, std::make_shared<MaterialManager>(m_materialManager));
+    Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
 
     UpdateDisplay();
@@ -179,7 +180,7 @@ void Application::Shutdown()
     m_imgui.Shutdown();
 #endif
 
-    AssetManager::Get()->Shutdown();
+    m_assetManager->Shutdown();
     m_materialManager.Shutdown();
     m_forwardPipeline.Shutdown();
     m_commandBufferManager.OnDestroy();
@@ -353,5 +354,28 @@ Camera* Application::GetCamera()
         m_currentCamera = new Camera();
 
     return m_currentCamera;
+}
+
+std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          width,
+                                                            const u32          height,
+                                                            const u32          channels,
+                                                            VkFormat           format,
+                                                            VkImageUsageFlags  usage,
+                                                            void*              data,
+                                                            const std::string& name)
+{
+    const auto t = Texture::CreateFromData(width, height, channels, format, usage, data, &m_device);
+    m_assetManager->RegisterAsset(name, t);
+
+    return t;
+}
+
+std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& filename,
+                                                            const std::string& name)
+{
+    const auto t = Texture::CreateFromFile(filename, &m_device);
+    m_assetManager->RegisterAsset(name, t);
+
+    return t;
 }
 } // namespace Pinut

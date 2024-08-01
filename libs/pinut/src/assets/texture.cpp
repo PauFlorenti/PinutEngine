@@ -3,7 +3,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-#include "src/core/assetManager.h"
 #include "src/renderer/buffer.h"
 #include "src/renderer/device.h"
 #include "texture.h"
@@ -133,17 +132,16 @@ void Texture::Create(Device* device, const VkImageCreateInfo& info)
     assert(ok == VK_SUCCESS);
 }
 
-std::shared_ptr<Texture> Texture::CreateFromData(const u32          width,
-                                                 const u32          height,
-                                                 const u32          channels,
-                                                 VkFormat           format,
-                                                 VkImageUsageFlags  usage,
-                                                 void*              data,
-                                                 const std::string& name)
+std::shared_ptr<Texture> Texture::CreateFromData(const u32         width,
+                                                 const u32         height,
+                                                 const u32         channels,
+                                                 VkFormat          format,
+                                                 VkImageUsageFlags usage,
+                                                 void*             data,
+                                                 Device*           device)
 {
-    auto       assetManager = AssetManager::Get();
-    const auto device       = assetManager->m_device;
-    auto       t            = std::make_shared<Texture>();
+    assert(device);
+    auto t = std::make_shared<Texture>();
 
     VkImageCreateInfo info{
       .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -234,13 +232,10 @@ std::shared_ptr<Texture> Texture::CreateFromData(const u32          width,
     assert(ok == VK_SUCCESS);
 
     t->SetSampler(std::move(sampler));
-
-    assetManager->RegisterAsset(name, t);
-    return assetManager->GetAsset<Texture>(name);
+    return t;
 }
 
-std::shared_ptr<Texture> Texture::CreateFromFile(const std::string& filename,
-                                                 const std::string& name)
+std::shared_ptr<Texture> Texture::CreateFromFile(const std::string& filename, Device* device)
 {
     int32_t  w, h, channels;
     stbi_uc* pixels = stbi_load(filename.c_str(), &w, &h, &channels, STBI_rgb_alpha);
@@ -254,7 +249,7 @@ std::shared_ptr<Texture> Texture::CreateFromFile(const std::string& filename,
                             VK_FORMAT_R8G8B8A8_SRGB,
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                             pixels,
-                            name);
+                            std::move(device));
 
     stbi_image_free(pixels);
 

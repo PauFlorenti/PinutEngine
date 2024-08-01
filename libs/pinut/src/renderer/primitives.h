@@ -2,16 +2,14 @@
 
 namespace Pinut
 {
+class AssetManager;
 class Mesh;
-
+class Device;
 namespace Primitives
 {
-static void CreateUnitPlane();
-static void CreateUnitCube();
+static std::shared_ptr<Mesh> CreateUnitPlane();
+static std::shared_ptr<Mesh> CreateUnitCube();
 
-std::shared_ptr<Mesh> GetUnitPlane();
-std::shared_ptr<Mesh> GetUnitCube();
-
-void InitializeDefaultPrimitives();
+void InitializeDefaultPrimitives(Device* device, const std::shared_ptr<AssetManager>& assetManager);
 } // namespace Primitives
 } // namespace Pinut

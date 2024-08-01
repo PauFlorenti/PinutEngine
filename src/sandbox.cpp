@@ -5,7 +5,6 @@
 #include "sandbox.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
-#include "src/core/assetManager.h"
 #include "src/core/camera.h"
 #include "src/core/scene.h"
 #include "src/renderer/materials/opaqueMaterial.h"
@@ -18,7 +17,7 @@ int main()
     return 0;
 }
 
-Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};
+Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
 
 void Sandbox::OnCreate()
 {
@@ -29,25 +28,25 @@ void Sandbox::OnCreate()
     // ------------------
     // Creating materials
     // ------------------
-    u32  whiteData    = 0xFFFFFFFF;
-    auto whiteTexture = Pinut::Texture::CreateFromData(1,
-                                                       1,
-                                                       4,
-                                                       VK_FORMAT_R8G8B8A8_SRGB,
-                                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                                         VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                       &whiteData,
-                                                       "WhiteTexture");
+    u32  whiteData = 0xFFFFFFFF;
+    auto whiteTexture =
+      CreateTextureFromData(1,
+                            1,
+                            4,
+                            VK_FORMAT_R8G8B8A8_SRGB,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                            &whiteData,
+                            "WhiteTexture");
 
-    u32  redColor   = 0xFF0000FF;
-    auto redTexture = Pinut::Texture::CreateFromData(1,
-                                                     1,
-                                                     4,
-                                                     VK_FORMAT_R8G8B8A8_SRGB,
-                                                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                                       VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                     &redColor,
-                                                     "RedTexture");
+    u32  redColor = 0xFF0000FF;
+    auto redTexture =
+      CreateTextureFromData(1,
+                            1,
+                            4,
+                            VK_FORMAT_R8G8B8A8_SRGB,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                            &redColor,
+                            "RedTexture");
 
     Pinut::MaterialData whiteMaterialData;
     whiteMaterialData.color   = whiteData;
@@ -73,8 +72,7 @@ void Sandbox::OnCreate()
                                                                   std::move(glassMaterialData));
 
     auto vikingTexture =
-      Pinut::Texture::CreateFromFile("../assets/viking_room/viking_room_diffuse.png",
-                                     "VikingRoomDiffuse");
+      CreateTextureFromFile("../assets/viking_room/viking_room_diffuse.png", "VikingRoomDiffuse");
 
     Pinut::MaterialData vikingMaterialData;
     vikingMaterialData.color   = whiteData;
@@ -87,27 +85,27 @@ void Sandbox::OnCreate()
     // ------------------
     // Loading assets
     // ------------------
-    auto assetManager = Pinut::AssetManager::Get();
+    // auto assetManager = Pinut::AssetManager::Get();
 
-    assetManager->LoadAsset("../assets/monkey_smooth/suzanne.obj", "Suzanne");
+    // assetManager->LoadAsset("../assets/monkey_smooth/suzanne.obj", "Suzanne");
     // assetManager->LoadAsset("../assets/viking_room/viking_room.obj", "VikingRoom");
     // assetManager->LoadAsset("../assets/cornell_box/cornell_box.obj", "CornellBox");
 
     auto floor = std::make_shared<Pinut::Renderable>("Floor");
-    auto m     = assetManager->GetAsset<Pinut::Mesh>("UnitCube");
+    auto m     = GetAsset<Pinut::Mesh>("UnitCube");
     m->SetMaterial(whiteMaterial);
     floor->SetMesh(std::move(m));
     floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, 0.0f)),
                                glm::vec3(5.0f, 0.5f, 5.0f)));
 
     auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
-    auto planeMesh  = assetManager->GetAsset<Pinut::Mesh>("UnitPlane");
+    auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
     planeMesh->SetMaterial(glassMaterial);
     glassPlane->SetMesh(std::move(planeMesh));
     glassPlane->SetModel(glm::mat4(1.0f));
 
     auto cube    = std::make_shared<Pinut::Renderable>("Cube");
-    auto redCube = assetManager->GetAsset<Pinut::Mesh>("UnitCube");
+    auto redCube = GetAsset<Pinut::Mesh>("UnitCube");
     redCube->SetMaterial(redMaterial);
     cube->SetMesh(std::move(redCube));
     cube->SetModel(glm::mat4(1.0f));
