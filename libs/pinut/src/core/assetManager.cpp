@@ -230,7 +230,7 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
         dc.m_indexOffset = indexOffset;
 
         vertexOffset += vertexDataSize;
-        indexOffset  += indexDataSize;
+        indexOffset += indexDataSize;
 
         const auto it = std::find_if(materials.begin(),
                                      materials.end(),
@@ -275,6 +275,8 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
     m_device->FlushCommandBuffer(cmd);
 
     RegisterAsset(name, mesh);
+
+    stagingBuffer.Destroy();
 
     return mesh;
 }

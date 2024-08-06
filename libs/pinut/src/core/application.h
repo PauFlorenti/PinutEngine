@@ -54,7 +54,7 @@ class Application
     template <typename T>
     std::shared_ptr<T> GetAsset(const std::string& name)
     {
-        return m_assetManager->GetAsset<T>(name);
+        return m_assetManager.GetAsset<T>(name);
     }
 
     std::shared_ptr<Texture> CreateTextureFromData(const u32          width,
