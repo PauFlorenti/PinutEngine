@@ -6,6 +6,7 @@
 
 #include "src/assets/asset.h"
 #include "src/assets/mesh.h"
+#include "src/assets/texture.h"
 #include "src/core/assetManager.h"
 #include "src/renderer/device.h"
 #include "src/renderer/materials/material.h"
@@ -19,6 +20,9 @@ void AssetManager::Init(Device* device, std::shared_ptr<MaterialManager> materia
     assert(materialManager);
     m_device          = device;
     m_materialManager = materialManager;
+
+    // Setting potential asset paths
+    m_assetsPath = std::filesystem::current_path().parent_path() / std::filesystem::path("assets");
 }
 
 void AssetManager::Shutdown()
@@ -29,20 +33,45 @@ void AssetManager::Shutdown()
     m_assets.clear();
 }
 
-void AssetManager::LoadAsset(const std::string& filename, const std::string& name)
+std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
+                                               const std::string&    name)
 {
     assert(!filename.empty());
 
-    std::filesystem::path p(filename);
-
-    if (p.extension() == ".obj")
+    if (!filename.has_extension())
     {
-        LoadMesh(filename, name);
+        printf("[ERROR]: File provided has no extension.");
+        return nullptr;
+    }
+
+    bool                  found{false};
+    std::filesystem::path absolutePath;
+    for (const auto& rootPath : std::filesystem::recursive_directory_iterator(m_assetsPath))
+    {
+        if (rootPath.path().filename() == filename.filename())
+        {
+            absolutePath = rootPath.path();
+            found        = true;
+            break;
+        }
+    }
+
+    if (!found)
+        return nullptr;
+
+    if (absolutePath.extension() == ".obj")
+    {
+        if (auto mesh = LoadMesh(std::move(absolutePath), name))
+        {
+            return mesh;
+        }
     }
     else
     {
         printf("[ERROR]: Unknown extension file.");
     }
+
+    return nullptr;
 }
 
 void AssetManager::RegisterAsset(const std::string& name, std::shared_ptr<Asset> asset)
@@ -74,13 +103,15 @@ void AssetManager::ReleaseAsset(const std::string& name)
     it->second.reset();
 }
 
-void AssetManager::LoadMesh(const std::string& filename, const std::string& name)
+std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
+                                             const std::string&    name)
 {
     tinyobj::attrib_t                attrib;
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
 
-    const auto path = filename.substr(0, filename.find_last_of("/") + 1);
+    const auto absoluteFilename = std::filesystem::absolute(filename).string();
+    const auto absolutePath     = std::filesystem::absolute(filename.parent_path()).string();
 
     std::string warn;
     std::string err;
@@ -89,8 +120,8 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
                                 &materials,
                                 &warn,
                                 &err,
-                                filename.c_str(),
-                                path.c_str(),
+                                absoluteFilename.c_str(),
+                                absolutePath.c_str(),
                                 true);
 
     if (!warn.empty())
@@ -101,12 +132,13 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
     if (!err.empty())
     {
         printf("[ERROR]: %s\n", err.c_str());
+        return nullptr;
     }
 
     if (!ret)
     {
         printf("Failed to load/parse .obj.\n");
-        return;
+        return nullptr;
     }
 
     assert(!attrib.GetVertices().empty());
@@ -117,7 +149,7 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
     {
         indexCount += s.mesh.indices.size();
     }
-    const u64 vertexCount      = attrib.GetVertices().size() / 3;
+    const u64 vertexCount      = attrib.GetVertices().size();
     const u64 vertexBufferSize = sizeof(Vertex) * vertexCount;
     const u64 indexBufferSize  = sizeof(u16) * indexCount;
 
@@ -138,13 +170,14 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                          VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
-    u64       vertexOffset = 0;
-    u64       indexOffset  = indexBufferSize;
-    const u8* stagingData  = static_cast<u8*>(stagingBuffer.AllocationInfo().pMappedData);
+    u64  vertexOffset = 0;
+    u64  indexOffset  = vertexBufferSize;
+    auto stagingData  = static_cast<u8*>(stagingBuffer.AllocationInfo().pMappedData);
+    memset(stagingData, 0, vertexBufferSize + indexBufferSize);
 
     for (const auto& shape : shapes)
     {
-        std::unordered_map<Vertex, u32> uniqueVertices{};
+        std::unordered_map<Vertex, u16> uniqueVertices{};
         std::vector<Vertex>             vertices;
         std::vector<u16>                indices;
         Mesh::DrawCall                  dc;
@@ -181,12 +214,12 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
             indices.push_back(static_cast<u16>(uniqueVertices[vertex]));
         }
 
-        const auto vertexData     = stagingData + vertexOffset;
-        const auto indexData      = stagingData + indexOffset;
-        const u64  vertexDataSize = vertices.size() * sizeof(Vertex);
-        const u64  indexDataSize  = indices.size() * sizeof(u16);
-        memcpy((void*)vertexData, vertices.data(), vertexDataSize);
-        memcpy((void*)indexData, indices.data(), indexDataSize);
+        auto      vertexData     = stagingData + vertexOffset;
+        auto      indexData      = stagingData + indexOffset;
+        const u64 vertexDataSize = vertices.size() * sizeof(Vertex);
+        const u64 indexDataSize  = indices.size() * sizeof(u16);
+        memcpy(vertexData, vertices.data(), vertexDataSize);
+        memcpy(indexData, indices.data(), indexDataSize);
 
         dc.m_vertexBuffer = std::make_shared<GPUBuffer>(mesh->m_vertexBuffer);
         dc.m_vertexCount  = static_cast<u32>(vertices.size());
@@ -196,8 +229,8 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
         dc.m_indexCount  = static_cast<u32>(indices.size());
         dc.m_indexOffset = indexOffset;
 
-        vertexOffset = vertexDataSize;
-        indexOffset  = indexDataSize;
+        vertexOffset += vertexDataSize;
+        indexOffset  += indexDataSize;
 
         const auto it = std::find_if(materials.begin(),
                                      materials.end(),
@@ -206,18 +239,43 @@ void AssetManager::LoadMesh(const std::string& filename, const std::string& name
                                          return m.name == shape.name;
                                      });
 
-        if (it == materials.end())
-            continue;
+        //if (it == materials.end())
+        //{
+        //    mesh->DrawCalls().push_back(dc);
+        //    continue;
+        //}
 
         MaterialData materialData;
         // materialData.color = glm::vec3(it->diffuse[0], it->diffuse[1], it->diffuse[2]);
+        materialData.diffuse = GetAsset<Texture>("PinutWhite");
 
-        auto mi       = m_materialManager->CreateMaterialInstance(it->name,
+        auto mi       = m_materialManager->CreateMaterialInstance(name + "MAT",
                                                             Pinut::MaterialType::OPAQUE,
                                                             std::move(materialData));
         dc.m_material = std::move(mi);
+
+        mesh->DrawCalls().push_back(dc);
     }
 
-    RegisterAsset(name, std::move(mesh));
+    VkBufferCopy vertexRegion{
+      .srcOffset = 0,
+      .dstOffset = 0,
+      .size      = vertexBufferSize,
+    };
+
+    VkBufferCopy indexRegion{
+      .srcOffset = vertexBufferSize,
+      .dstOffset = 0,
+      .size      = indexBufferSize,
+    };
+
+    auto cmd = m_device->CreateImmediateCommandBuffer();
+    vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, mesh->m_vertexBuffer.m_buffer, 1, &vertexRegion);
+    vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, mesh->m_indexBuffer.m_buffer, 1, &indexRegion);
+    m_device->FlushCommandBuffer(cmd);
+
+    RegisterAsset(name, mesh);
+
+    return mesh;
 }
 } // namespace Pinut

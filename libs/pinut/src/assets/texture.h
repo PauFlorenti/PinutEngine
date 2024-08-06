@@ -26,7 +26,7 @@ class Texture final : public Asset
                                                         VkExtent2D      srcExtent,
                                                         VkExtent2D      dstExtent);
 
-    ~Texture() {}
+    ~Texture() = default;
 
     void                            Create(Device* device, const VkImageCreateInfo& info);
     static std::shared_ptr<Texture> CreateFromData(const u32         width,

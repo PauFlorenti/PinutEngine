@@ -36,7 +36,7 @@ void Sandbox::OnCreate()
                             VK_FORMAT_R8G8B8A8_SRGB,
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                             &whiteData,
-                            "WhiteTexture");
+                            "PinutWhite");
 
     u32  redColor = 0xFF0000FF;
     auto redTexture =
@@ -46,7 +46,7 @@ void Sandbox::OnCreate()
                             VK_FORMAT_R8G8B8A8_SRGB,
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                             &redColor,
-                            "RedTexture");
+                            "PinutRed");
 
     Pinut::MaterialData whiteMaterialData;
     whiteMaterialData.color   = whiteData;
@@ -87,7 +87,7 @@ void Sandbox::OnCreate()
     // ------------------
     // auto assetManager = Pinut::AssetManager::Get();
 
-    // assetManager->LoadAsset("../assets/monkey_smooth/suzanne.obj", "Suzanne");
+    // const auto suzanne = GetAsset<Pinut::Mesh>("monkey_smooth/suzanne.obj");
     // assetManager->LoadAsset("../assets/viking_room/viking_room.obj", "VikingRoom");
     // assetManager->LoadAsset("../assets/cornell_box/cornell_box.obj", "CornellBox");
 
@@ -112,9 +112,10 @@ void Sandbox::OnCreate()
 
     //auto planeMesh = assetManager->GetAsset<Pinut::Mesh>("UnitCube");
 
-    // auto monkey = std::make_shared<Pinut::Renderable>("Suzanne");
-    // monkey->SetMesh(assetManager->GetAsset<Pinut::Mesh>("Suzanne"));
-    // monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
+    auto monkey = std::make_shared<Pinut::Renderable>("Suzanne");
+    monkey->SetMesh(GetAsset<Pinut::Mesh>("monkey_smooth/suzanne.obj"));
+    // monkey->SetMesh(GetAsset<Pinut::Mesh>("cube.obj"));
+    monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
 
     // auto vikingRoom = std::make_shared<Pinut::Renderable>("VikingRoom");
     // vikingRoom->SetMesh(assetManager->GetAsset<Pinut::Mesh>("VikingRoom"));
@@ -147,7 +148,7 @@ void Sandbox::OnCreate()
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(glassPlane));
     m_currentScene->AddRenderable(std::move(cube));
-    // m_currentScene->AddRenderable(std::move(monkey));
+    m_currentScene->AddRenderable(std::move(monkey));
     // m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
     m_currentScene->AddLight(l);

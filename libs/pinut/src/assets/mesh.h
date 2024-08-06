@@ -48,8 +48,8 @@ class Mesh final : public Asset
                                         std::vector<Vertex> vertices,
                                         std::vector<u16>    indices);
 
-    Mesh() = default;
-    ~Mesh() {}
+    Mesh()  = default;
+    ~Mesh() = default;
     void Destroy() override;
 
     const std::vector<std::shared_ptr<MaterialInstance>> Materials() const;

@@ -38,7 +38,7 @@ std::shared_ptr<Mesh> Mesh::Create(Device*             device,
     dc.m_indexOffset  = 0;
 
     const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
-    const size_t indexBufferSize  = indices.size() * sizeof(uint32_t);
+    const size_t indexBufferSize  = indices.size() * sizeof(u16);
 
     // Vertex buffer
     {
@@ -71,7 +71,7 @@ std::shared_ptr<Mesh> Mesh::Create(Device*             device,
         memcpy(data, vertices.data(), vertices.size() * sizeof(Vertex));
         memcpy((char*)data + vertices.size() * sizeof(Vertex),
                indices.data(),
-               indices.size() * sizeof(uint32_t));
+               indices.size() * sizeof(u16));
 
         VkBufferCopy vertexRegion{
           .srcOffset = 0,
