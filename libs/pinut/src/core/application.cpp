@@ -156,8 +156,7 @@ void Application::Init(GLFWwindow* window)
 
     m_materialManager.Init(&m_device);
 
-    m_assetManager = std::make_shared<AssetManager>();
-    m_assetManager->Init(&m_device, std::make_shared<MaterialManager>(m_materialManager));
+    m_assetManager.Init(&m_device, std::make_shared<MaterialManager>(m_materialManager));
     Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
 
@@ -180,7 +179,7 @@ void Application::Shutdown()
     m_imgui.Shutdown();
 #endif
 
-    m_assetManager->Shutdown();
+    m_assetManager.Shutdown();
     m_materialManager.Shutdown();
     m_forwardPipeline.Shutdown();
     m_commandBufferManager.OnDestroy();
@@ -365,7 +364,7 @@ std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          w
                                                             const std::string& name)
 {
     const auto t = Texture::CreateFromData(width, height, channels, format, usage, data, &m_device);
-    m_assetManager->RegisterAsset(name, t);
+    m_assetManager.RegisterAsset(name, t);
 
     return t;
 }
@@ -374,7 +373,7 @@ std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& f
                                                             const std::string& name)
 {
     const auto t = Texture::CreateFromFile(filename, &m_device);
-    m_assetManager->RegisterAsset(name, t);
+    m_assetManager.RegisterAsset(name, t);
 
     return t;
 }

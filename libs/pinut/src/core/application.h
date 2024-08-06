@@ -73,10 +73,10 @@ class Application
 
     GLFWwindow* m_window{nullptr};
 
-    Camera*                       m_currentCamera = nullptr;
-    Scene*                        m_currentScene  = nullptr;
-    MaterialManager               m_materialManager;
-    std::shared_ptr<AssetManager> m_assetManager;
+    Camera*         m_currentCamera = nullptr;
+    Scene*          m_currentScene  = nullptr;
+    MaterialManager m_materialManager;
+    AssetManager    m_assetManager;
 
     Mouse m_mouse;
 

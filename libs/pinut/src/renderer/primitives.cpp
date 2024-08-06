@@ -96,13 +96,12 @@ std::shared_ptr<Mesh> CreateUnitCube(Device* device)
     return Mesh::Create(device, std::move(vertices), std::move(indices));
 }
 
-void InitializeDefaultPrimitives(Device* device, const std::shared_ptr<AssetManager>& assetManager)
+void InitializeDefaultPrimitives(Device* device, AssetManager& assetManager)
 {
     assert(device);
-    assert(assetManager);
 
-    assetManager->RegisterAsset("UnitPlane", CreateUnitPlane(device));
-    assetManager->RegisterAsset("UnitCube", CreateUnitCube(device));
+    assetManager.RegisterAsset("UnitPlane", CreateUnitPlane(device));
+    assetManager.RegisterAsset("UnitCube", CreateUnitCube(device));
 }
 } // namespace Primitives
 } // namespace Pinut

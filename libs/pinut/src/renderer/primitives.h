@@ -10,6 +10,6 @@ namespace Primitives
 static std::shared_ptr<Mesh> CreateUnitPlane();
 static std::shared_ptr<Mesh> CreateUnitCube();
 
-void InitializeDefaultPrimitives(Device* device, const std::shared_ptr<AssetManager>& assetManager);
+void InitializeDefaultPrimitives(Device* device, AssetManager& assetManager);
 } // namespace Primitives
 } // namespace Pinut
