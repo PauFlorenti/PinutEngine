@@ -58,7 +58,7 @@ void TransparentMaterial::BuildPipeline(VkDevice device)
       vkinit::DescriptorSetLayoutBinding(0,
                                          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                          1,
-                                         VK_SHADER_STAGE_VERTEX_BIT),
+                                         VK_SHADER_STAGE_FRAGMENT_BIT),
       vkinit::DescriptorSetLayoutBinding(1,
                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                          1,
@@ -121,14 +121,17 @@ std::shared_ptr<MaterialInstance> TransparentMaterial::CreateMaterialInstance(
 {
     const auto set = descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
 
-    auto data               = (GPUMaterialData*)buffer.AllocationInfo().pMappedData;
-    data[offsetCount].color = materialData.color;
+    auto data                          = (GPUMaterialData*)buffer.AllocationInfo().pMappedData;
+    data[offsetCount].ambient          = materialData.ambient;
+    data[offsetCount].diffuse          = materialData.diffuse;
+    data[offsetCount].specular         = materialData.specular;
+    data[offsetCount].specularExponent = materialData.specularExponent;
 
     auto perObjectBufferInfo = vkinit::DescriptorBufferInfo(buffer.m_buffer,
                                                             offsetCount * sizeof(GPUMaterialData),
                                                             sizeof(GPUMaterialData));
-    auto textureInfo         = vkinit::DescriptorImageInfo(materialData.diffuse->ImageView(),
-                                                   materialData.diffuse->Sampler(),
+    auto textureInfo         = vkinit::DescriptorImageInfo(materialData.diffuseTexture->ImageView(),
+                                                   materialData.diffuseTexture->Sampler(),
                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VkWriteDescriptorSet writes[2] = {

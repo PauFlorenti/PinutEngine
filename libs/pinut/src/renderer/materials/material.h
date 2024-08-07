@@ -14,17 +14,22 @@ enum class MaterialType
 };
 struct MaterialData
 {
-    u32 color;
+    u32 ambient;
+    u32 diffuse;
+    u32 specular;
+    u32 specularExponent;
 
-    std::shared_ptr<Texture> diffuse{nullptr};
+    std::shared_ptr<Texture> diffuseTexture{nullptr};
     std::shared_ptr<Texture> normal{nullptr};
     std::shared_ptr<Texture> metallicRoughness{nullptr};
 };
 
 struct GPUMaterialData
 {
-    glm::vec3 padding;
-    u32       color;
+    u32 ambient          = 0x00000000;
+    u32 diffuse          = 0x00000000;
+    u32 specular         = 0x00000000;
+    u32 specularExponent = 500;
 };
 
 struct Material

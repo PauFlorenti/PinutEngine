@@ -17,7 +17,7 @@ int main()
     return 0;
 }
 
-Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
+Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};
 
 void Sandbox::OnCreate()
 {
@@ -49,21 +49,21 @@ void Sandbox::OnCreate()
                             "PinutRed");
 
     Pinut::MaterialData whiteMaterialData;
-    whiteMaterialData.color   = whiteData;
-    whiteMaterialData.diffuse = whiteTexture;
+    whiteMaterialData.diffuse        = whiteData;
+    whiteMaterialData.diffuseTexture = whiteTexture;
 
     auto whiteMaterial =
       GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
 
     Pinut::MaterialData redMaterialData;
-    redMaterialData.color   = redColor;
-    redMaterialData.diffuse = redTexture;
+    redMaterialData.diffuse        = redColor;
+    redMaterialData.diffuseTexture = redTexture;
     const auto redMaterial =
       GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
 
     Pinut::MaterialData glassMaterialData;
-    glassMaterialData.color   = 0x7FFF0000;
-    glassMaterialData.diffuse = redTexture;
+    glassMaterialData.diffuse        = 0x7FFF0000;
+    glassMaterialData.diffuseTexture = redTexture;
 
     auto glassMaterial = GetMaterialInstance("GlassMAT",
                                              Pinut::MaterialType::TRANSPARENT,
@@ -73,8 +73,8 @@ void Sandbox::OnCreate()
       CreateTextureFromFile("../assets/viking_room/viking_room_diffuse.png", "VikingRoomDiffuse");
 
     Pinut::MaterialData vikingMaterialData;
-    vikingMaterialData.color   = whiteData;
-    vikingMaterialData.diffuse = vikingTexture;
+    vikingMaterialData.diffuse        = whiteData;
+    vikingMaterialData.diffuseTexture = vikingTexture;
 
     auto vikingMaterial = GetMaterialInstance("VikingRoomMaterial",
                                               Pinut::MaterialType::OPAQUE,

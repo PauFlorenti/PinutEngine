@@ -258,9 +258,19 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
         u8 green = it->diffuse[1] * 255;
         u8 blue  = it->diffuse[2] * 255;
 
+        u8 ambientRed   = it->ambient[0] * 255;
+        u8 ambientGreen = it->ambient[1] * 255;
+        u8 ambientBlue  = it->ambient[2] * 255;
+
+        u8 specularRed   = it->specular[0] * 255;
+        u8 specularGreen = it->specular[1] * 255;
+        u8 specularBlue  = it->specular[2] * 255;
+
         MaterialData materialData;
-        materialData.color   = blue << 16 | green << 8 | red;
-        materialData.diffuse = GetAsset<Texture>("PinutWhite");
+        materialData.ambient        = ambientBlue << 16 | ambientGreen << 8 | ambientRed;
+        materialData.diffuse        = blue << 16 | green << 8 | red;
+        materialData.specular       = specularBlue << 16 | specularGreen << 8 | specularRed;
+        materialData.diffuseTexture = GetAsset<Texture>("PinutWhite");
 
         auto mi       = m_materialManager.GetMaterialInstance(name + "MAT",
                                                         Pinut::MaterialType::OPAQUE,
