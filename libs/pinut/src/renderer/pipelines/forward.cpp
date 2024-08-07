@@ -164,7 +164,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
     for (const auto& dc : scene->OpaqueRenderables())
     {
-        if (currentMaterial != dc.m_material)
+        if (!currentMaterial || *currentMaterial != *dc.m_material)
         {
             currentMaterial = dc.m_material;
             currentMaterial->Bind(cmd);

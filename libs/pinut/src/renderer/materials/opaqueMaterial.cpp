@@ -116,7 +116,8 @@ std::shared_ptr<MaterialInstance> OpaqueMaterial::CreateMaterialInstance(
   MaterialData          materialData,
   const GPUBuffer&      buffer,
   u32                   offsetCount,
-  DescriptorSetManager& descriptorSetManager)
+  DescriptorSetManager& descriptorSetManager,
+  const u32             id)
 {
     const auto set = descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
 
@@ -146,6 +147,6 @@ std::shared_ptr<MaterialInstance> OpaqueMaterial::CreateMaterialInstance(
 
     vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
 
-    return std::make_shared<MaterialInstance>(this, set, MaterialType::OPAQUE);
+    return std::make_shared<MaterialInstance>(this, set, MaterialType::OPAQUE, id);
 }
 } // namespace Pinut

@@ -14,12 +14,12 @@
 
 namespace Pinut
 {
-void AssetManager::Init(Device* device, std::shared_ptr<MaterialManager> materialManager)
+void AssetManager::Init(Device* device)
 {
     assert(device);
-    assert(materialManager);
-    m_device          = device;
-    m_materialManager = materialManager;
+    m_device = device;
+
+    m_materialManager.Init(m_device);
 
     // Setting potential asset paths
     m_assetsPath = std::filesystem::current_path().parent_path() / std::filesystem::path("assets");
@@ -31,6 +31,8 @@ void AssetManager::Shutdown()
         asset.second->Destroy();
 
     m_assets.clear();
+
+    m_materialManager.Shutdown();
 }
 
 std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
@@ -101,6 +103,13 @@ void AssetManager::ReleaseAsset(const std::string& name)
     }
 
     it->second.reset();
+}
+
+std::shared_ptr<MaterialInstance> AssetManager::GetMaterialInstance(const std::string& name,
+                                                                    MaterialType       type,
+                                                                    MaterialData       data)
+{
+    return m_materialManager.GetMaterialInstance(name, type, data);
 }
 
 std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
@@ -245,13 +254,17 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
         //    continue;
         //}
 
+        u8 red   = it->diffuse[0] * 255;
+        u8 green = it->diffuse[1] * 255;
+        u8 blue  = it->diffuse[2] * 255;
+
         MaterialData materialData;
-        // materialData.color = glm::vec3(it->diffuse[0], it->diffuse[1], it->diffuse[2]);
+        materialData.color   = blue << 16 | green << 8 | red;
         materialData.diffuse = GetAsset<Texture>("PinutWhite");
 
-        auto mi       = m_materialManager->CreateMaterialInstance(name + "MAT",
-                                                            Pinut::MaterialType::OPAQUE,
-                                                            std::move(materialData));
+        auto mi       = m_materialManager.GetMaterialInstance(name + "MAT",
+                                                        Pinut::MaterialType::OPAQUE,
+                                                        std::move(materialData));
         dc.m_material = std::move(mi);
 
         mesh->DrawCalls().push_back(dc);

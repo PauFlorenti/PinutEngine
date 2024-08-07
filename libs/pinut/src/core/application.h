@@ -67,16 +67,18 @@ class Application
     std::shared_ptr<Texture> CreateTextureFromFile(const std::string& filename,
                                                    const std::string& name = "");
 
+    std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
+                                                          MaterialType type = MaterialType::COUNT,
+                                                          MaterialData data = {});
+
     std::string m_name;
     u32         m_width;
     u32         m_height;
 
     GLFWwindow* m_window{nullptr};
 
-    Camera*         m_currentCamera = nullptr;
-    Scene*          m_currentScene  = nullptr;
-    MaterialManager m_materialManager;
-    AssetManager    m_assetManager;
+    Camera* m_currentCamera = nullptr;
+    Scene*  m_currentScene  = nullptr;
 
     Mouse m_mouse;
 
@@ -86,8 +88,10 @@ class Application
     f64 m_deltaTime{0};
     f64 m_lastFrameTime{0};
 
-    Device          m_device;
-    Swapchain       m_swapchain;
+    Device       m_device;
+    Swapchain    m_swapchain;
+    AssetManager m_assetManager;
+
     ForwardPipeline m_forwardPipeline;
 
 #ifdef _DEBUG

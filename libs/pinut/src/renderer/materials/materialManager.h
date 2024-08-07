@@ -16,12 +16,12 @@ u32 constexpr MAX_MATERIALS = 1000;
 class MaterialManager
 {
   public:
-    ~MaterialManager(){};
+    ~MaterialManager() {};
     void                              Init(Device* device);
     void                              Shutdown();
-    std::shared_ptr<MaterialInstance> CreateMaterialInstance(const std::string& name,
-                                                             MaterialType       type,
-                                                             MaterialData       materialData);
+    std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
+                                                          MaterialType type = MaterialType::COUNT,
+                                                          MaterialData materialData = {});
 
   private:
     VkDevice                                                 m_device;
@@ -33,5 +33,6 @@ class MaterialManager
     DescriptorSetManager m_descriptorSetManager;
     OpaqueMaterial       m_opaqueMaterial;
     TransparentMaterial  m_transparentMaterial;
+    u32                  m_unusedId = 0;
 };
 } // namespace Pinut

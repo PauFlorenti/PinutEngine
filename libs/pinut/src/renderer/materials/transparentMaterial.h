@@ -14,7 +14,8 @@ class TransparentMaterial : public Material
       MaterialData          materialData,
       const GPUBuffer&      buffer,
       u32                   offsetCount,
-      DescriptorSetManager& descriptorSetManager);
+      DescriptorSetManager& descriptorSetManager,
+      const u32             id) override;
 
     VkDescriptorSetLayout m_perFrameDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorSetLayout m_perObjectDescriptorSetLayout{VK_NULL_HANDLE};

@@ -154,9 +154,7 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
-    m_materialManager.Init(&m_device);
-
-    m_assetManager.Init(&m_device, std::make_shared<MaterialManager>(m_materialManager));
+    m_assetManager.Init(&m_device);
     Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
 
@@ -180,7 +178,6 @@ void Application::Shutdown()
 #endif
 
     m_assetManager.Shutdown();
-    m_materialManager.Shutdown();
     m_forwardPipeline.Shutdown();
     m_commandBufferManager.OnDestroy();
     m_swapchain.OnDestroy();
@@ -376,5 +373,12 @@ std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& f
     m_assetManager.RegisterAsset(name, t);
 
     return t;
+}
+
+std::shared_ptr<MaterialInstance> Application::GetMaterialInstance(const std::string& name,
+                                                                   MaterialType       type,
+                                                                   MaterialData       data)
+{
+    return m_assetManager.GetMaterialInstance(name, type, data);
 }
 } // namespace Pinut

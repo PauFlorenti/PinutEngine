@@ -3,13 +3,15 @@
 #include <filesystem>
 #include <map>
 
+#include "src/renderer/materials/materialManager.h"
+
 namespace Pinut
 {
 class Asset;
 class Device;
-class MaterialManager;
 class Mesh;
 class Texture;
+struct MaterialInstance;
 class AssetManager
 {
     friend Mesh;
@@ -19,7 +21,7 @@ class AssetManager
     AssetManager()  = default;
     ~AssetManager() = default;
 
-    void Init(Device* device, std::shared_ptr<MaterialManager> materialManager);
+    void Init(Device* device);
     void Shutdown();
 
     void RegisterAsset(const std::string& name, std::shared_ptr<Asset> asset);
@@ -47,12 +49,16 @@ class AssetManager
         return nullptr;
     }
 
+    std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
+                                                          MaterialType type = MaterialType::COUNT,
+                                                          MaterialData data = {});
+
   private:
     std::shared_ptr<Asset> LoadAsset(std::filesystem::path filename, const std::string& name);
     std::shared_ptr<Mesh>  LoadMesh(std::filesystem::path filename, const std::string& name);
 
     Device*                                       m_device{nullptr};
-    std::shared_ptr<MaterialManager>              m_materialManager;
+    MaterialManager                               m_materialManager;
     std::map<std::string, std::shared_ptr<Asset>> m_assets;
     std::filesystem::path                         m_assetsPath;
 };

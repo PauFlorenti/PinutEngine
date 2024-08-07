@@ -34,9 +34,9 @@ void MaterialManager::Shutdown()
     m_transparentMaterial.Destroy(m_device);
 }
 
-std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const std::string& name,
-                                                                          MaterialType       type,
-                                                                          MaterialData materialData)
+std::shared_ptr<MaterialInstance> MaterialManager::GetMaterialInstance(const std::string& name,
+                                                                       MaterialType       type,
+                                                                       MaterialData materialData)
 {
     if (auto it = m_materials.find(name); it != m_materials.end())
     {
@@ -55,7 +55,8 @@ std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const 
                                                               std::move(materialData),
                                                               m_materialBuffer,
                                                               m_materialCount,
-                                                              m_descriptorSetManager);
+                                                              m_descriptorSetManager,
+                                                              ++m_unusedId);
             m_materials[name] = mi;
             m_materialCount++;
             return std::make_shared<MaterialInstance>(*mi);
@@ -67,14 +68,16 @@ std::shared_ptr<MaterialInstance> MaterialManager::CreateMaterialInstance(const 
                                                                    std::move(materialData),
                                                                    m_materialBuffer,
                                                                    m_materialCount,
-                                                                   m_descriptorSetManager);
+                                                                   m_descriptorSetManager,
+                                                                   ++m_unusedId);
             m_materials[name] = mi;
             m_materialCount++;
             return std::make_shared<MaterialInstance>(*mi);
             break;
         }
-
+        case MaterialType::COUNT:
         default:
+            printf("[ERROR]: Trying to create material with undefined material type.");
             break;
     }
 
