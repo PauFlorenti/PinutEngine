@@ -283,6 +283,7 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
             if (const auto diffuseTexture = GetAsset<Texture>(mat.diffuse_texname))
             {
                 materialData.diffuseTexture = diffuseTexture;
+                RegisterAsset(mat.diffuse_texname, diffuseTexture);
             }
             else
             {
