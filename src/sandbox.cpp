@@ -60,26 +60,9 @@ void Sandbox::OnCreate()
                                              Pinut::MaterialType::TRANSPARENT,
                                              std::move(glassMaterialData));
 
-    auto vikingTexture =
-      CreateTextureFromFile("../assets/viking_room/viking_room_diffuse.png", "VikingRoomDiffuse");
-
-    Pinut::MaterialData vikingMaterialData;
-    vikingMaterialData.diffuse        = whiteData;
-    vikingMaterialData.diffuseTexture = vikingTexture;
-
-    auto vikingMaterial = GetMaterialInstance("VikingRoomMaterial",
-                                              Pinut::MaterialType::OPAQUE,
-                                              std::move(vikingMaterialData));
-
     // ------------------
     // Loading assets
     // ------------------
-    // auto assetManager = Pinut::AssetManager::Get();
-
-    // const auto suzanne = GetAsset<Pinut::Mesh>("monkey_smooth/suzanne.obj");
-    // assetManager->LoadAsset("../assets/viking_room/viking_room.obj", "VikingRoom");
-    // assetManager->LoadAsset("../assets/cornell_box/cornell_box.obj", "CornellBox");
-
     auto floor = std::make_shared<Pinut::Renderable>("Floor");
     auto m     = GetAsset<Pinut::Mesh>("UnitCube");
     m->SetMaterial(whiteMaterial);
@@ -100,19 +83,19 @@ void Sandbox::OnCreate()
     cube->SetModel(glm::mat4(1.0f));
 
     auto monkey = std::make_shared<Pinut::Renderable>("Suzanne");
-    monkey->SetMesh(GetAsset<Pinut::Mesh>("monkey_smooth/suzanne.obj"));
+    monkey->SetMesh(GetAsset<Pinut::Mesh>("suzanne.obj"));
     monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-3.0f, 0.0f, 0.0f)));
 
-    // auto vikingRoom = std::make_shared<Pinut::Renderable>("VikingRoom");
-    // vikingRoom->SetMesh(assetManager->GetAsset<Pinut::Mesh>("VikingRoom"));
-    // vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
+    auto vikingRoom = std::make_shared<Pinut::Renderable>("VikingRoom");
+    vikingRoom->SetMesh(GetAsset<Pinut::Mesh>("viking_room.obj"));
+    vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
     auto cornellBox = std::make_shared<Pinut::Renderable>("CornellBox");
-    cornellBox->SetMesh(GetAsset<Pinut::Mesh>("cornell_box_v2.obj"));
+    cornellBox->SetMesh(GetAsset<Pinut::Mesh>("cornell_box.obj"));
     cornellBox->SetModel(glm::mat4(1.0f));
 
     // ------------------
-    // Creaint lights
+    // Creating lights
     // ------------------
     Pinut::Light l;
     l.color     = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -135,7 +118,7 @@ void Sandbox::OnCreate()
     // m_currentScene->AddRenderable(std::move(glassPlane));
     // m_currentScene->AddRenderable(std::move(cube));
     m_currentScene->AddRenderable(std::move(monkey));
-    // m_currentScene->AddRenderable(std::move(vikingRoom));
+    m_currentScene->AddRenderable(std::move(vikingRoom));
     m_currentScene->AddRenderable(std::move(cornellBox));
     m_currentScene->AddLight(l);
     // m_currentScene->AddLight(l2);

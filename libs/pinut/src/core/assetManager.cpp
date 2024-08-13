@@ -68,6 +68,13 @@ std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
             return mesh;
         }
     }
+    else if (absolutePath.extension() == ".png" || absolutePath.extension() == ".jpg")
+    {
+        if (auto t = Texture::CreateFromFile(absolutePath.string(), m_device))
+        {
+            return t;
+        }
+    }
     else
     {
         printf("[ERROR]: Unknown extension file.");
@@ -270,7 +277,22 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
         materialData.diffuse          = blue << 16 | green << 8 | red;
         materialData.specular         = specularBlue << 16 | specularGreen << 8 | specularRed;
         materialData.specularExponent = mat.shininess;
-        materialData.diffuseTexture   = GetAsset<Texture>("PinutWhite");
+
+        if (!mat.diffuse_texname.empty())
+        {
+            if (const auto diffuseTexture = GetAsset<Texture>(mat.diffuse_texname))
+            {
+                materialData.diffuseTexture = diffuseTexture;
+            }
+            else
+            {
+                materialData.diffuseTexture = GetAsset<Texture>("PinutWhite");
+            }
+        }
+        else
+        {
+            materialData.diffuseTexture = GetAsset<Texture>("PinutWhite");
+        }
 
         auto mi       = m_materialManager.GetMaterialInstance(mat.name + "MAT",
                                                         Pinut::MaterialType::OPAQUE,
