@@ -28,9 +28,13 @@ void Renderable::DrawImGui()
 {
     if (ImGui::TreeNode(m_name.c_str()))
     {
-        ImGui::DragFloat3("Position", &m_position.x);
-        ImGui::DragFloat3("Scale", &m_scale.x);
-        ImGui::DragFloat4("Rotation", &m_rotation[0]);
+        auto euler = glm::eulerAngles(m_rotation);
+
+        ImGui::DragFloat3("Position", &m_position.x, 0.1f);
+        ImGui::DragFloat3("Scale", &m_scale.x, 0.1f);
+        ImGui::DragFloat3("Rotation", &euler[0], 0.1f);
+
+        m_rotation = glm::quat(euler);
 
         ImGui::TreePop();
     }
