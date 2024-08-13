@@ -3,7 +3,7 @@
 layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec3 inPosition;
 layout(location = 2) in vec3 inCameraPosition;
-layout(location = 3) in vec4 fragColor;
+layout(location = 3) in vec4 inColor;
 layout(location = 4) in vec2 inUv;
 
 layout(location = 0) out vec4 outColor;
@@ -22,17 +22,43 @@ layout(set = 0, binding = 2) uniform perFrame
     Light lights[10];
 } lightData;
 
+layout(set = 1, binding = 0) readonly buffer perInstance
+{
+    uint ambient;
+    uint diffuse;
+    uint specular;
+    uint specularExponent;
+} perInstanceData;
+
 layout(set = 1, binding = 1) uniform sampler2D diffuseTexture;
 
-float specular_strengh = 0.5f;
+float ambientLightIntensity = 0.01;
+
+vec4 UnpackColor(uint packedColor)
+{
+    vec4 unpackedColor;
+    unpackedColor.r = float((packedColor & uint(0x000000FF)) >> 0) / 255.0;
+    unpackedColor.g = float((packedColor & uint(0x0000FF00)) >> 8) / 255.0;
+    unpackedColor.b = float((packedColor & uint(0x00FF0000)) >> 16) / 255.0;
+    unpackedColor.a = float((packedColor & uint(0xFF000000)) >> 24) / 255.0;
+    return unpackedColor;
+}
 
 void main()
 {
     vec3 N = normalize(inNormal);
     vec3 V = normalize(inCameraPosition - inPosition);
-    vec4 materialColor = texture(diffuseTexture, inUv) * fragColor;
 
-    vec3 output_light = vec3(0.0f);
+    vec3 diffuseTextureValue    = texture(diffuseTexture, inUv).xyz;
+    vec3 materialDiffuseColor   = diffuseTextureValue * inColor.xyz * UnpackColor(perInstanceData.diffuse).xyz;
+    vec3 materialAmbientColor   = UnpackColor(perInstanceData.ambient).xyz;
+    vec3 materialSpecularColor  = UnpackColor(perInstanceData.specular).xyz;
+
+    vec3 ambient = vec3(0.0f);
+    vec3 diffuse = vec3(0.0f);
+    vec3 specular = vec3(0.0f);
+
+    ambient = ambientLightIntensity * materialAmbientColor;
     for (int i = 0; i < lightData.count; ++i)
     {
         Light light = lightData.lights[i];
@@ -63,11 +89,9 @@ void main()
         float dotNL = max(dot(N, L), 0.0);
         float dotVR = max(dot(V, R), 0.0);
 
-        vec3 diffuse = light_color * dotNL;
-        vec3 specular = specular_strengh * pow(dotVR, 2) * light_color;
-
-        output_light += (diffuse + specular) * attenuation_factor * materialColor.xyz;
+        diffuse = light_color * dotNL * materialDiffuseColor * attenuation_factor;
+        specular = pow(dotVR, perInstanceData.specularExponent) * light_color * materialSpecularColor * attenuation_factor;
     }
 
-    outColor = vec4(output_light, materialColor.w);
+    outColor = vec4(ambient + diffuse + specular, 1.0);
 }

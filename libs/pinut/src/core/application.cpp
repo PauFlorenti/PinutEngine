@@ -158,6 +158,22 @@ void Application::Init(GLFWwindow* window)
     Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
 
+    u32        whiteData = 0xFFFFFFFF;
+    const auto whiteTexture =
+      CreateTextureFromData(1,
+                            1,
+                            4,
+                            VK_FORMAT_R8G8B8A8_SRGB,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                            &whiteData,
+                            "PinutWhite");
+
+    MaterialData materialData{};
+    materialData.diffuseTexture = whiteTexture;
+
+    GetMaterialInstance("DefaultMAT", MaterialType::OPAQUE, materialData);
+    GetMaterialInstance("DefaultTransparentMAT", MaterialType::TRANSPARENT, materialData);
+
     UpdateDisplay();
 
 #ifdef _DEBUG

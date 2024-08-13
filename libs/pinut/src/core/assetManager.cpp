@@ -184,12 +184,13 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
     auto stagingData  = static_cast<u8*>(stagingBuffer.AllocationInfo().pMappedData);
     memset(stagingData, 0, vertexBufferSize + indexBufferSize);
 
+    std::vector<u16>                indices;
+    std::unordered_map<Vertex, u16> uniqueVertices{};
     for (const auto& shape : shapes)
     {
-        std::unordered_map<Vertex, u16> uniqueVertices{};
-        std::vector<Vertex>             vertices;
-        std::vector<u16>                indices;
-        Mesh::DrawCall                  dc;
+        std::vector<Vertex> vertices;
+        std::vector<u16>    currentIndices;
+        Mesh::DrawCall      dc;
 
         for (const auto& index : shape.mesh.indices)
         {
@@ -216,63 +217,62 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
 
             if (uniqueVertices.count(vertex) == 0)
             {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                uniqueVertices[vertex] = static_cast<uint32_t>(uniqueVertices.size());
                 vertices.push_back(vertex);
             }
 
             indices.push_back(static_cast<u16>(uniqueVertices[vertex]));
+            currentIndices.push_back(static_cast<u16>(uniqueVertices[vertex]));
         }
 
-        auto      vertexData     = stagingData + vertexOffset;
-        auto      indexData      = stagingData + indexOffset;
         const u64 vertexDataSize = vertices.size() * sizeof(Vertex);
-        const u64 indexDataSize  = indices.size() * sizeof(u16);
-        memcpy(vertexData, vertices.data(), vertexDataSize);
-        memcpy(indexData, indices.data(), indexDataSize);
+        const u64 indexDataSize  = currentIndices.size() * sizeof(u16);
+        memcpy(stagingData + vertexOffset, vertices.data(), vertexDataSize);
+        memcpy(stagingData + indexOffset, currentIndices.data(), indexDataSize);
 
         dc.m_vertexBuffer = std::make_shared<GPUBuffer>(mesh->m_vertexBuffer);
         dc.m_vertexCount  = static_cast<u32>(vertices.size());
         dc.m_vertexOffset = vertexOffset;
 
+        assert(currentIndices.size() <= indices.size());
+        assert(vertexBufferSize <= indexOffset);
+
         dc.m_indexBuffer = std::make_shared<GPUBuffer>(mesh->m_indexBuffer);
-        dc.m_indexCount  = static_cast<u32>(indices.size());
-        dc.m_indexOffset = indexOffset;
+        dc.m_indexCount  = static_cast<u32>(currentIndices.size());
+        dc.m_indexOffset = (indices.size() - currentIndices.size()) * sizeof(u16);
 
         vertexOffset += vertexDataSize;
         indexOffset += indexDataSize;
 
-        const auto it = std::find_if(materials.begin(),
-                                     materials.end(),
-                                     [&shape](tinyobj::material_t m)
-                                     {
-                                         return m.name == shape.name;
-                                     });
+        if (materials.empty())
+        {
+            dc.m_material = m_materialManager.GetMaterialInstance("DefaultMAT");
+            mesh->DrawCalls().push_back(dc);
+            continue;
+        }
 
-        //if (it == materials.end())
-        //{
-        //    mesh->DrawCalls().push_back(dc);
-        //    continue;
-        //}
+        const auto mat = materials.at(shape.mesh.material_ids.at(0));
 
-        u8 red   = it->diffuse[0] * 255;
-        u8 green = it->diffuse[1] * 255;
-        u8 blue  = it->diffuse[2] * 255;
+        u8 red   = mat.diffuse[0] * 255;
+        u8 green = mat.diffuse[1] * 255;
+        u8 blue  = mat.diffuse[2] * 255;
 
-        u8 ambientRed   = it->ambient[0] * 255;
-        u8 ambientGreen = it->ambient[1] * 255;
-        u8 ambientBlue  = it->ambient[2] * 255;
+        u8 ambientRed   = mat.ambient[0] * 255;
+        u8 ambientGreen = mat.ambient[1] * 255;
+        u8 ambientBlue  = mat.ambient[2] * 255;
 
-        u8 specularRed   = it->specular[0] * 255;
-        u8 specularGreen = it->specular[1] * 255;
-        u8 specularBlue  = it->specular[2] * 255;
+        u8 specularRed   = mat.specular[0] * 255;
+        u8 specularGreen = mat.specular[1] * 255;
+        u8 specularBlue  = mat.specular[2] * 255;
 
         MaterialData materialData;
-        materialData.ambient        = ambientBlue << 16 | ambientGreen << 8 | ambientRed;
-        materialData.diffuse        = blue << 16 | green << 8 | red;
-        materialData.specular       = specularBlue << 16 | specularGreen << 8 | specularRed;
-        materialData.diffuseTexture = GetAsset<Texture>("PinutWhite");
+        materialData.ambient          = ambientBlue << 16 | ambientGreen << 8 | ambientRed;
+        materialData.diffuse          = blue << 16 | green << 8 | red;
+        materialData.specular         = specularBlue << 16 | specularGreen << 8 | specularRed;
+        materialData.specularExponent = mat.shininess;
+        materialData.diffuseTexture   = GetAsset<Texture>("PinutWhite");
 
-        auto mi       = m_materialManager.GetMaterialInstance(name + "MAT",
+        auto mi       = m_materialManager.GetMaterialInstance(mat.name + "MAT",
                                                         Pinut::MaterialType::OPAQUE,
                                                         std::move(materialData));
         dc.m_material = std::move(mi);

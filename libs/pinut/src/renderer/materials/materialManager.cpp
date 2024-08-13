@@ -16,7 +16,7 @@ void MaterialManager::Init(Device* device)
       {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10},
       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
     };
-    m_descriptorSetManager.OnCreate(m_device, 3, 10, std::move(descriptorPoolSizes));
+    m_descriptorSetManager.OnCreate(m_device, 3, 100, std::move(descriptorPoolSizes));
 
     m_materialBuffer.Create(device,
                             sizeof(u32) * MAX_MATERIALS,

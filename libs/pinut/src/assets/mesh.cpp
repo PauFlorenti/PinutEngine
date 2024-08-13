@@ -9,18 +9,17 @@ namespace Pinut
 
 void Mesh::DrawCall::Draw(VkCommandBuffer cmd) const
 {
-    VkDeviceSize offset{0};
-
+    VkDeviceSize offset = 0;
     if (m_indexBuffer->m_buffer != VK_NULL_HANDLE && m_indexCount > 0)
     {
         vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &offset);
-        vkCmdBindIndexBuffer(cmd, m_indexBuffer->m_buffer, offset, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(cmd, m_indexBuffer->m_buffer, m_indexOffset, VK_INDEX_TYPE_UINT16);
 
         vkCmdDrawIndexed(cmd, m_indexCount, 1, 0, 0, m_owner->InstanceIndex());
     }
     else
     {
-        vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &offset);
+        vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &m_vertexOffset);
         vkCmdDraw(cmd, m_vertexCount, 1, 0, m_owner->InstanceIndex());
     }
 }

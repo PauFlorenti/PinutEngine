@@ -84,16 +84,14 @@ void main()
         attenuation_factor = max(attenuation_factor, 0.0f);
         attenuation_factor = attenuation_factor * attenuation_factor;
 
-        L                       = normalize(L);
-        vec3 R                  = reflect(-L, N);
+        L       = normalize(L);
+        vec3 R  = reflect(-L, N);
 
         float dotNL = max(dot(N, L), 0.0);
         float dotVR = max(dot(V, R), 0.0);
 
-        diffuse = light_color * dotNL * materialDiffuseColor * attenuation_factor;
-        specular = pow(dotVR, perInstanceData.specularExponent) * light_color * materialSpecularColor * attenuation_factor;
-
-        //output_light += (diffuse * materialDiffuseColor + specular * materialSpecularColor) * attenuation_factor;
+        diffuse += light_color * dotNL * materialDiffuseColor * attenuation_factor;
+        specular += pow(dotVR, perInstanceData.specularExponent) * light_color * materialSpecularColor * attenuation_factor;
     }
 
     outColor = vec4(ambient + diffuse + specular, 1.0);

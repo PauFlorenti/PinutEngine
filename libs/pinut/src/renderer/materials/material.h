@@ -29,7 +29,7 @@ struct GPUMaterialData
     u32 ambient          = 0x00000000;
     u32 diffuse          = 0x00000000;
     u32 specular         = 0x00000000;
-    u32 specularExponent = 500;
+    u32 specularExponent = 1;
 };
 
 struct Material
