@@ -61,7 +61,10 @@ void Camera::UpdateCameraWASD(const glm::vec3& direction)
 
 void Camera::DrawImGUI()
 {
+    ImGui::DragFloat3("Position", &m_position[0]);
     ImGui::DragFloat("Speed", &speed);
     ImGui::DragFloat("Sensibility", &m_sensibility);
+
+    LookAt(m_position, m_position + m_forward);
 }
 } // namespace Pinut

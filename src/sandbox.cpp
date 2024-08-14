@@ -22,7 +22,7 @@ Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
 void Sandbox::OnCreate()
 {
     m_currentCamera = new Pinut::Camera();
-    m_currentCamera->LookAt(glm::vec3(3.0f, 2.0f, 3.0f), glm::vec3(0.0f));
+    m_currentCamera->LookAt(glm::vec3(18.0f, 15.0f, 32.0f), glm::vec3(0.0f));
     m_currentCamera->SetProjection(glm::radians(45.0f), (f32)m_width / m_height, 0.01f, 1000.0f);
 
     // ------------------
@@ -84,7 +84,7 @@ void Sandbox::OnCreate()
 
     auto monkey = std::make_shared<Pinut::Renderable>("Suzanne");
     monkey->SetMesh(GetAsset<Pinut::Mesh>("suzanne.obj"));
-    monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-3.0f, 0.0f, 0.0f)));
+    monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
 
     auto vikingRoom = std::make_shared<Pinut::Renderable>("VikingRoom");
     vikingRoom->SetMesh(GetAsset<Pinut::Mesh>("viking_room.obj"));
@@ -92,7 +92,8 @@ void Sandbox::OnCreate()
 
     auto cornellBox = std::make_shared<Pinut::Renderable>("CornellBox");
     cornellBox->SetMesh(GetAsset<Pinut::Mesh>("cornell_box.obj"));
-    cornellBox->SetModel(glm::mat4(1.0f));
+    cornellBox->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)) *
+                         glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
 
     // ------------------
     // Creating lights
