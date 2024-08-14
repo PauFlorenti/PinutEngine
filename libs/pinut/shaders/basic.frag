@@ -35,10 +35,10 @@ layout(set = 0, binding = 2) uniform perFrame
 
 layout(set = 1, binding = 0) readonly buffer perInstance
 {
-    uint ambient;
     uint diffuse;
-    uint specular;
     uint specularExponent;
+    uint dummy1;
+    uint dummy2;
 } perInstanceData;
 
 layout(set = 1, binding = 1) uniform sampler2D diffuseTexture;
@@ -77,14 +77,12 @@ void main()
 
     vec3 diffuseTextureValue    = texture(diffuseTexture, inUv).xyz;
     vec3 materialDiffuseColor   = diffuseTextureValue * inColor.xyz * UnpackColor(perInstanceData.diffuse).xyz;
-    vec3 materialAmbientColor   = UnpackColor(perInstanceData.ambient).xyz;
-    vec3 materialSpecularColor  = UnpackColor(perInstanceData.specular).xyz;
 
     vec3 ambient = vec3(0.0f);
     vec3 diffuse = vec3(0.0f);
     vec3 specular = vec3(0.0f);
 
-    ambient = ambientLightIntensity * materialAmbientColor;
+    ambient = ambientLightIntensity * materialDiffuseColor;
     diffuse += ComputeDirectionalLight(lightData.directionalLight, N, materialDiffuseColor);
 
     for (int i = 0; i < lightData.count; ++i)
@@ -117,8 +115,8 @@ void main()
         float dotNL = max(dot(N, L), 0.0);
         float dotVR = max(dot(V, R), 0.0);
 
-        diffuse += light_color * dotNL * materialDiffuseColor * attenuation_factor;
-        specular += pow(dotVR, perInstanceData.specularExponent) * light_color * materialSpecularColor * attenuation_factor;
+        diffuse += light_color * dotNL * light_intensity * materialDiffuseColor * attenuation_factor;
+        specular += pow(dotVR, perInstanceData.specularExponent) * light_intensity * light_color * attenuation_factor * materialDiffuseColor;
     }
 
     outColor = vec4(ambient + diffuse + specular, 1.0);

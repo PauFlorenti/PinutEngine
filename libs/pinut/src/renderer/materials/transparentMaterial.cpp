@@ -122,9 +122,7 @@ std::shared_ptr<MaterialInstance> TransparentMaterial::CreateMaterialInstance(
     const auto set = descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
 
     auto data                          = (GPUMaterialData*)buffer.AllocationInfo().pMappedData;
-    data[offsetCount].ambient          = materialData.ambient;
     data[offsetCount].diffuse          = materialData.diffuse;
-    data[offsetCount].specular         = materialData.specular;
     data[offsetCount].specularExponent = materialData.specularExponent;
 
     auto perObjectBufferInfo = vkinit::DescriptorBufferInfo(buffer.m_buffer,

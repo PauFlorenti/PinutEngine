@@ -264,18 +264,8 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
         u8 green = mat.diffuse[1] * 255;
         u8 blue  = mat.diffuse[2] * 255;
 
-        u8 ambientRed   = mat.ambient[0] * 255;
-        u8 ambientGreen = mat.ambient[1] * 255;
-        u8 ambientBlue  = mat.ambient[2] * 255;
-
-        u8 specularRed   = mat.specular[0] * 255;
-        u8 specularGreen = mat.specular[1] * 255;
-        u8 specularBlue  = mat.specular[2] * 255;
-
         MaterialData materialData;
-        materialData.ambient          = ambientBlue << 16 | ambientGreen << 8 | ambientRed;
         materialData.diffuse          = blue << 16 | green << 8 | red;
-        materialData.specular         = specularBlue << 16 | specularGreen << 8 | specularRed;
         materialData.specularExponent = mat.shininess;
 
         if (!mat.diffuse_texname.empty())
@@ -287,12 +277,12 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
             }
             else
             {
-                materialData.diffuseTexture = GetAsset<Texture>("PinutWhite");
+                materialData.diffuseTexture = GetAsset<Texture>("DefaultWhiteTexture");
             }
         }
         else
         {
-            materialData.diffuseTexture = GetAsset<Texture>("PinutWhite");
+            materialData.diffuseTexture = GetAsset<Texture>("DefaultWhiteTexture");
         }
 
         auto mi       = m_materialManager.GetMaterialInstance(mat.name + "MAT",

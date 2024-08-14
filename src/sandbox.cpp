@@ -28,33 +28,22 @@ void Sandbox::OnCreate()
     // ------------------
     // Creating materials
     // ------------------
-    u32  whiteData = 0xFFFFFFFF;
-    u32  redColor  = 0xFF0000FF;
-    auto redTexture =
-      CreateTextureFromData(1,
-                            1,
-                            4,
-                            VK_FORMAT_R8G8B8A8_SRGB,
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                            &redColor,
-                            "PinutRed");
-
     Pinut::MaterialData whiteMaterialData;
-    whiteMaterialData.diffuse        = whiteData;
-    whiteMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("PinutWhite");
+    whiteMaterialData.diffuse        = 0xFFFFFFFF;
+    whiteMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultWhiteTexture");
 
     auto whiteMaterial =
       GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
 
     Pinut::MaterialData redMaterialData;
-    redMaterialData.diffuse        = redColor;
-    redMaterialData.diffuseTexture = redTexture;
+    redMaterialData.diffuse        = 0xFFFFFFFF;
+    redMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
     const auto redMaterial =
       GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
 
     Pinut::MaterialData glassMaterialData;
-    glassMaterialData.diffuse        = 0x7FFF0000;
-    glassMaterialData.diffuseTexture = redTexture;
+    glassMaterialData.diffuse        = 0xFFFFFFFF;
+    glassMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");;
 
     auto glassMaterial = GetMaterialInstance("GlassMAT",
                                              Pinut::MaterialType::TRANSPARENT,
@@ -123,7 +112,7 @@ void Sandbox::OnCreate()
     m_currentScene->AddRenderable(std::move(vikingRoom));
     m_currentScene->AddRenderable(std::move(cornellBox));
     m_currentScene->AddLight(l);
-    // m_currentScene->AddLight(l2);
+    m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()

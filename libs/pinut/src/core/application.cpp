@@ -158,6 +158,7 @@ void Application::Init(GLFWwindow* window)
     Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
 
+    // TODO This should make in a function like in Primitives?
     u32        whiteData = 0xFFFFFFFF;
     const auto whiteTexture =
       CreateTextureFromData(1,
@@ -166,7 +167,25 @@ void Application::Init(GLFWwindow* window)
                             VK_FORMAT_R8G8B8A8_SRGB,
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                             &whiteData,
-                            "PinutWhite");
+                            "DefaultWhiteTexture");
+
+    u32 blackData = 0x00000000;
+    CreateTextureFromData(1,
+                          1,
+                          4,
+                          VK_FORMAT_R8G8B8A8_SRGB,
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          &blackData,
+                          "DefaultBlackTexture");
+
+    u32 redData = 0xFF0000FF;
+    CreateTextureFromData(1,
+                          1,
+                          4,
+                          VK_FORMAT_R8G8B8A8_SRGB,
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          &redData,
+                          "DefaultRedTexture");
 
     MaterialData materialData{};
     materialData.diffuseTexture = whiteTexture;

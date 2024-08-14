@@ -14,9 +14,7 @@ enum class MaterialType
 };
 struct MaterialData
 {
-    u32 ambient;
     u32 diffuse;
-    u32 specular;
     u32 specularExponent;
 
     std::shared_ptr<Texture> diffuseTexture{nullptr};
@@ -26,10 +24,10 @@ struct MaterialData
 
 struct GPUMaterialData
 {
-    u32 ambient          = 0x00000000;
     u32 diffuse          = 0x00000000;
-    u32 specular         = 0x00000000;
     u32 specularExponent = 1;
+    u32 dummy1; // TODO Offset in my gpu is 16. Make it generic?
+    u32 dummy2;
 };
 
 struct Material
