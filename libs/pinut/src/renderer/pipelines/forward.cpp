@@ -36,7 +36,7 @@ void ForwardPipeline::Init(Device* device)
                               sizeof(glm::mat4) * MAX_ENTITIES,
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
-    m_lightsBuffer.Create(m_device, sizeof(Light) * MAX_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    m_lightsBuffer.Create(m_device, sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 }
 
 void ForwardPipeline::Shutdown()
@@ -73,7 +73,6 @@ void ForwardPipeline::OnCreateWindowDependantResources(u32 width, u32 height)
     };
 
     m_depthTexture = std::make_shared<Texture>(m_device, depthTextureInfo);
-    // m_depthTexture->Create(m_device, depthTextureInfo);
 }
 
 void ForwardPipeline::OnDestroyWindowDependantResources()
@@ -114,11 +113,10 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
     // Lights
     {
-        // TODO Lights count should be the number of lights enabled.
-        const auto lightsCount = static_cast<u32>(scene->Lights().size());
-        auto       lightData   = (LightData*)m_lightsBuffer.AllocationInfo().pMappedData;
-        lightData->lightsCount = lightsCount;
-        memcpy(lightData->lights, scene->Lights().data(), sizeof(Light) * lightsCount);
+        auto lightData         = (LightData*)m_lightsBuffer.AllocationInfo().pMappedData;
+        lightData->lightsCount = scene->LightsCount();
+        memcpy(lightData->lights, scene->Lights().data(), sizeof(Light) * lightData->lightsCount);
+        lightData->directionalLight = scene->GetDirectionalLight();
     }
 
     // Transforms

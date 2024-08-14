@@ -8,6 +8,13 @@ namespace Pinut
 {
 void Scene::LoadScene() {}
 
+void Scene::SetDirectionalLight(DirectionalLight l) { m_directionalLight = std::move(l); }
+
+void Scene::SetDirectionalLight(glm::vec3 direction, glm::vec3 color, f32 intensity)
+{
+    m_directionalLight = {direction, intensity, color};
+}
+
 void Scene::AddLight(Light l)
 {
     assert(m_lightCount < MAX_LIGHTS);

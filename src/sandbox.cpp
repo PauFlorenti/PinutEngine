@@ -114,6 +114,7 @@ void Sandbox::OnCreate()
     // ------------------
 
     m_currentScene = new Pinut::Scene();
+    m_currentScene->SetDirectionalLight(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f), 1.0f);
     // m_currentScene->AddRenderable(std::move(floor));
     // m_currentScene->AddRenderable(std::move(glassPlane));
     // m_currentScene->AddRenderable(std::move(cube));

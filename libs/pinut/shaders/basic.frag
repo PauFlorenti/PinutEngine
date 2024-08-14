@@ -16,10 +16,21 @@ struct Light
     float   radius;
 };
 
+struct DirectionalLight
+{
+    vec3    direction;
+    float   intensity;
+    vec3    color;
+};
+
 layout(set = 0, binding = 2) uniform perFrame
 {
     uint count;
+    float dummy1;
+    float dummy2;
+    float dummy3;
     Light lights[10];
+    DirectionalLight directionalLight;
 } lightData;
 
 layout(set = 1, binding = 0) readonly buffer perInstance
@@ -44,6 +55,21 @@ vec4 UnpackColor(uint packedColor)
     return unpackedColor;
 }
 
+vec3 ComputeDirectionalLight(DirectionalLight l, vec3 N, vec3 materialDiffuseColor)
+{
+    vec3 color = vec3(0.0f);
+
+    if (l.intensity <= 0.0001 || length(l.direction) < 0.0001)
+    {
+        return color;
+    }
+
+    vec3 L = normalize(l.direction);
+    float dotNL = max(dot(N, L), 0.0f);
+
+    return l.intensity * dotNL * materialDiffuseColor;
+}
+
 void main()
 {
     vec3 N = normalize(inNormal);
@@ -59,6 +85,7 @@ void main()
     vec3 specular = vec3(0.0f);
 
     ambient = ambientLightIntensity * materialAmbientColor;
+    diffuse += ComputeDirectionalLight(lightData.directionalLight, N, materialDiffuseColor);
 
     for (int i = 0; i < lightData.count; ++i)
     {

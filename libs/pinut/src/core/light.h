@@ -12,4 +12,11 @@ struct Light
 
     void DrawImGUI();
 };
+
+struct DirectionalLight
+{
+    glm::vec3 direction{};
+    f32       intensity = 1.0f;
+    glm::vec3 color{};
+};
 } // namespace Pinut

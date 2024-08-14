@@ -300,6 +300,11 @@ void Application::Render()
     }
     if (ImGui::TreeNode("Lights"))
     {
+        auto& directionalLight = m_currentScene->GetDirectionalLight();
+        ImGui::DragFloat3("Direction", &directionalLight.direction[0], 1.0f, 0.0f, 360.0f);
+        ImGui::ColorEdit3("Color", &directionalLight.color[0]);
+        ImGui::DragFloat("Intensity", &directionalLight.intensity);
+
         auto& lights = m_currentScene->Lights();
         for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)
         {

@@ -3,6 +3,7 @@
 namespace Pinut
 {
 
+struct DirectionalLight;
 struct Light;
 
 constexpr int MAX_ENTITIES = 1000;
@@ -20,5 +21,6 @@ struct LightData
     u32   dummy1;
     u32   dummy2;
     Light lights[MAX_LIGHTS];
+    DirectionalLight directionalLight;
 };
 } // namespace Pinut
