@@ -22,7 +22,7 @@ class ForwardPipeline
     void OnDestroyWindowDependantResources();
     void OnCreateWindowDependantResources(u32 width, u32 height);
 
-    const Texture* GetDepthAttachment() const { return m_depthTexture; }
+    const std::shared_ptr<Texture>& GetDepthAttachment() const { return m_depthTexture; }
 
     void Render(VkCommandBuffer cmd, Camera* camera, Scene* scene);
 
@@ -32,10 +32,10 @@ class ForwardPipeline
 
     DescriptorSetManager m_descriptorSetManager; // Used for global data.
 
-    GPUBuffer m_perFrameBuffer;
-    GPUBuffer m_perObjectBuffer;
-    GPUBuffer m_lightsBuffer;
-    GPUBuffer m_transformsBuffer;
-    Texture*  m_depthTexture{nullptr};
+    GPUBuffer                m_perFrameBuffer;
+    GPUBuffer                m_perObjectBuffer;
+    GPUBuffer                m_lightsBuffer;
+    GPUBuffer                m_transformsBuffer;
+    std::shared_ptr<Texture> m_depthTexture{nullptr};
 };
 } // namespace Pinut

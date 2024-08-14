@@ -72,8 +72,8 @@ void ForwardPipeline::OnCreateWindowDependantResources(u32 width, u32 height)
       .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    m_depthTexture = new Texture();
-    m_depthTexture->Create(m_device, depthTextureInfo);
+    m_depthTexture = std::make_shared<Texture>(m_device, depthTextureInfo);
+    // m_depthTexture->Create(m_device, depthTextureInfo);
 }
 
 void ForwardPipeline::OnDestroyWindowDependantResources()

@@ -28,7 +28,6 @@ class Texture final : public Asset
 
     ~Texture() = default;
 
-    void                            Create(Device* device, const VkImageCreateInfo& info);
     static std::shared_ptr<Texture> CreateFromData(const u32         width,
                                                    const u32         height,
                                                    const u32         channels,
@@ -37,7 +36,9 @@ class Texture final : public Asset
                                                    void*             data,
                                                    Device*           device);
     static std::shared_ptr<Texture> CreateFromFile(const std::string& filename, Device* device);
-    void                            Destroy() override;
+
+    Texture(Device* device, const VkImageCreateInfo& info);
+    void Destroy() override;
 
     VkImage     Image() const { return m_image; }
     VkImageView ImageView() const { return m_imageView; }

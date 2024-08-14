@@ -227,7 +227,7 @@ void Application::Render()
     auto ok = vkBeginCommandBuffer(cmd, &cmdBeginInfo);
     assert(ok == VK_SUCCESS);
 
-    auto depthTexture = m_forwardPipeline.GetDepthAttachment();
+    const auto depthTexture = m_forwardPipeline.GetDepthAttachment();
 
     Texture::TransitionImageLayout(cmd,
                                    m_swapchain.GetCurrentImage(),

@@ -87,51 +87,6 @@ void Texture::CopyTextureToTexture(VkCommandBuffer cmd,
     vkCmdBlitImage2(cmd, &blitInfo);
 }
 
-void Texture::Create(Device* device, const VkImageCreateInfo& info)
-{
-    assert(device);
-    m_device = device;
-
-    m_width  = info.extent.width;
-    m_height = info.extent.height;
-    m_format = info.format;
-
-    VmaAllocationCreateInfo allocationCreateInfo{
-      .usage = VMA_MEMORY_USAGE_GPU_ONLY,
-    };
-
-    VmaAllocationInfo allocationInfo{};
-
-    auto ok = vmaCreateImage(m_device->GetAllocator(),
-                             &info,
-                             &allocationCreateInfo,
-                             &m_image,
-                             &m_allocation,
-                             &allocationInfo);
-    assert(ok == VK_SUCCESS);
-
-    VkImageSubresourceRange subresourceRange{};
-    if (m_format == VK_FORMAT_D32_SFLOAT)
-        subresourceRange = GetImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT);
-    else if (m_format == VK_FORMAT_D32_SFLOAT_S8_UINT)
-        subresourceRange =
-          GetImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
-    else
-        subresourceRange = GetImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    VkImageViewCreateInfo viewInfo{
-      .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-      .pNext            = nullptr,
-      .image            = m_image,
-      .viewType         = VK_IMAGE_VIEW_TYPE_2D,
-      .format           = m_format,
-      .subresourceRange = subresourceRange,
-    };
-
-    ok = vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &m_imageView);
-    assert(ok == VK_SUCCESS);
-}
-
 std::shared_ptr<Texture> Texture::CreateFromData(const u32         width,
                                                  const u32         height,
                                                  const u32         channels,
@@ -141,7 +96,6 @@ std::shared_ptr<Texture> Texture::CreateFromData(const u32         width,
                                                  Device*           device)
 {
     assert(device);
-    auto t = std::make_shared<Texture>();
 
     VkImageCreateInfo info{
       .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -160,7 +114,7 @@ std::shared_ptr<Texture> Texture::CreateFromData(const u32         width,
       .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    t->Create(device, info);
+    auto t = std::make_shared<Texture>(device, info);
 
     const auto   cmd         = device->CreateImmediateCommandBuffer();
     const size_t textureSize = width * height * channels;
@@ -254,6 +208,51 @@ std::shared_ptr<Texture> Texture::CreateFromFile(const std::string& filename, De
     stbi_image_free(pixels);
 
     return t;
+}
+
+Texture::Texture(Device* device, const VkImageCreateInfo& info)
+{
+    assert(device);
+    m_device = device;
+
+    m_width  = info.extent.width;
+    m_height = info.extent.height;
+    m_format = info.format;
+
+    VmaAllocationCreateInfo allocationCreateInfo{
+      .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+    };
+
+    VmaAllocationInfo allocationInfo{};
+
+    auto ok = vmaCreateImage(m_device->GetAllocator(),
+                             &info,
+                             &allocationCreateInfo,
+                             &m_image,
+                             &m_allocation,
+                             &allocationInfo);
+    assert(ok == VK_SUCCESS);
+
+    VkImageSubresourceRange subresourceRange{};
+    if (m_format == VK_FORMAT_D32_SFLOAT)
+        subresourceRange = GetImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT);
+    else if (m_format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+        subresourceRange =
+          GetImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+    else
+        subresourceRange = GetImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+    VkImageViewCreateInfo viewInfo{
+      .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+      .pNext            = nullptr,
+      .image            = m_image,
+      .viewType         = VK_IMAGE_VIEW_TYPE_2D,
+      .format           = m_format,
+      .subresourceRange = subresourceRange,
+    };
+
+    ok = vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &m_imageView);
+    assert(ok == VK_SUCCESS);
 }
 
 void Texture::Destroy()
