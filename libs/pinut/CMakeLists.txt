@@ -61,14 +61,14 @@ add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_imgui} ${Pinut_re
 
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
+add_subdirectory(external/glm)
 add_subdirectory(external/imgui)
 add_subdirectory(external/tinyobjloader)
 add_subdirectory(external/vkbootstrap)
 add_subdirectory(external/vma)
 
-# add_subdirectory(external/glm)
 # add_subdirectory(external/stb)
-target_link_libraries(Pinut PUBLIC GLFW IMGUI TINYOBJ VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
+target_link_libraries(Pinut PUBLIC GLFW glm IMGUI TINYOBJ VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
 
 # target_link_libraries(Pinut PUBLIC GLFW GLM STB VMA VKBOOTSTRAP ${Vulkan_LIBRARY})
 target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Vulkan_INCLUDE_DIR})

@@ -1,6 +1,6 @@
 file(GLOB_RECURSE shader_files CONFIGURE_DEPENDS *.frag *.vert)
 
-set(glslc "D:/TOOLS/Vulkan/1.3.231.1/Bin/glslc.exe")
+set(glslc ${Vulkan_GLSLC_EXECUTABLE})
 set(objects)
 
 foreach(file ${shader_files})
