@@ -36,7 +36,7 @@ void ForwardPipeline::Init(Device* device)
                               sizeof(glm::mat4) * MAX_ENTITIES,
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
-    m_lightsBuffer.Create(m_device, sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    m_lightsBuffer.Create(m_device, sizeof(SceneLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 }
 
 void ForwardPipeline::Shutdown()
@@ -113,13 +113,31 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
     // Lights
     {
-        auto lightData         = (LightData*)m_lightsBuffer.AllocationInfo().pMappedData;
+        auto lightData         = (SceneLightData*)m_lightsBuffer.AllocationInfo().pMappedData;
         lightData->lightsCount = scene->LightsCount();
-        memcpy(lightData->lights, scene->Lights().data(), sizeof(Light) * lightData->lightsCount);
+
+        u32 index = 0;
+        for (const auto& l : scene->Lights())
+        {
+            auto& data          = lightData->lights[index];
+            data.color          = l.color;
+            data.intensity      = l.intensity;
+            data.position       = l.position;
+            data.radius         = l.radius;
+            data.cosine         = glm::cos(glm::radians(l.cosine));
+            data.cosineExponent = l.cosineExponent;
+            data.direction =
+              data.cosine > 0.0f ? l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) : glm::vec3{};
+
+            index++;
+        }
+
+        //memset(lightData + sizeof(LightData) * index, 0, sizeof(lightData) * (MAX_LIGHTS - index));
 
         const auto& directionalLight = scene->GetDirectionalLight();
-        lightData->directionalLight.direction = directionalLight.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-        lightData->directionalLight.color = directionalLight.color;
+        lightData->directionalLight.direction =
+          directionalLight.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+        lightData->directionalLight.color     = directionalLight.color;
         lightData->directionalLight.intensity = directionalLight.intensity;
     }
 

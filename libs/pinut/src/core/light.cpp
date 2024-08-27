@@ -12,6 +12,16 @@ void Pinut::Light::DrawImGUI()
         ImGui::ColorEdit3("Color", &color[0]);
         ImGui::DragFloat("Intensity", &intensity, 1, 0, FLT_MAX / 2);
         ImGui::DragFloat("Radius", &radius, 1, 0, FLT_MAX / 2);
+        ImGui::DragFloat("Spot Light Angle", &cosine, 1.0f, 0.0f, 180.0f, "%.0f");
+        ImGui::DragFloat("Angle exponent", &cosineExponent, 1.0f, 0.0f, 100.0f, "%.0f");
+
+        auto euler = glm::degrees(glm::eulerAngles(rotation));
+        const auto eulerAux = euler;
+        if (ImGui::DragFloat3("Rotation", &euler[0], 1.0f, -360.0f, 360.0f, "%0.f"))
+        {
+            const auto difference = euler - eulerAux;
+            rotation *= glm::quat(glm::radians(difference));
+        }
 
         ImGui::TreePop();
     }

@@ -14,6 +14,12 @@ struct Light
     float   intensity;
     vec3    position;
     float   radius;
+    vec3    direction; // Only used in spotlight.
+    float   cosine; // If greater than 0, this is spotlight.
+    float   cosineExponent; // Only used in spotlight.
+    float   dummy1;
+    float   dummy2;
+    float   dummy3;
 };
 
 struct DirectionalLight
@@ -21,6 +27,7 @@ struct DirectionalLight
     vec3    direction;
     float   intensity;
     vec3    color;
+    float   dummy;
 };
 
 layout(set = 0, binding = 2) uniform perFrame
@@ -59,7 +66,7 @@ vec3 ComputeDirectionalLight(DirectionalLight l, vec3 N, vec3 materialDiffuseCol
 {
     vec3 color = vec3(0.0f);
 
-    if (l.intensity <= 0.0001 || length(l.direction) < 0.0001)
+    if (l.intensity <= 1e-6 || length(l.direction) < 1e-6)
     {
         return color;
     }
@@ -95,7 +102,7 @@ void main()
         float light_radius      = light.radius;
 
         // If near zero, skip it.
-        if (light_intensity < 0.001f)
+        if (light_intensity < 1e-6f)
             continue;
 
         vec3 L                  = light_position - inPosition;
@@ -112,11 +119,27 @@ void main()
         L       = normalize(L);
         vec3 R  = reflect(-L, N);
 
+        // Compute spot factor.
+        float spotFactor = 1.0f;
+        if (light.cosine > 0.0)
+        {
+            vec3 D = normalize(light.direction);
+            float spotCosine = dot(D, -L);
+            if (spotCosine >= cos(light.cosine / 2))
+            {
+                spotFactor = pow(spotCosine, light.cosineExponent);
+            }
+            else
+            {
+                spotFactor = 0.0f;
+            }
+        }
+
         float dotNL = max(dot(N, L), 0.0);
         float dotVR = max(dot(V, R), 0.0);
 
-        diffuse += light_color * dotNL * light_intensity * materialDiffuseColor * attenuation_factor;
-        specular += pow(dotVR, perInstanceData.specularExponent) * light_intensity * light_color * attenuation_factor * materialDiffuseColor;
+        diffuse += light_color * dotNL * light_intensity * materialDiffuseColor * attenuation_factor * spotFactor;
+        specular += pow(dotVR, perInstanceData.specularExponent) * light_intensity * light_color * attenuation_factor * materialDiffuseColor * spotFactor;
     }
 
     outColor = vec4(ambient + diffuse + specular, 1.0);

@@ -43,7 +43,7 @@ void Sandbox::OnCreate()
 
     Pinut::MaterialData glassMaterialData;
     glassMaterialData.diffuse        = 0xFFFFFFFF;
-    glassMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");;
+    glassMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
 
     auto glassMaterial = GetMaterialInstance("GlassMAT",
                                              Pinut::MaterialType::TRANSPARENT,
@@ -94,17 +94,20 @@ void Sandbox::OnCreate()
     l.intensity = 100.0f;
 
     Pinut::Light l2;
-    l2.color     = glm::vec3(0.0f, 0.0f, 1.0f);
-    l2.position  = glm::vec3(-1.0f, 2.0f, 0.0f);
-    l2.radius    = 100.0f;
-    l2.intensity = 100.0f;
+    l2.color          = glm::vec3(0.0f, 0.0f, 1.0f);
+    l2.position       = glm::vec3(20.0f, 2.0f, 0.0f);
+    l2.radius         = 50.0f;
+    l2.intensity      = 50.0f;
+    l2.cosine         = 30.0f;
+    // l2.rotation       = glm::quat(glm::radians(glm::vec3(-90.0f, 0.0f, 0.0f)));
+    l2.cosineExponent = 10.0f;
 
     // ------------------
     // Creating scene
     // ------------------
 
     m_currentScene = new Pinut::Scene();
-    m_currentScene->SetDirectionalLight(glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f), 1.0f);
+    m_currentScene->SetDirectionalLight(glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f), 0.1f);
     m_currentScene->AddRenderable(std::move(floor));
     // m_currentScene->AddRenderable(std::move(glassPlane));
     // m_currentScene->AddRenderable(std::move(cube));
@@ -112,7 +115,7 @@ void Sandbox::OnCreate()
     m_currentScene->AddRenderable(std::move(vikingRoom));
     m_currentScene->AddRenderable(std::move(cornellBox));
     // m_currentScene->AddLight(l);
-    // m_currentScene->AddLight(l2);
+    m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()
