@@ -2,8 +2,6 @@
 
 namespace Pinut
 {
-
-struct DirectionalLight;
 struct Light;
 
 constexpr int MAX_ENTITIES = 1000;
@@ -14,6 +12,13 @@ struct PerFrameData
     glm::vec3 cameraPosition{};
 };
 
+struct DirectionalLightData
+{
+    glm::vec3 direction{};
+    f32       intensity = 1.0f;
+    glm::vec3 color{};
+};
+
 struct LightData
 {
     u32   lightsCount{0};
@@ -21,6 +26,6 @@ struct LightData
     u32   dummy1;
     u32   dummy2;
     Light lights[MAX_LIGHTS];
-    DirectionalLight directionalLight;
+    DirectionalLightData directionalLight;
 };
 } // namespace Pinut

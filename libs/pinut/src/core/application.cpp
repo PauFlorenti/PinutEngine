@@ -319,10 +319,25 @@ void Application::Render()
     }
     if (ImGui::TreeNode("Lights"))
     {
-        auto& directionalLight = m_currentScene->GetDirectionalLight();
-        ImGui::DragFloat3("Direction", &directionalLight.direction[0], 1.0f, 0.0f, 360.0f);
-        ImGui::ColorEdit3("Color", &directionalLight.color[0]);
-        ImGui::DragFloat("Intensity", &directionalLight.intensity);
+        if (ImGui::TreeNode("Directional Light"))
+        {
+            auto& directionalLight = m_currentScene->GetDirectionalLight();
+
+            auto euler          = glm::degrees(glm::eulerAngles(directionalLight.rotation));
+            const auto eulerAux = euler;
+
+            ImGui::ColorEdit3("Color", &directionalLight.color[0]);
+            ImGui::DragFloat("Intensity", &directionalLight.intensity);
+
+            if (ImGui::DragFloat3("Direction", &euler[0], 1.0f, 0.0f, 360.0f, "%.0f"))
+            {
+                const auto difference = eulerAux - euler;
+                const auto quaternion = glm::quat(glm::radians(difference));
+                directionalLight.rotation *= quaternion;
+            }
+
+            ImGui::TreePop();
+        }
 
         auto& lights = m_currentScene->Lights();
         for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)

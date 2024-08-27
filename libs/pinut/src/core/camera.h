@@ -24,7 +24,7 @@ class Camera
 
     void DrawImGUI();
 
-    float speed{2.0f};
+    float speed{5.0f};
 
   private:
     glm::mat4 m_view = glm::mat4(1.0f);
@@ -33,6 +33,6 @@ class Camera
     glm::vec3 m_forward  = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 m_right    = glm::vec3(1.0f, 0.0f, 0.0f);
 
-    f32 m_sensibility = 2.0f;
+    f32 m_sensibility = 5.0f;
 };
 } // namespace Pinut

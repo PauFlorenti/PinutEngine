@@ -116,7 +116,11 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         auto lightData         = (LightData*)m_lightsBuffer.AllocationInfo().pMappedData;
         lightData->lightsCount = scene->LightsCount();
         memcpy(lightData->lights, scene->Lights().data(), sizeof(Light) * lightData->lightsCount);
-        lightData->directionalLight = scene->GetDirectionalLight();
+
+        const auto& directionalLight = scene->GetDirectionalLight();
+        lightData->directionalLight.direction = directionalLight.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+        lightData->directionalLight.color = directionalLight.color;
+        lightData->directionalLight.intensity = directionalLight.intensity;
     }
 
     // Transforms

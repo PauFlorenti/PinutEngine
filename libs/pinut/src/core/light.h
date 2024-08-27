@@ -15,7 +15,7 @@ struct Light
 
 struct DirectionalLight
 {
-    glm::vec3 direction{};
+    glm::quat rotation{};
     f32       intensity = 1.0f;
     glm::vec3 color{};
 };

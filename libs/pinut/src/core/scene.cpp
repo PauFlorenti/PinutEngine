@@ -12,7 +12,8 @@ void Scene::SetDirectionalLight(DirectionalLight l) { m_directionalLight = std::
 
 void Scene::SetDirectionalLight(glm::vec3 direction, glm::vec3 color, f32 intensity)
 {
-    m_directionalLight = {direction, intensity, color};
+    const auto rotation = glm::quat(glm::radians(std::move(direction)));
+    m_directionalLight  = {rotation, intensity, color};
 }
 
 void Scene::AddLight(Light l)

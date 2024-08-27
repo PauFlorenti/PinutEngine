@@ -57,7 +57,7 @@ void Sandbox::OnCreate()
     m->SetMaterial(whiteMaterial);
     floor->SetMesh(std::move(m));
     floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, 0.0f)),
-                               glm::vec3(5.0f, 0.5f, 5.0f)));
+                               glm::vec3(100.0f, 0.5f, 100.0f)));
 
     auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
     auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
@@ -104,23 +104,23 @@ void Sandbox::OnCreate()
     // ------------------
 
     m_currentScene = new Pinut::Scene();
-    m_currentScene->SetDirectionalLight(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f), 1.0f);
-    // m_currentScene->AddRenderable(std::move(floor));
+    m_currentScene->SetDirectionalLight(glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f), 1.0f);
+    m_currentScene->AddRenderable(std::move(floor));
     // m_currentScene->AddRenderable(std::move(glassPlane));
     // m_currentScene->AddRenderable(std::move(cube));
     m_currentScene->AddRenderable(std::move(monkey));
     m_currentScene->AddRenderable(std::move(vikingRoom));
     m_currentScene->AddRenderable(std::move(cornellBox));
-    m_currentScene->AddLight(l);
-    m_currentScene->AddLight(l2);
+    // m_currentScene->AddLight(l);
+    // m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()
 {
     if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT))
-        m_currentCamera->speed = 3.0f;
+        m_currentCamera->speed = 10.0f;
     else
-        m_currentCamera->speed = 1.0f;
+        m_currentCamera->speed = 5.0f;
 
     const auto dt = static_cast<f32>(GetDeltaTime());
 
@@ -143,6 +143,7 @@ void Sandbox::OnUpdate()
 
     if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_2))
     {
+        // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         m_currentCamera->UpdateRotation(dt, -m_mouse.mouseOffset.x, -m_mouse.mouseOffset.y);
     }
 }
