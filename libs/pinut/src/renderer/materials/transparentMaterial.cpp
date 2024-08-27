@@ -26,13 +26,11 @@ void TransparentMaterial::BuildPipeline(VkDevice device)
     // clang-format off
     std::vector<VkVertexInputAttributeDescription> input_attributes{
         vkinit::VertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)),
-        vkinit::VertexInputAttributeDescription(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)),
-        vkinit::VertexInputAttributeDescription(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color)),
-        vkinit::VertexInputAttributeDescription(3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)),
+        vkinit::VertexInputAttributeDescription(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)),
     };
     // clang-format on
 
-    VkDescriptorSetLayoutBinding perFrameBindings[3] = {
+    VkDescriptorSetLayoutBinding perFrameBindings[2] = {
       vkinit::DescriptorSetLayoutBinding(0,
                                          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                          1,
@@ -41,13 +39,10 @@ void TransparentMaterial::BuildPipeline(VkDevice device)
                                          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                          1,
                                          VK_SHADER_STAGE_VERTEX_BIT),
-      vkinit::DescriptorSetLayoutBinding(2,
-                                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                         1,
-                                         VK_SHADER_STAGE_FRAGMENT_BIT),
     };
+
     auto perFrameDescriptorSetLayoutCreateInfo =
-      vkinit::DescriptorSetLayoutCreateInfo(3, perFrameBindings);
+      vkinit::DescriptorSetLayoutCreateInfo(2, perFrameBindings);
 
     vkCreateDescriptorSetLayout(device,
                                 &perFrameDescriptorSetLayoutCreateInfo,

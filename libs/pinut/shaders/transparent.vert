@@ -1,15 +1,9 @@
 #version 460
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec4 inColor;
-layout(location = 3) in vec2 inUv;
+layout(location = 1) in vec2 inUv;
 
-layout(location = 0) out vec3 outNormal;
-layout(location = 1) out vec3 outPosition;
-layout(location = 2) out vec3 outCameraPosition;
-layout(location = 3) out vec4 outColor;
-layout(location = 4) out vec2 outUv;
+layout(location = 0) out vec2 outUv;
 
 layout(set = 0, binding = 0) uniform perFrame
 {
@@ -30,13 +24,7 @@ void main()
     mat4 model = transforms.models[gl_BaseInstance];
 
     vec4 world_position = model * vec4(inPosition, 1.0);
-    vec3 N = mat3(transpose(inverse(model))) * inNormal;
-
     gl_Position = projection * view * world_position;
 
-    outNormal = N;
-    outPosition = world_position.xyz;
-    outCameraPosition = perFrameData.cameraPosition;
-    outColor = inColor;
     outUv = inUv;
 }

@@ -32,7 +32,7 @@ void Sandbox::OnCreate()
     whiteMaterialData.diffuse        = 0xFFFFFFFF;
     whiteMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultWhiteTexture");
 
-    auto whiteMaterial =
+    const auto whiteMaterial =
       GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
 
     Pinut::MaterialData redMaterialData;
@@ -42,12 +42,12 @@ void Sandbox::OnCreate()
       GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
 
     Pinut::MaterialData glassMaterialData;
-    glassMaterialData.diffuse        = 0xFFFFFFFF;
+    glassMaterialData.diffuse        = 0x1FFFFFFF;
     glassMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
 
-    auto glassMaterial = GetMaterialInstance("GlassMAT",
-                                             Pinut::MaterialType::TRANSPARENT,
-                                             std::move(glassMaterialData));
+    const auto glassMaterial = GetMaterialInstance("GlassMAT",
+                                                   Pinut::MaterialType::TRANSPARENT,
+                                                   std::move(glassMaterialData));
 
     // ------------------
     // Loading assets
@@ -63,7 +63,8 @@ void Sandbox::OnCreate()
     auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
     planeMesh->SetMaterial(glassMaterial);
     glassPlane->SetMesh(std::move(planeMesh));
-    glassPlane->SetModel(glm::mat4(1.0f));
+    glassPlane->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 15.0f)),
+                                    glm::vec3(10.0f, 10.0f, 1.0f)));
 
     auto cube    = std::make_shared<Pinut::Renderable>("Cube");
     auto redCube = GetAsset<Pinut::Mesh>("UnitCube");
@@ -94,11 +95,11 @@ void Sandbox::OnCreate()
     l.intensity = 100.0f;
 
     Pinut::Light l2;
-    l2.color          = glm::vec3(0.0f, 0.0f, 1.0f);
-    l2.position       = glm::vec3(20.0f, 2.0f, 0.0f);
-    l2.radius         = 50.0f;
-    l2.intensity      = 50.0f;
-    l2.cosine         = 30.0f;
+    l2.color     = glm::vec3(0.0f, 0.0f, 1.0f);
+    l2.position  = glm::vec3(20.0f, 2.0f, 0.0f);
+    l2.radius    = 50.0f;
+    l2.intensity = 50.0f;
+    l2.cosine    = 30.0f;
     // l2.rotation       = glm::quat(glm::radians(glm::vec3(-90.0f, 0.0f, 0.0f)));
     l2.cosineExponent = 10.0f;
 
@@ -109,7 +110,7 @@ void Sandbox::OnCreate()
     m_currentScene = new Pinut::Scene();
     m_currentScene->SetDirectionalLight(glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f), 0.1f);
     m_currentScene->AddRenderable(std::move(floor));
-    // m_currentScene->AddRenderable(std::move(glassPlane));
+    m_currentScene->AddRenderable(std::move(glassPlane));
     // m_currentScene->AddRenderable(std::move(cube));
     m_currentScene->AddRenderable(std::move(monkey));
     m_currentScene->AddRenderable(std::move(vikingRoom));

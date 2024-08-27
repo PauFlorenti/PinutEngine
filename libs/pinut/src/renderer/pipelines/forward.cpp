@@ -9,6 +9,7 @@
 #include "src/renderer/device.h"
 #include "src/renderer/materials/material.h"
 #include "src/renderer/materials/opaqueMaterial.h"
+#include "src/renderer/materials/transparentMaterial.h"
 #include "src/renderer/pipeline.h"
 #include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
@@ -26,7 +27,7 @@ void ForwardPipeline::Init(Device* device)
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
     };
 
-    m_descriptorSetManager.OnCreate(m_device->GetDevice(), 3, 1, std::move(sizes));
+    m_descriptorSetManager.OnCreate(m_device->GetDevice(), 3, 10, std::move(sizes));
 
     m_perFrameBuffer.Create(m_device, sizeof(PerFrameData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
@@ -132,8 +133,6 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
             index++;
         }
 
-        //memset(lightData + sizeof(LightData) * index, 0, sizeof(lightData) * (MAX_LIGHTS - index));
-
         const auto& directionalLight = scene->GetDirectionalLight();
         lightData->directionalLight.direction =
           directionalLight.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
@@ -177,7 +176,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                  &transformBufferInfo),
       vkinit::WriteDescriptorSet(set, 2, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &lightsBufferInfo),
     };
-    vkUpdateDescriptorSets(m_device->GetDevice(), 3, perFrameWrites, 0, nullptr);
+    vkUpdateDescriptorSets(device, 3, perFrameWrites, 0, nullptr);
 
     // Draw
 
@@ -195,6 +194,32 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
     if (transparentRenderables.empty())
         return;
+
+    auto transparentMaterialInstance = transparentRenderables.at(0).m_material;
+    auto transparentMaterial = (TransparentMaterial*)transparentMaterialInstance->GetMaterial();
+    VkDescriptorSet transparentSet =
+      m_descriptorSetManager.Allocate(transparentMaterial->m_perFrameDescriptorSetLayout);
+
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            transparentMaterial->m_pipelineLayout,
+                            0,
+                            1,
+                            &transparentSet,
+                            0,
+                            nullptr);
+
+    VkWriteDescriptorSet writes[2] = {vkinit::WriteDescriptorSet(transparentSet,
+                                                                 0,
+                                                                 1,
+                                                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                 &bufferVertexInfo),
+                                      vkinit::WriteDescriptorSet(transparentSet,
+                                                                 1,
+                                                                 1,
+                                                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                                 &transformBufferInfo)};
+    vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
 
     transparentRenderables.at(0).m_material->BindPipeline(cmd);
     for (auto& dc : scene->TransparentRenderables())
