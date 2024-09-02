@@ -3,6 +3,7 @@
 #include "forward.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
+#include "src/core/assetManager.h"
 #include "src/core/camera.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
@@ -38,6 +39,9 @@ void ForwardPipeline::Init(Device* device)
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
     m_lightsBuffer.Create(m_device, sizeof(SceneLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+    m_skyboxMaterial = std::make_shared<SkyboxMaterial>();
+    m_skyboxMaterial->BuildPipeline(logicalDevice);
 }
 
 void ForwardPipeline::Shutdown()
@@ -52,6 +56,8 @@ void ForwardPipeline::Shutdown()
     m_transformsBuffer.Destroy();
     m_perObjectBuffer.Destroy();
     m_perFrameBuffer.Destroy();
+
+    m_skyboxMaterial->Destroy(device);
 }
 
 void ForwardPipeline::OnCreateWindowDependantResources(u32 width, u32 height)
@@ -150,8 +156,8 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         ++i;
     }
 
-    auto opaqueMaterial = (OpaqueMaterial*)opaqueMaterialInstance->GetMaterial();
-    auto set = m_descriptorSetManager.Allocate(opaqueMaterial->m_perFrameDescriptorSetLayout);
+    const auto opaqueMaterial = (OpaqueMaterial*)opaqueMaterialInstance->GetMaterial();
+    const auto set = m_descriptorSetManager.Allocate(opaqueMaterial->m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             opaqueMaterial->m_pipelineLayout,
@@ -192,12 +198,15 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         dc.Draw(cmd);
     }
 
+    // Draw skybox
+    DrawSkybox(cmd, camera);
+
     if (transparentRenderables.empty())
         return;
 
-    auto transparentMaterialInstance = transparentRenderables.at(0).m_material;
-    auto transparentMaterial = (TransparentMaterial*)transparentMaterialInstance->GetMaterial();
-    VkDescriptorSet transparentSet =
+    const auto transparentMaterial =
+      (TransparentMaterial*)transparentRenderables.at(0).m_material->GetMaterial();
+    const auto transparentSet =
       m_descriptorSetManager.Allocate(transparentMaterial->m_perFrameDescriptorSetLayout);
 
     vkCmdBindDescriptorSets(cmd,
@@ -219,18 +228,84 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                                                  1,
                                                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                                                  &transformBufferInfo)};
-    vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
+    vkUpdateDescriptorSets(device, 2, std::move(writes), 0, nullptr);
 
-    transparentRenderables.at(0).m_material->BindPipeline(cmd);
     for (auto& dc : scene->TransparentRenderables())
     {
         if (currentMaterial != dc.m_material)
         {
+            // Is this necessary?
+            if (currentMaterial->Type() != dc.m_material->Type())
+            {
+                dc.m_material->BindPipeline(cmd);
+            }
+
             currentMaterial = dc.m_material;
             currentMaterial->Bind(cmd);
         }
 
         dc.Draw(cmd);
+    }
+}
+
+void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
+{
+    m_skyboxMaterial->BindPipeline(cmd);
+    const auto sphereMesh = m_assetManager.GetAsset<Mesh>("sphere.obj");
+
+    const auto model = glm::translate(glm::mat4(1.0f), camera->Position()) * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    vkCmdPushConstants(cmd,
+                       m_skyboxMaterial->m_pipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT,
+                       0,
+                       sizeof(glm::mat4),
+                       &model);
+
+    std::array<VkDescriptorSet, 2> set = {
+      m_descriptorSetManager.Allocate(m_skyboxMaterial->m_perFrameDescriptorSetLayout),
+      m_descriptorSetManager.Allocate(m_skyboxMaterial->m_perObjectDescriptorSetLayout),
+    };
+
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_skyboxMaterial->m_pipelineLayout,
+                            0,
+                            2,
+                            set.data(),
+                            0,
+                            nullptr);
+
+    // TODO This should be provided by the scene ...
+    const auto t         = m_assetManager.GetAsset<Texture>("ciel_diffuse.jpg");
+    auto       imageInfo = vkinit::DescriptorImageInfo(t->ImageView(),
+                                                 t->Sampler(),
+                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    auto bufferVertexInfo =
+      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, sizeof(PerFrameData));
+
+    VkWriteDescriptorSet writes[2] = {
+      vkinit::WriteDescriptorSet(set.at(0),
+                                 0,
+                                 1,
+                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                 &bufferVertexInfo),
+      vkinit::WriteDescriptorSet(set.at(1),
+                                 0,
+                                 1,
+                                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                 nullptr,
+                                 &imageInfo),
+    };
+
+    vkUpdateDescriptorSets(m_device->GetDevice(), 2, writes, 0, nullptr);
+
+    for (const auto& dc : sphereMesh->DrawCalls())
+    {
+        VkDeviceSize offset = 0;
+        vkCmdBindVertexBuffers(cmd, 0, 1, &dc.m_vertexBuffer->m_buffer, &offset);
+        vkCmdBindIndexBuffer(cmd, dc.m_indexBuffer->m_buffer, offset, VK_INDEX_TYPE_UINT16);
+        vkCmdDrawIndexed(cmd, dc.m_indexCount, 1, 0, 0, 0);
     }
 }
 } // namespace Pinut

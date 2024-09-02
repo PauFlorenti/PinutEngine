@@ -60,7 +60,10 @@ struct MaterialInstance
         assert(m_type != MaterialType::COUNT);
     }
 
-    bool operator==(const MaterialInstance& other) { return m_id == other.m_id; }
+    bool operator==(const MaterialInstance& other)
+    {
+        return m_id == other.m_id && m_type == other.m_type;
+    }
     bool operator!=(const MaterialInstance& other) { return !(*this == other); }
 
     const Material* GetMaterial() const { return m_material; }

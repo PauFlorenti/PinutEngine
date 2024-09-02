@@ -72,6 +72,7 @@ std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
     {
         if (auto t = Texture::CreateFromFile(absolutePath.string(), m_device))
         {
+            RegisterAsset(name, t);
             return t;
         }
     }

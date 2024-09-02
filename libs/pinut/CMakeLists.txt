@@ -50,6 +50,8 @@ set(Pinut_materials
     src/renderer/materials/materialManager.h
     src/renderer/materials/opaqueMaterial.cpp
     src/renderer/materials/opaqueMaterial.h
+    src/renderer/materials/skyboxMaterial.cpp
+    src/renderer/materials/skyboxMaterial.h
     src/renderer/materials/transparentMaterial.cpp
     src/renderer/materials/transparentMaterial.h)
 
@@ -69,7 +71,5 @@ add_subdirectory(external/vma)
 
 # add_subdirectory(external/stb)
 target_link_libraries(Pinut PUBLIC GLFW glm IMGUI TINYOBJ VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
-
-# target_link_libraries(Pinut PUBLIC GLFW GLM STB VMA VKBOOTSTRAP ${Vulkan_LIBRARY})
 target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Vulkan_INCLUDE_DIR})
 target_compile_features(Pinut PRIVATE cxx_std_20)

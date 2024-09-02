@@ -84,7 +84,9 @@ namespace Pinut
 Application::Application(const std::string& name, i32 width, i32 height)
 : m_name(name),
   m_width(width),
-  m_height(height)
+  m_height(height),
+  m_assetManager(),
+  m_forwardPipeline(m_assetManager)
 {
 }
 
@@ -272,7 +274,7 @@ void Application::Render()
                                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                                       VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                       VK_ATTACHMENT_STORE_OP_STORE,
-                                                      {0.2f, 0.f, 0.f, 0.f});
+                                                      {0.0f, 0.f, 0.f, 0.f});
 
     auto depthAttachment = vkinit::RenderingAttachmentInfo(depthTexture->ImageView(),
                                                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
@@ -323,7 +325,7 @@ void Application::Render()
         {
             auto& directionalLight = m_currentScene->GetDirectionalLight();
 
-            auto euler          = glm::degrees(glm::eulerAngles(directionalLight.rotation));
+            auto       euler    = glm::degrees(glm::eulerAngles(directionalLight.rotation));
             const auto eulerAux = euler;
 
             ImGui::ColorEdit3("Color", &directionalLight.color[0]);

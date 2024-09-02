@@ -77,6 +77,7 @@ class Application
 
     GLFWwindow* m_window{nullptr};
 
+    // TODO Shared_ptr
     Camera* m_currentCamera = nullptr;
     Scene*  m_currentScene  = nullptr;
 
