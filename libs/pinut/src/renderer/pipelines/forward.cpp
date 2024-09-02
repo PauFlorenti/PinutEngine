@@ -99,15 +99,9 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     assert(scene);
 
     const auto  device                 = m_device->GetDevice();
-    const auto& renderables            = scene->OpaqueRenderables();
     const auto& transparentRenderables = scene->TransparentRenderables();
 
-    assert(!renderables.empty());
-
-    const auto opaqueMaterialInstance = renderables.at(0).m_material;
-
     m_descriptorSetManager.Clear();
-    opaqueMaterialInstance->BindPipeline(cmd);
 
     // Camera
     {
@@ -156,6 +150,20 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         ++i;
     }
 
+    DrawOpaque(cmd, scene);
+
+    // Draw skybox
+    DrawSkybox(cmd, camera);
+
+    if (!transparentRenderables.empty())
+        DrawTransparents(cmd, scene);
+}
+
+void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
+{
+    const auto opaqueMaterialInstance = scene->OpaqueRenderables().at(0).m_material;
+    opaqueMaterialInstance->BindPipeline(cmd);
+
     const auto opaqueMaterial = (OpaqueMaterial*)opaqueMaterialInstance->GetMaterial();
     const auto set = m_descriptorSetManager.Allocate(opaqueMaterial->m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
@@ -182,64 +190,13 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
                                  &transformBufferInfo),
       vkinit::WriteDescriptorSet(set, 2, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &lightsBufferInfo),
     };
-    vkUpdateDescriptorSets(device, 3, perFrameWrites, 0, nullptr);
-
-    // Draw
+    vkUpdateDescriptorSets(m_device->GetDevice(), 3, perFrameWrites, 0, nullptr);
 
     std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
     for (const auto& dc : scene->OpaqueRenderables())
     {
         if (!currentMaterial || *currentMaterial != *dc.m_material)
         {
-            currentMaterial = dc.m_material;
-            currentMaterial->Bind(cmd);
-        }
-
-        dc.Draw(cmd);
-    }
-
-    // Draw skybox
-    DrawSkybox(cmd, camera);
-
-    if (transparentRenderables.empty())
-        return;
-
-    const auto transparentMaterial =
-      (TransparentMaterial*)transparentRenderables.at(0).m_material->GetMaterial();
-    const auto transparentSet =
-      m_descriptorSetManager.Allocate(transparentMaterial->m_perFrameDescriptorSetLayout);
-
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            transparentMaterial->m_pipelineLayout,
-                            0,
-                            1,
-                            &transparentSet,
-                            0,
-                            nullptr);
-
-    VkWriteDescriptorSet writes[2] = {vkinit::WriteDescriptorSet(transparentSet,
-                                                                 0,
-                                                                 1,
-                                                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                                 &bufferVertexInfo),
-                                      vkinit::WriteDescriptorSet(transparentSet,
-                                                                 1,
-                                                                 1,
-                                                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                                                 &transformBufferInfo)};
-    vkUpdateDescriptorSets(device, 2, std::move(writes), 0, nullptr);
-
-    for (auto& dc : scene->TransparentRenderables())
-    {
-        if (currentMaterial != dc.m_material)
-        {
-            // Is this necessary?
-            if (currentMaterial->Type() != dc.m_material->Type())
-            {
-                dc.m_material->BindPipeline(cmd);
-            }
-
             currentMaterial = dc.m_material;
             currentMaterial->Bind(cmd);
         }
@@ -253,7 +210,9 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
     m_skyboxMaterial->BindPipeline(cmd);
     const auto sphereMesh = m_assetManager.GetAsset<Mesh>("sphere.obj");
 
-    const auto model = glm::translate(glm::mat4(1.0f), camera->Position()) * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    const auto model =
+      glm::translate(glm::mat4(1.0f), camera->Position()) *
+      glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     vkCmdPushConstants(cmd,
                        m_skyboxMaterial->m_pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT,
@@ -306,6 +265,56 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
         vkCmdBindVertexBuffers(cmd, 0, 1, &dc.m_vertexBuffer->m_buffer, &offset);
         vkCmdBindIndexBuffer(cmd, dc.m_indexBuffer->m_buffer, offset, VK_INDEX_TYPE_UINT16);
         vkCmdDrawIndexed(cmd, dc.m_indexCount, 1, 0, 0, 0);
+    }
+}
+
+void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
+{
+    const auto transparentMaterialInstance = scene->TransparentRenderables().at(0).m_material;
+    transparentMaterialInstance->BindPipeline(cmd);
+
+    const auto transparentMaterial = (TransparentMaterial*)transparentMaterialInstance->GetMaterial();
+    const auto transparentSet =
+      m_descriptorSetManager.Allocate(transparentMaterial->m_perFrameDescriptorSetLayout);
+
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            transparentMaterial->m_pipelineLayout,
+                            0,
+                            1,
+                            &transparentSet,
+                            0,
+                            nullptr);
+
+    auto bufferVertexInfo =
+      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, sizeof(PerFrameData));
+    auto transformBufferInfo = vkinit::DescriptorBufferInfo(m_transformsBuffer.m_buffer,
+                                                            0,
+                                                            sizeof(glm::mat4) * MAX_ENTITIES);
+
+    VkWriteDescriptorSet writes[2] = {vkinit::WriteDescriptorSet(transparentSet,
+                                                                 0,
+                                                                 1,
+                                                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                 &bufferVertexInfo),
+                                      vkinit::WriteDescriptorSet(transparentSet,
+                                                                 1,
+                                                                 1,
+                                                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                                 &transformBufferInfo)};
+    vkUpdateDescriptorSets(m_device->GetDevice(), 2, std::move(writes), 0, nullptr);
+
+    std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
+
+    for (auto& dc : scene->TransparentRenderables())
+    {
+        if (!currentMaterial || currentMaterial != dc.m_material)
+        {
+            currentMaterial = dc.m_material;
+            currentMaterial->Bind(cmd);
+        }
+
+        dc.Draw(cmd);
     }
 }
 } // namespace Pinut

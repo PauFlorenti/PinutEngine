@@ -30,7 +30,9 @@ class ForwardPipeline
     void Render(VkCommandBuffer cmd, Camera* camera, Scene* scene);
 
   private:
+    void DrawOpaque(VkCommandBuffer cmd, Scene* scene);
     void DrawSkybox(VkCommandBuffer cmd, Camera* camera);
+    void DrawTransparents(VkCommandBuffer cmd, Scene* scene);
 
     Device*               m_device{nullptr};
     VkDescriptorSetLayout m_transformsDescriptorSetLayout{VK_NULL_HANDLE};
