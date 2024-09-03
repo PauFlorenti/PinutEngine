@@ -1,3 +1,6 @@
 [submodule "libs/pinut/external/glm"]
 	path = libs/pinut/external/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "libs/pinut/external/tinygltf"]
+	path = libs/pinut/external/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
