@@ -2,12 +2,14 @@
 
 #include <glm/gtx/quaternion.hpp>
 
+#include "src/assets/asset.h"
+
 namespace Pinut
 {
 class Mesh;
 class GPUBuffer;
 struct MaterialInstance;
-class Renderable final
+class Renderable final : public Asset
 {
   public:
     explicit Renderable(std::string name);

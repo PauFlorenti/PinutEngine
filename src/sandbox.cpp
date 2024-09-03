@@ -66,22 +66,13 @@ void Sandbox::OnCreate()
     glassPlane->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 15.0f)),
                                     glm::vec3(10.0f, 10.0f, 1.0f)));
 
-    auto cube    = std::make_shared<Pinut::Renderable>("Cube");
-    auto redCube = GetAsset<Pinut::Mesh>("UnitCube");
-    redCube->SetMaterial(redMaterial);
-    cube->SetMesh(std::move(redCube));
-    cube->SetModel(glm::mat4(1.0f));
-
-    auto monkey = std::make_shared<Pinut::Renderable>("Suzanne");
-    monkey->SetMesh(GetAsset<Pinut::Mesh>("suzanne.obj"));
+    auto monkey = GetRenderable("suzanne.obj", "Suzanne");
     monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
 
-    auto vikingRoom = std::make_shared<Pinut::Renderable>("VikingRoom");
-    vikingRoom->SetMesh(GetAsset<Pinut::Mesh>("viking_room.obj"));
+    auto vikingRoom = GetRenderable("viking_room.obj", "VikingRoom");
     vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
-    auto cornellBox = std::make_shared<Pinut::Renderable>("CornellBox");
-    cornellBox->SetMesh(GetAsset<Pinut::Mesh>("cornell_box.obj"));
+    auto cornellBox = GetRenderable("cornell_box.obj", "CornellBox");
     cornellBox->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)) *
                          glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
 
@@ -111,7 +102,6 @@ void Sandbox::OnCreate()
     m_currentScene->SetDirectionalLight(glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f), 0.1f);
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(glassPlane));
-    // m_currentScene->AddRenderable(std::move(cube));
     m_currentScene->AddRenderable(std::move(monkey));
     m_currentScene->AddRenderable(std::move(vikingRoom));
     m_currentScene->AddRenderable(std::move(cornellBox));

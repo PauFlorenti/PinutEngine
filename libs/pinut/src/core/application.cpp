@@ -409,6 +409,13 @@ Camera* Application::GetCamera()
     return m_currentCamera;
 }
 
+std::shared_ptr<Renderable> Application::GetRenderable(const std::string& filename,
+                                                       const std::string& name)
+
+{
+    return m_assetManager.GetRenderable(filename, name);
+}
+
 std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          width,
                                                             const u32          height,
                                                             const u32          channels,

@@ -15,6 +15,7 @@ struct GLFWwindow;
 namespace Pinut
 {
 class Camera;
+class Renderable;
 class Scene;
 
 struct Mouse
@@ -56,6 +57,8 @@ class Application
     {
         return m_assetManager.GetAsset<T>(name);
     }
+
+    std::shared_ptr<Renderable> GetRenderable(const std::string& filename, const std::string& name);
 
     std::shared_ptr<Texture> CreateTextureFromData(const u32          width,
                                                    const u32          height,

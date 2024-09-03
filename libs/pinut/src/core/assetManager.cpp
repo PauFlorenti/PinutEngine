@@ -2,6 +2,7 @@
 
 #include <filesystem>
 
+#include "tinygltf/tiny_gltf.h"
 #include "tinyobjloader/tiny_obj_loader.h"
 
 #include "src/assets/asset.h"
@@ -11,6 +12,7 @@
 #include "src/renderer/device.h"
 #include "src/renderer/materials/material.h"
 #include "src/renderer/materials/materialManager.h"
+#include "src/renderer/renderable.h"
 
 namespace Pinut
 {
@@ -35,30 +37,55 @@ void AssetManager::Shutdown()
     m_materialManager.Shutdown();
 }
 
-std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
-                                               const std::string&    name)
+bool AssetManager::FindFile(const std::filesystem::path& filepath,
+                            std::filesystem::path&       outAbsolutePath)
 {
-    assert(!filename.empty());
+    assert(!filepath.empty());
 
-    if (!filename.has_extension())
+    if (!filepath.has_extension())
     {
         printf("[ERROR]: File provided has no extension.");
-        return nullptr;
+        return false;
     }
 
-    bool                  found{false};
-    std::filesystem::path absolutePath;
     for (const auto& rootPath : std::filesystem::recursive_directory_iterator(m_assetsPath))
     {
-        if (rootPath.path().filename() == filename.filename())
+        if (rootPath.path().filename() == filepath.filename())
         {
-            absolutePath = rootPath.path();
-            found        = true;
-            break;
+            outAbsolutePath = rootPath.path();
+            return true;
         }
     }
 
-    if (!found)
+    return false;
+}
+
+std::shared_ptr<Renderable> AssetManager::GetRenderable(std::filesystem::path filepath,
+                                                        const std::string&    name)
+{
+    std::filesystem::path absolutePath;
+    if (!FindFile(filepath, absolutePath))
+        return nullptr;
+
+    if (absolutePath.extension() == ".obj")
+    {
+        if (auto mesh = LoadMesh(std::move(absolutePath), name))
+        {
+            auto renderable = std::make_shared<Renderable>(name);
+            renderable->SetMesh(std::move(mesh));
+            RegisterAsset(name, renderable);
+            return renderable;
+        }
+    }
+
+    return nullptr;
+}
+
+std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
+                                               const std::string&    name)
+{
+    std::filesystem::path absolutePath;
+    if (!FindFile(filename, absolutePath))
         return nullptr;
 
     if (absolutePath.extension() == ".obj")
@@ -261,13 +288,13 @@ std::shared_ptr<Mesh> AssetManager::LoadMesh(std::filesystem::path filename,
 
         const auto mat = materials.at(shape.mesh.material_ids.at(0));
 
-        u8 red   = mat.diffuse[0] * 255;
-        u8 green = mat.diffuse[1] * 255;
-        u8 blue  = mat.diffuse[2] * 255;
+        u8 red   = static_cast<u8>(mat.diffuse[0] * 255);
+        u8 green = static_cast<u8>(mat.diffuse[1] * 255);
+        u8 blue  = static_cast<u8>(mat.diffuse[2] * 255);
 
         MaterialData materialData;
         materialData.diffuse          = blue << 16 | green << 8 | red;
-        materialData.specularExponent = mat.shininess;
+        materialData.specularExponent = static_cast<u32>(mat.shininess);
 
         if (!mat.diffuse_texname.empty())
         {
