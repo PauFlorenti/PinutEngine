@@ -4,7 +4,9 @@
 
 #include "src/renderer/buffer.h"
 #include "src/renderer/descriptorSetManager.h"
+#include "src/renderer/materials/opaqueMaterial.h"
 #include "src/renderer/materials/skyboxMaterial.h"
+#include "src/renderer/materials/transparentMaterial.h"
 
 namespace Pinut
 {
@@ -18,7 +20,7 @@ struct PerFrameData;
 class ForwardPipeline
 {
   public:
-    ForwardPipeline(AssetManager& assetManager) : m_assetManager(assetManager){}
+    ForwardPipeline(AssetManager& assetManager) : m_assetManager(assetManager) {}
     void Init(Device* device);
     void Shutdown();
 
@@ -40,7 +42,9 @@ class ForwardPipeline
     DescriptorSetManager m_descriptorSetManager; // Used for global data.
     AssetManager&        m_assetManager;
 
-    std::shared_ptr<SkyboxMaterial> m_skyboxMaterial{nullptr};
+    OpaqueMaterial      m_opaqueMaterial;
+    SkyboxMaterial      m_skyboxMaterial;
+    TransparentMaterial m_transparentMaterial;
 
     GPUBuffer                m_perFrameBuffer;
     GPUBuffer                m_perObjectBuffer;

@@ -28,7 +28,7 @@ void Renderable::DrawImGui()
 {
     if (ImGui::TreeNode(m_name.c_str()))
     {
-        auto euler          = glm::degrees(glm::eulerAngles(m_rotation));
+        auto       euler    = glm::degrees(glm::eulerAngles(m_rotation));
         const auto eulerAux = euler;
 
         ImGui::DragFloat3("Position", &m_position.x, 0.1f);

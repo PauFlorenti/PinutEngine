@@ -8,9 +8,6 @@
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/device.h"
-#include "src/renderer/materials/material.h"
-#include "src/renderer/materials/opaqueMaterial.h"
-#include "src/renderer/materials/transparentMaterial.h"
 #include "src/renderer/pipeline.h"
 #include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
@@ -40,8 +37,9 @@ void ForwardPipeline::Init(Device* device)
 
     m_lightsBuffer.Create(m_device, sizeof(SceneLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-    m_skyboxMaterial = std::make_shared<SkyboxMaterial>();
-    m_skyboxMaterial->BuildPipeline(logicalDevice);
+    m_opaqueMaterial.BuildPipeline(logicalDevice);
+    m_skyboxMaterial.BuildPipeline(logicalDevice);
+    m_transparentMaterial.BuildPipeline(logicalDevice);
 }
 
 void ForwardPipeline::Shutdown()
@@ -57,7 +55,9 @@ void ForwardPipeline::Shutdown()
     m_perObjectBuffer.Destroy();
     m_perFrameBuffer.Destroy();
 
-    m_skyboxMaterial->Destroy(device);
+    m_opaqueMaterial.Destroy(device);
+    m_skyboxMaterial.Destroy(device);
+    m_transparentMaterial.Destroy(device);
 }
 
 void ForwardPipeline::OnCreateWindowDependantResources(u32 width, u32 height)
@@ -161,14 +161,13 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
 void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
 {
-    const auto opaqueMaterialInstance = scene->OpaqueRenderables().at(0).m_material;
-    opaqueMaterialInstance->BindPipeline(cmd);
+    m_opaqueMaterial.BindPipeline(cmd);
 
-    const auto opaqueMaterial = (OpaqueMaterial*)opaqueMaterialInstance->GetMaterial();
-    const auto set = m_descriptorSetManager.Allocate(opaqueMaterial->m_perFrameDescriptorSetLayout);
+    const auto set =
+      m_descriptorSetManager.Allocate(m_opaqueMaterial.m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            opaqueMaterial->m_pipelineLayout,
+                            m_opaqueMaterial.m_pipelineLayout,
                             0,
                             1,
                             &set,
@@ -207,27 +206,27 @@ void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
 
 void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
 {
-    m_skyboxMaterial->BindPipeline(cmd);
+    m_skyboxMaterial.BindPipeline(cmd);
     const auto sphereMesh = m_assetManager.GetAsset<Mesh>("sphere.obj");
 
     const auto model =
       glm::translate(glm::mat4(1.0f), camera->Position()) *
       glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     vkCmdPushConstants(cmd,
-                       m_skyboxMaterial->m_pipelineLayout,
+                       m_skyboxMaterial.m_pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT,
                        0,
                        sizeof(glm::mat4),
                        &model);
 
     std::array<VkDescriptorSet, 2> set = {
-      m_descriptorSetManager.Allocate(m_skyboxMaterial->m_perFrameDescriptorSetLayout),
-      m_descriptorSetManager.Allocate(m_skyboxMaterial->m_perObjectDescriptorSetLayout),
+      m_descriptorSetManager.Allocate(m_skyboxMaterial.m_perFrameDescriptorSetLayout),
+      m_descriptorSetManager.Allocate(m_skyboxMaterial.m_perObjectDescriptorSetLayout),
     };
 
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_skyboxMaterial->m_pipelineLayout,
+                            m_skyboxMaterial.m_pipelineLayout,
                             0,
                             2,
                             set.data(),
@@ -270,16 +269,13 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
 
 void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
 {
-    const auto transparentMaterialInstance = scene->TransparentRenderables().at(0).m_material;
-    transparentMaterialInstance->BindPipeline(cmd);
-
-    const auto transparentMaterial = (TransparentMaterial*)transparentMaterialInstance->GetMaterial();
+    m_transparentMaterial.BindPipeline(cmd);
     const auto transparentSet =
-      m_descriptorSetManager.Allocate(transparentMaterial->m_perFrameDescriptorSetLayout);
+      m_descriptorSetManager.Allocate(m_transparentMaterial.m_perFrameDescriptorSetLayout);
 
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            transparentMaterial->m_pipelineLayout,
+                            m_transparentMaterial.m_pipelineLayout,
                             0,
                             1,
                             &transparentSet,
