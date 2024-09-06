@@ -8,6 +8,9 @@ namespace Pinut
 {
 namespace Primitives
 {
+std::shared_ptr<Mesh> wiredCircle = nullptr;
+std::shared_ptr<Mesh> wiredSphere = nullptr;
+
 std::shared_ptr<Mesh> CreateUnitPlane(Device* device)
 {
     assert(device);
@@ -96,12 +99,86 @@ std::shared_ptr<Mesh> CreateUnitCube(Device* device)
     return Mesh::Create(device, std::move(vertices), std::move(indices));
 }
 
+std::shared_ptr<Mesh> CreateUnitWiredCircle(Device* device)
+{
+    assert(device);
+    const i32           samples = 32;
+    std::vector<Vertex> vertices(samples);
+    std::vector<u16>    indices;
+
+    for (u16 i = 0; i < samples; i++)
+    {
+        f32    angle = 2.0f * glm::pi<f32>() * static_cast<f32>(i) / static_cast<f32>(samples);
+        Vertex v{};
+        v.position = glm::vec3(sinf(angle), 0.0f, cosf(angle));
+        v.color    = glm::vec4(1.0f);
+
+        vertices[i] = v;
+        indices.push_back(i);
+    }
+
+    indices.push_back(0);
+
+    wiredCircle = Mesh::Create(device, std::move(vertices), std::move(indices));
+    return wiredCircle;
+}
+
 void InitializeDefaultPrimitives(Device* device, AssetManager& assetManager)
 {
     assert(device);
 
     assetManager.RegisterAsset("UnitPlane", CreateUnitPlane(device));
     assetManager.RegisterAsset("UnitCube", CreateUnitCube(device));
+    assetManager.RegisterAsset("UnitWiredCircle", CreateUnitWiredCircle(device));
+}
+
+void DrawWiredCircle(VkCommandBuffer  cmd,
+                     VkPipelineLayout layout,
+                     const glm::mat4& transform,
+                     const f32        radius,
+                     const glm::vec3  color)
+{
+    const auto model = glm::scale(transform, glm::vec3(radius));
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model);
+    vkCmdPushConstants(cmd,
+                       layout,
+                       VK_SHADER_STAGE_VERTEX_BIT,
+                       sizeof(glm::mat4),
+                       sizeof(glm::vec3),
+                       &color);
+
+    for (auto& dc : wiredCircle->DrawCalls())
+    {
+        dc.Draw(cmd);
+    }
+}
+
+void DrawWiredSphere(VkCommandBuffer  cmd,
+                     VkPipelineLayout layout,
+                     const glm::mat4  transform,
+                     const f32        radius,
+                     const glm::vec3  color)
+{
+    const auto draw = [&](glm::mat4 rotation)
+    {
+        const auto model = glm::scale(transform * rotation, glm::vec3(radius));
+        vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model);
+        vkCmdPushConstants(cmd,
+                           layout,
+                           VK_SHADER_STAGE_VERTEX_BIT,
+                           sizeof(glm::mat4),
+                           sizeof(glm::vec3),
+                           &color);
+
+        for (auto& dc : wiredCircle->DrawCalls())
+        {
+            dc.Draw(cmd);
+        }
+    };
+
+    draw(glm::mat4(1.0f));
+    draw(glm::rotate(glm::mat4(1.0f), glm::pi<f32>() * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
+    draw(glm::rotate(glm::mat4(1.0f), glm::pi<f32>() * 0.5f, glm::vec3(0.0f, 0.0f, 1.0f)));
 }
 } // namespace Primitives
 } // namespace Pinut

@@ -15,12 +15,12 @@ void Mesh::DrawCall::Draw(VkCommandBuffer cmd) const
         vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &offset);
         vkCmdBindIndexBuffer(cmd, m_indexBuffer->m_buffer, m_indexOffset, VK_INDEX_TYPE_UINT16);
 
-        vkCmdDrawIndexed(cmd, m_indexCount, 1, 0, 0, m_owner->InstanceIndex());
+        vkCmdDrawIndexed(cmd, m_indexCount, 1, 0, 0, m_owner ? m_owner->InstanceIndex() : 0);
     }
     else
     {
         vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer->m_buffer, &m_vertexOffset);
-        vkCmdDraw(cmd, m_vertexCount, 1, 0, m_owner->InstanceIndex());
+        vkCmdDraw(cmd, m_vertexCount, 1, 0, m_owner ? m_owner->InstanceIndex() : 0);
     }
 }
 

@@ -9,6 +9,7 @@
 #include "src/renderer/common.h"
 #include "src/renderer/device.h"
 #include "src/renderer/pipeline.h"
+#include "src/renderer/primitives.h"
 #include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
 
@@ -40,6 +41,10 @@ void ForwardPipeline::Init(Device* device)
     m_opaqueMaterial.BuildPipeline(logicalDevice);
     m_skyboxMaterial.BuildPipeline(logicalDevice);
     m_transparentMaterial.BuildPipeline(logicalDevice);
+
+#ifdef _DEBUG
+    m_wireframeMaterial.BuildPipeline(logicalDevice);
+#endif
 }
 
 void ForwardPipeline::Shutdown()
@@ -58,6 +63,9 @@ void ForwardPipeline::Shutdown()
     m_opaqueMaterial.Destroy(device);
     m_skyboxMaterial.Destroy(device);
     m_transparentMaterial.Destroy(device);
+#ifdef _DEBUG
+    m_wireframeMaterial.Destroy(device);
+#endif
 }
 
 void ForwardPipeline::OnCreateWindowDependantResources(u32 width, u32 height)
@@ -157,6 +165,10 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
     if (!transparentRenderables.empty())
         DrawTransparents(cmd, scene);
+
+#ifdef _DEBUG
+    DrawDebug(cmd, scene);
+#endif
 }
 
 void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
@@ -311,6 +323,41 @@ void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
         }
 
         dc.Draw(cmd);
+    }
+}
+
+void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
+{
+    m_wireframeMaterial.BindPipeline(cmd);
+
+    const auto set =
+      m_descriptorSetManager.Allocate(m_wireframeMaterial.m_perFrameDescriptorSetLayout);
+
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_wireframeMaterial.m_pipelineLayout,
+                            0,
+                            1,
+                            &set,
+                            0,
+                            nullptr);
+
+    auto bufferVertexInfo =
+      vkinit::DescriptorBufferInfo(m_perFrameBuffer.m_buffer, 0, sizeof(PerFrameData));
+
+    auto write =
+      vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferVertexInfo);
+    vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
+
+    for (const auto& l : scene->Lights())
+    {
+        if (l.outerCone < 0.0f)
+        {
+            Primitives::DrawWiredSphere(cmd,
+                                        m_wireframeMaterial.m_pipelineLayout,
+                                        glm::translate(glm::mat4(1.0f), l.position),
+                                        l.radius);
+        }
     }
 }
 } // namespace Pinut

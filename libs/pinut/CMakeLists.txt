@@ -52,6 +52,8 @@ set(Pinut_materials
     src/renderer/materials/opaqueMaterial.h
     src/renderer/materials/skyboxMaterial.cpp
     src/renderer/materials/skyboxMaterial.h
+    src/renderer/materials/wireframeMaterial.cpp
+    src/renderer/materials/wireframeMaterial.h
     src/renderer/materials/transparentMaterial.cpp
     src/renderer/materials/transparentMaterial.h)
 

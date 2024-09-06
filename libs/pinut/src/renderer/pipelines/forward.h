@@ -7,6 +7,7 @@
 #include "src/renderer/materials/opaqueMaterial.h"
 #include "src/renderer/materials/skyboxMaterial.h"
 #include "src/renderer/materials/transparentMaterial.h"
+#include "src/renderer/materials/wireframeMaterial.h"
 
 namespace Pinut
 {
@@ -35,6 +36,7 @@ class ForwardPipeline
     void DrawOpaque(VkCommandBuffer cmd, Scene* scene);
     void DrawSkybox(VkCommandBuffer cmd, Camera* camera);
     void DrawTransparents(VkCommandBuffer cmd, Scene* scene);
+    void DrawDebug(VkCommandBuffer cmd, Scene* scene);
 
     Device*               m_device{nullptr};
     VkDescriptorSetLayout m_transformsDescriptorSetLayout{VK_NULL_HANDLE};
@@ -45,6 +47,7 @@ class ForwardPipeline
     OpaqueMaterial      m_opaqueMaterial;
     SkyboxMaterial      m_skyboxMaterial;
     TransparentMaterial m_transparentMaterial;
+    WireframeMaterial m_wireframeMaterial;
 
     GPUBuffer                m_perFrameBuffer;
     GPUBuffer                m_perObjectBuffer;
