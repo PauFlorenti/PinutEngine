@@ -8,6 +8,8 @@ layout(location = 4) in vec2 inUv;
 
 layout(location = 0) out vec4 outColor;
 
+const float PI = 3.1415926535897932384626433832795;
+
 struct Light
 {
     vec3    color;
@@ -15,11 +17,11 @@ struct Light
     vec3    position;
     float   radius;
     vec3    direction; // Only used in spotlight.
-    float   cosine; // If greater than 0, this is spotlight.
+    float   innerCone; // Radians.
+    float   outerCone; // Radians. If 2 * PI (180), then pointlight.
     float   cosineExponent; // Only used in spotlight.
     float   dummy1;
     float   dummy2;
-    float   dummy3;
 };
 
 struct DirectionalLight
@@ -96,50 +98,49 @@ void main()
     {
         Light light = lightData.lights[i];
 
-        vec3 light_position     = light.position;
-        vec3 light_color        = light.color;
-        float light_intensity   = light.intensity;
-        float light_radius      = light.radius;
+        const vec3 lightPosition    = light.position;
+        const vec3 lightColor       = light.color;
+        const vec3 lightDirection   = light.direction;
+        const float lightIntensity  = light.intensity;
+        const float lightRadius     = light.radius;
 
         // If near zero, skip it.
-        if (light_intensity < 1e-6f)
+        if (lightIntensity < 1e-6f)
             continue;
 
-        vec3 L                  = light_position - inPosition;
-        float light_distance    = length(L);
+        vec3 L                  = lightPosition - inPosition;
+        float lightDistance     = length(L);
         
-        if (light_distance > light_radius)
+        if (lightDistance > lightRadius)
             continue;
 
-        float attenuation_factor = light_radius - light_distance;
-        attenuation_factor /= light_radius;
-        attenuation_factor = max(attenuation_factor, 0.0f);
-        attenuation_factor = attenuation_factor * attenuation_factor;
+        float attenuation = lightRadius - lightDistance;
+        attenuation /= lightRadius;
+        attenuation = max(attenuation, 0.0f);
+        attenuation = attenuation * attenuation;
 
         L       = normalize(L);
         vec3 R  = reflect(-L, N);
 
         // Compute spot factor.
         float spotFactor = 1.0f;
-        if (light.cosine > 0.0)
+        if (light.outerCone >= 0)
         {
-            vec3 D = normalize(light.direction);
-            float spotCosine = dot(D, -L);
-            if (spotCosine >= cos(light.cosine / 2))
+            vec3 D          = normalize(light.direction);
+            float theta     = dot(-L, D);
+            spotFactor      = 0.0f;
+
+            if (theta > cos(light.outerCone))
             {
-                spotFactor = pow(spotCosine, light.cosineExponent);
-            }
-            else
-            {
-                spotFactor = 0.0f;
+                spotFactor = smoothstep(cos(light.outerCone), cos(light.innerCone), theta);
+                spotFactor = pow(spotFactor, light.cosineExponent);
             }
         }
 
-        float dotNL = max(dot(N, L), 0.0);
-        float dotVR = max(dot(V, R), 0.0);
+        attenuation *= spotFactor;
 
-        diffuse += light_color * dotNL * light_intensity * materialDiffuseColor * attenuation_factor * spotFactor;
-        specular += pow(dotVR, perInstanceData.specularExponent) * light_intensity * light_color * attenuation_factor * materialDiffuseColor * spotFactor;
+        diffuse += lightColor * max(dot(N, L), 0.0) * lightIntensity * materialDiffuseColor * attenuation;
+        specular += pow(max(dot(V, R), 0.0), perInstanceData.specularExponent) * lightIntensity * lightColor * attenuation * materialDiffuseColor;
     }
 
     outColor = vec4(ambient + diffuse + specular, 1.0);

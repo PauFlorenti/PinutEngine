@@ -125,10 +125,10 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
             data.intensity      = l.intensity;
             data.position       = l.position;
             data.radius         = l.radius;
-            data.cosine         = glm::cos(glm::radians(l.cosine));
+            data.innerCone      = glm::radians(static_cast<f32>(l.innerCone));
+            data.outerCone      = glm::radians(static_cast<f32>(l.outerCone));
             data.cosineExponent = l.cosineExponent;
-            data.direction =
-              data.cosine > 0.0f ? l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) : glm::vec3{};
+            data.direction      = l.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
 
             index++;
         }

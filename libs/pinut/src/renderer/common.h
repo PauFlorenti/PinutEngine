@@ -19,11 +19,11 @@ struct LightData
     glm::vec3 position{};
     f32       radius{1.0f};
     glm::vec3 direction{};
-    f32       cosine{0.f}; // If greater than 0, then this is a spotlight.
+    f32       innerCone{0.f}; // If greater than 0, then this is a spotlight.
+    f32       outerCone{0.f}; // If greater than 0, then this is a spotlight.
     f32       cosineExponent{0.f};
     f32       dummy1;
     f32       dummy2;
-    f32       dummy3;
 };
 
 struct DirectionalLightData

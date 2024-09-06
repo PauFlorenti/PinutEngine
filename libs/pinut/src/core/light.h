@@ -10,7 +10,8 @@ struct Light
     glm::vec3 position{};
     f32       radius{1.0f};
     glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
-    f32       cosine{0.f}; // If greater than 0, then this is a spotlight.
+    f32       innerCone{0}; // Cones are sent to shader in radians.
+    f32       outerCone{0}; // If set to -1, then this becomes a pointlight.
     f32       cosineExponent{0.f};
 
     void DrawImGUI();
