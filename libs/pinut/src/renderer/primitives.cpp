@@ -8,8 +8,21 @@ namespace Pinut
 {
 namespace Primitives
 {
+std::shared_ptr<Mesh> line        = nullptr;
 std::shared_ptr<Mesh> wiredCircle = nullptr;
 std::shared_ptr<Mesh> wiredSphere = nullptr;
+
+std::shared_ptr<Mesh> CreateUnitLine(Device* device)
+{
+    std::vector<Vertex> vertices = {
+      {glm::vec3(0.0f), glm::vec3(0.0f), glm::vec4(1.0f), glm::vec2(0.0f)},
+      {{0.0f, 0.0f, -1.0f}, glm::vec3(0.0f), glm::vec4(1.0f), glm::vec2(0.0f)}};
+
+    std::vector<u16> indices = {0, 1};
+
+    line = Mesh::Create(device, std::move(vertices), std::move(indices));
+    return line;
+}
 
 std::shared_ptr<Mesh> CreateUnitPlane(Device* device)
 {
@@ -127,9 +140,46 @@ void InitializeDefaultPrimitives(Device* device, AssetManager& assetManager)
 {
     assert(device);
 
+    assetManager.RegisterAsset("UnitLine", CreateUnitLine(device));
     assetManager.RegisterAsset("UnitPlane", CreateUnitPlane(device));
     assetManager.RegisterAsset("UnitCube", CreateUnitCube(device));
     assetManager.RegisterAsset("UnitWiredCircle", CreateUnitWiredCircle(device));
+}
+
+void DrawLine(VkCommandBuffer  cmd,
+              VkPipelineLayout layout,
+              const glm::vec3& origin,
+              const glm::vec3& dest,
+              const glm::vec3& color)
+{
+    auto       dst      = dest;
+    const auto dir      = dest - origin;
+    const f32  distance = glm::length(dir);
+
+    if (distance < 0.001f)
+        return;
+
+    // Make sure it does not align with up(0, 1, 0).
+    if (glm::abs(dest.x) < 0.001f || glm::abs(dest.z) < 0.001f)
+    {
+        dst.x += 0.001f;
+    }
+
+    const auto model = glm::scale(
+      glm::inverse(glm::lookAt(origin, origin + glm::normalize(dir), glm::vec3(0.0f, 1.0f, 0.0f))),
+      glm::vec3(distance));
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model);
+    vkCmdPushConstants(cmd,
+                       layout,
+                       VK_SHADER_STAGE_VERTEX_BIT,
+                       sizeof(glm::mat4),
+                       sizeof(glm::vec3),
+                       &color);
+
+    for (auto& dc : line->DrawCalls())
+    {
+        dc.Draw(cmd);
+    }
 }
 
 void DrawWiredCircle(VkCommandBuffer  cmd,
@@ -179,6 +229,45 @@ void DrawWiredSphere(VkCommandBuffer  cmd,
     draw(glm::mat4(1.0f));
     draw(glm::rotate(glm::mat4(1.0f), glm::pi<f32>() * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
     draw(glm::rotate(glm::mat4(1.0f), glm::pi<f32>() * 0.5f, glm::vec3(0.0f, 0.0f, 1.0f)));
+}
+
+void DrawWiredCone(VkCommandBuffer  cmd,
+                   VkPipelineLayout layout,
+                   const glm::vec3& origin,
+                   const glm::vec3& dest,
+                   const f32        radius, // The radius of the base of the cone.
+                   const glm::vec3& color)
+{
+    const auto dir      = dest - origin;
+    const auto distance = glm::length(dir);
+
+    if (distance < 0.001f)
+        return;
+
+    const auto model = glm::scale(
+      glm::inverse(glm::lookAt(dest, dest + glm::normalize(dir), glm::vec3(0.0f, 1.0f, 0.0f))) *
+        glm::rotate(glm::pi<f32>() * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)),
+      glm::vec3(radius));
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model);
+    vkCmdPushConstants(cmd,
+                       layout,
+                       VK_SHADER_STAGE_VERTEX_BIT,
+                       sizeof(glm::mat4),
+                       sizeof(glm::vec3),
+                       &color);
+
+    for (auto& dc : wiredCircle->DrawCalls())
+    {
+        dc.Draw(cmd);
+    }
+
+    u16 samples = 16;
+    for (u16 i = 0; i < samples; i++)
+    {
+        f32        angle = 2.0f * glm::pi<f32>() * static_cast<f32>(i) / static_cast<f32>(samples);
+        const auto position = model * glm::vec4(sinf(angle), 0.0f, cosf(angle), 1.0f);
+        DrawLine(cmd, layout, origin, position, color);
+    }
 }
 } // namespace Primitives
 } // namespace Pinut

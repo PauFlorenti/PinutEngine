@@ -349,8 +349,12 @@ void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
       vkinit::WriteDescriptorSet(set, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferVertexInfo);
     vkUpdateDescriptorSets(m_device->GetDevice(), 1, &write, 0, nullptr);
 
+    u32 i = 0;
     for (const auto& l : scene->Lights())
     {
+        if (i == scene->LightsCount())
+            break;
+
         if (l.outerCone < 0.0f)
         {
             Primitives::DrawWiredSphere(cmd,
@@ -358,6 +362,33 @@ void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
                                         glm::translate(glm::mat4(1.0f), l.position),
                                         l.radius);
         }
+        else
+        {
+            const auto ComputeBaseConeRadius = [&l](f32 angle)
+            {
+                const auto direction = l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * l.radius;
+                const auto end       = l.position + direction;
+                const auto distance  = glm::length(end - l.position);
+                const auto h         = distance / glm::cos(glm::radians(angle));
+                return glm::sqrt(h * h - distance * distance);
+            };
+
+            Primitives::DrawWiredCone(cmd,
+                                      m_wireframeMaterial.m_pipelineLayout,
+                                      l.position,
+                                      l.position +
+                                        l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * l.radius,
+                                      ComputeBaseConeRadius(l.outerCone));
+
+            Primitives::DrawWiredCone(cmd,
+                                      m_wireframeMaterial.m_pipelineLayout,
+                                      l.position,
+                                      l.position +
+                                        l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * l.radius,
+                                      ComputeBaseConeRadius(l.innerCone),
+                                      glm::vec3(0.0f, 1.0f, 1.0f));
+        }
+        ++i;
     }
 }
 } // namespace Pinut
