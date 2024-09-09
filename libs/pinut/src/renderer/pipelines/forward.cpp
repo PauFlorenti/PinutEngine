@@ -128,24 +128,34 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         u32 index = 0;
         for (const auto& l : scene->Lights())
         {
-            auto& data          = lightData->lights[index];
-            data.color          = l.color;
-            data.intensity      = l.intensity;
-            data.position       = l.position;
-            data.radius         = l.radius;
-            data.innerCone      = glm::radians(static_cast<f32>(l.innerCone));
-            data.outerCone      = glm::radians(static_cast<f32>(l.outerCone));
-            data.cosineExponent = l.cosineExponent;
-            data.direction      = l.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+            if (!l)
+                continue;
+
+            auto& data     = lightData->lights[index];
+            data.color     = l->m_color;
+            data.intensity = l->m_intensity;
+            data.position  = l->GetPosition();
+            data.direction = l->GetDirection();
+
+            if (const auto& point = std::static_pointer_cast<PointLight>(l))
+            {
+                data.radius = point->m_radius;
+            }
+            if (const auto& spot = std::static_pointer_cast<SpotLight>(l))
+            {
+                data.innerCone      = glm::radians(static_cast<f32>(spot->m_innerCone));
+                data.outerCone      = glm::radians(static_cast<f32>(spot->m_outerCone));
+                data.cosineExponent = spot->m_cosineExponent;
+            }
 
             index++;
         }
 
-        const auto& directionalLight = scene->GetDirectionalLight();
-        lightData->directionalLight.direction =
-          directionalLight.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-        lightData->directionalLight.color     = directionalLight.color;
-        lightData->directionalLight.intensity = directionalLight.intensity;
+        const auto& directionalLight          = scene->GetDirectionalLight();
+        lightData->directionalLight.direction = directionalLight.GetDirection();
+        lightData->directionalLight.color     = directionalLight.m_color;
+        lightData->directionalLight.intensity =
+          directionalLight.m_enabled ? directionalLight.m_intensity : 0.0f;
     }
 
     // Transforms
@@ -355,39 +365,44 @@ void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
         if (i == scene->LightsCount())
             break;
 
-        if (l.outerCone < 0.0f)
+        if (const auto& spot = std::static_pointer_cast<SpotLight>(l))
         {
-            Primitives::DrawWiredSphere(cmd,
-                                        m_wireframeMaterial.m_pipelineLayout,
-                                        glm::translate(glm::mat4(1.0f), l.position),
-                                        l.radius);
-        }
-        else
-        {
-            const auto ComputeBaseConeRadius = [&l](f32 angle)
+            if (spot->m_outerCone < 0.0f)
             {
-                const auto direction = l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * l.radius;
-                const auto end       = l.position + direction;
-                const auto distance  = glm::length(end - l.position);
-                const auto h         = distance / glm::cos(glm::radians(angle));
-                return glm::sqrt(h * h - distance * distance);
-            };
+                Primitives::DrawWiredSphere(cmd,
+                                            m_wireframeMaterial.m_pipelineLayout,
+                                            glm::translate(glm::mat4(1.0f), spot->GetPosition()),
+                                            spot->m_radius);
+            }
+            else
+            {
+                const auto position  = spot->GetPosition();
+                const auto direction = spot->GetDirection();
+                const auto radius    = spot->m_radius;
 
-            Primitives::DrawWiredCone(cmd,
-                                      m_wireframeMaterial.m_pipelineLayout,
-                                      l.position,
-                                      l.position +
-                                        l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * l.radius,
-                                      ComputeBaseConeRadius(l.outerCone));
+                const auto ComputeBaseConeRadius = [&position, &direction, &radius](f32 angle)
+                {
+                    const auto end      = position + direction * radius;
+                    const auto distance = glm::length(end - position);
+                    const auto h        = distance / glm::cos(glm::radians(angle));
+                    return glm::sqrt(h * h - distance * distance);
+                };
 
-            Primitives::DrawWiredCone(cmd,
-                                      m_wireframeMaterial.m_pipelineLayout,
-                                      l.position,
-                                      l.position +
-                                        l.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * l.radius,
-                                      ComputeBaseConeRadius(l.innerCone),
-                                      glm::vec3(0.0f, 1.0f, 1.0f));
+                Primitives::DrawWiredCone(cmd,
+                                          m_wireframeMaterial.m_pipelineLayout,
+                                          position,
+                                          position + direction * radius,
+                                          ComputeBaseConeRadius(spot->m_outerCone));
+
+                Primitives::DrawWiredCone(cmd,
+                                          m_wireframeMaterial.m_pipelineLayout,
+                                          position,
+                                          position + direction * radius,
+                                          ComputeBaseConeRadius(spot->m_innerCone),
+                                          glm::vec3(0.0f, 1.0f, 1.0f));
+            }
         }
+
         ++i;
     }
 }

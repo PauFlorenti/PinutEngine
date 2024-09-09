@@ -56,7 +56,7 @@ void Sandbox::OnCreate()
     auto m     = GetAsset<Pinut::Mesh>("UnitCube");
     m->SetMaterial(whiteMaterial);
     floor->SetMesh(std::move(m));
-    floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)),
+    floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.5f, 0.0f)),
                                glm::vec3(100.0f, 0.5f, 100.0f)));
 
     auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
@@ -79,34 +79,29 @@ void Sandbox::OnCreate()
     // ------------------
     // Creating lights
     // ------------------
-    Pinut::Light l;
-    l.color     = glm::vec3(1.0f, 1.0f, 1.0f);
-    l.position  = glm::vec3(1.0f, 1.0f, 0.0f);
-    l.radius    = 100.0f;
-    l.intensity = 100.0f;
+    Pinut::DirectionalLight directionalLight;
+    directionalLight.SetTransform(
+      glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
-    Pinut::Light l2;
-    l2.color          = glm::vec3(0.0f, 0.0f, 1.0f);
-    l2.position       = glm::vec3(0.0f, 1.0f, 20.0f);
-    l2.radius         = 50.0f;
-    l2.intensity      = 50.0f;
-    l2.innerCone      = 15.0f;
-    l2.outerCone      = 30.0f;
-    l2.cosineExponent = 10.0f;
+    auto l = std::make_shared<Pinut::SpotLight>();
+    l->SetPosition(glm::vec3(0.0f, 8.0f, 20.0f));
+    l->m_color     = glm::vec3(0.8f, 0.5f, 0.2f);
+    l->m_radius    = 50.0f;
+    l->m_intensity = 50.0f;
 
     // ------------------
     // Creating scene
     // ------------------
 
     m_currentScene = new Pinut::Scene();
-    m_currentScene->SetDirectionalLight(glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f), 0.1f);
+    m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
     // m_currentScene->AddRenderable(std::move(glassPlane));
     m_currentScene->AddRenderable(std::move(monkey));
     m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
-    // m_currentScene->AddLight(l);
-    m_currentScene->AddLight(l2);
+    m_currentScene->AddLight(std::move(l));
+    // m_currentScene->AddLight(l2);
 }
 
 void Sandbox::OnUpdate()

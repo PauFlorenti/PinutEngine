@@ -10,13 +10,7 @@ void Scene::LoadScene() {}
 
 void Scene::SetDirectionalLight(DirectionalLight l) { m_directionalLight = std::move(l); }
 
-void Scene::SetDirectionalLight(glm::vec3 direction, glm::vec3 color, f32 intensity)
-{
-    const auto rotation = glm::quat(glm::radians(std::move(direction)));
-    m_directionalLight  = {rotation, intensity, color};
-}
-
-void Scene::AddLight(Light l)
+void Scene::AddLight(std::shared_ptr<Light> l)
 {
     assert(m_lightCount < MAX_LIGHTS);
     m_lights[m_lightCount++] = std::move(l);
@@ -46,8 +40,11 @@ void Scene::AddRenderable(std::shared_ptr<Renderable> r)
 
 void Scene::Clear()
 {
+    for (auto& l : m_lights)
+        l.reset();
+
+    m_lights.fill(nullptr);
     m_lightCount = 0;
-    memset(m_lights.data(), 0, sizeof(Light) * m_lights.size());
     m_renderables.clear();
     m_opaqueRenderables.clear();
     m_transparentRenderables.clear();
