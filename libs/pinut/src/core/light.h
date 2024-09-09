@@ -30,6 +30,10 @@ class Light
     f32       m_intensity{1.0f};
     glm::vec3 m_color{glm::vec3(1.0f)};
 
+#ifdef _DEBUG
+    bool m_renderDebug{false};
+#endif
+
   protected:
     glm::mat4                m_transform{glm::mat4(1.0f)};
     std::shared_ptr<Texture> m_shadowMap{nullptr};

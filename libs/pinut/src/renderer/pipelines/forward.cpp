@@ -365,42 +365,45 @@ void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
         if (i == scene->LightsCount())
             break;
 
-        if (const auto& spot = std::static_pointer_cast<SpotLight>(l))
+        if (!l->m_renderDebug)
         {
-            if (spot->m_outerCone < 0.0f)
+            ++i;
+            continue;
+        }
+
+        if (const auto& spot = std::dynamic_pointer_cast<SpotLight>(l))
+        {
+            const auto position  = spot->GetPosition();
+            const auto direction = spot->GetDirection();
+            const auto radius    = spot->m_radius;
+
+            const auto ComputeBaseConeRadius = [&position, &direction, &radius](f32 angle)
             {
-                Primitives::DrawWiredSphere(cmd,
-                                            m_wireframeMaterial.m_pipelineLayout,
-                                            glm::translate(glm::mat4(1.0f), spot->GetPosition()),
-                                            spot->m_radius);
-            }
-            else
-            {
-                const auto position  = spot->GetPosition();
-                const auto direction = spot->GetDirection();
-                const auto radius    = spot->m_radius;
+                const auto end      = position + direction * radius;
+                const auto distance = glm::length(end - position);
+                const auto h        = distance / glm::cos(glm::radians(angle));
+                return glm::sqrt(h * h - distance * distance);
+            };
 
-                const auto ComputeBaseConeRadius = [&position, &direction, &radius](f32 angle)
-                {
-                    const auto end      = position + direction * radius;
-                    const auto distance = glm::length(end - position);
-                    const auto h        = distance / glm::cos(glm::radians(angle));
-                    return glm::sqrt(h * h - distance * distance);
-                };
+            Primitives::DrawWiredCone(cmd,
+                                      m_wireframeMaterial.m_pipelineLayout,
+                                      position,
+                                      position + direction * radius,
+                                      ComputeBaseConeRadius(spot->m_outerCone));
 
-                Primitives::DrawWiredCone(cmd,
-                                          m_wireframeMaterial.m_pipelineLayout,
-                                          position,
-                                          position + direction * radius,
-                                          ComputeBaseConeRadius(spot->m_outerCone));
-
-                Primitives::DrawWiredCone(cmd,
-                                          m_wireframeMaterial.m_pipelineLayout,
-                                          position,
-                                          position + direction * radius,
-                                          ComputeBaseConeRadius(spot->m_innerCone),
-                                          glm::vec3(0.0f, 1.0f, 1.0f));
-            }
+            Primitives::DrawWiredCone(cmd,
+                                      m_wireframeMaterial.m_pipelineLayout,
+                                      position,
+                                      position + direction * radius,
+                                      ComputeBaseConeRadius(spot->m_innerCone),
+                                      glm::vec3(0.0f, 1.0f, 1.0f));
+        }
+        else if (const auto& point = std::dynamic_pointer_cast<PointLight>(l))
+        {
+            Primitives::DrawWiredSphere(cmd,
+                                        m_wireframeMaterial.m_pipelineLayout,
+                                        glm::translate(glm::mat4(1.0f), point->GetPosition()),
+                                        point->m_radius);
         }
 
         ++i;

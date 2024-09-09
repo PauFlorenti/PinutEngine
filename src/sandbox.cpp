@@ -82,12 +82,19 @@ void Sandbox::OnCreate()
     Pinut::DirectionalLight directionalLight;
     directionalLight.SetTransform(
       glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+    directionalLight.m_intensity = 0.5f;
 
     auto l = std::make_shared<Pinut::SpotLight>();
     l->SetPosition(glm::vec3(0.0f, 8.0f, 20.0f));
     l->m_color     = glm::vec3(0.8f, 0.5f, 0.2f);
     l->m_radius    = 50.0f;
     l->m_intensity = 50.0f;
+
+    auto l2 = std::make_shared<Pinut::PointLight>();
+    l2->SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+    l2->m_color     = glm::vec3(0.9f, 0.1f, 0.05f);
+    l2->m_intensity = 30.0f;
+    l2->m_radius    = 50.0f;
 
     // ------------------
     // Creating scene
@@ -101,7 +108,7 @@ void Sandbox::OnCreate()
     m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
     m_currentScene->AddLight(std::move(l));
-    // m_currentScene->AddLight(l2);
+    m_currentScene->AddLight(std::move(l2));
 }
 
 void Sandbox::OnUpdate()
