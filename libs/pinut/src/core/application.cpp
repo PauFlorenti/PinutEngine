@@ -337,7 +337,7 @@ void Application::Render()
 
     if (ImGui::TreeNode("Camera"))
     {
-        m_currentCamera->DrawImGUI();
+        m_currentCamera->DrawDebug();
         ImGui::TreePop();
     }
     ImGui::End();

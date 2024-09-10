@@ -21,9 +21,21 @@ void Camera::SetProjection(float fov_rad, float width, float height, float near,
     SetProjection(fov_rad, width / height, near, far);
 }
 
-void Camera::SetProjection(float fov_rad, float aspectRadio, float near, float far)
+void Camera::SetProjection(float fov_rad, float aspectRatio, float near, float far)
 {
-    m_projection = glm::perspective(fov_rad, aspectRadio, near, far);
+    m_isOrthographic = false;
+    m_aspectRatio    = aspectRatio;
+    m_projection     = glm::perspective(fov_rad, aspectRatio, near, far);
+}
+
+void Camera::SetOrthographic(f32 left, f32 right, f32 bottom, f32 top)
+{
+    m_isOrthographic = true;
+    m_orthoLeft      = left;
+    m_orthoRight     = right;
+    m_orthoBottom    = bottom;
+    m_orthoTop       = top;
+    m_projection     = glm::ortho(left, right, bottom, top);
 }
 
 void Camera::UpdateRotation(const f32 deltaTime, const f32 x, const f32 y)
@@ -59,12 +71,53 @@ void Camera::UpdateCameraWASD(const glm::vec3& direction)
     LookAt(m_position, m_position + m_forward);
 }
 
-void Camera::DrawImGUI()
+void Camera::DrawDebug()
 {
+    if (ImGui::Checkbox("Orthographic", &m_isOrthographic))
+    {
+        if (m_isOrthographic)
+            SetOrthographic(m_orthoLeft, m_orthoRight, m_orthoBottom, m_orthoTop);
+        else
+            SetProjection(m_fov, m_aspectRatio, m_near, m_far);
+    }
+
     ImGui::DragFloat3("Position", &m_position[0]);
     ImGui::DragFloat("Speed", &speed);
     ImGui::DragFloat("Sensibility", &m_sensibility);
 
+    if (m_isOrthographic)
+    {
+        if (ImGui::DragFloat("Right", &m_orthoRight, 1.0f, 0.0f))
+            SetOrthographic(m_orthoLeft, m_orthoRight, m_orthoBottom, m_orthoTop);
+
+        if (ImGui::DragFloat("Left", &m_orthoLeft, 1.0f, 0.0f))
+            SetOrthographic(m_orthoLeft, m_orthoRight, m_orthoBottom, m_orthoTop);
+
+        if (ImGui::DragFloat("Bottom", &m_orthoBottom, 1.0f, 0.0f))
+            SetOrthographic(m_orthoLeft, m_orthoRight, m_orthoBottom, m_orthoTop);
+
+        if (ImGui::DragFloat("Top", &m_orthoTop, 1.0f, 0.0f))
+            SetOrthographic(m_orthoLeft, m_orthoRight, m_orthoBottom, m_orthoTop);
+    }
+    else
+    {
+        auto fov = glm::degrees(m_fov);
+        if (ImGui::DragFloat("Fov", &fov, 1.0f, 0.0f, 90.0f, "%.0f"))
+        {
+            m_fov = glm::radians(fov);
+            SetProjection(m_fov, m_aspectRatio, m_near, m_far);
+        }
+
+        if (ImGui::DragFloat("Near", &m_near, 1.0f, 0.0001f, m_far))
+        {
+            SetProjection(m_fov, m_aspectRatio, m_near, m_far);
+        }
+
+        if (ImGui::DragFloat("Far", &m_far, 1.0f, m_near, 100000.0f))
+        {
+            SetProjection(m_fov, m_aspectRatio, m_near, m_far);
+        }
+    }
     LookAt(m_position, m_position + m_forward);
 }
 } // namespace Pinut

@@ -171,7 +171,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     DrawOpaque(cmd, scene);
 
     // Draw skybox
-    DrawSkybox(cmd, camera);
+    //DrawSkybox(cmd, camera);
 
     if (!transparentRenderables.empty())
         DrawTransparents(cmd, scene);
