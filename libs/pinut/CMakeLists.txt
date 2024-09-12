@@ -13,6 +13,8 @@ set(Pinut_core
     src/core/camera.cpp
     src/core/camera.h
     src/core/defines.h
+    src/core/entity.cpp
+    src/core/entity.h
     src/core/light.cpp
     src/core/light.h
     src/core/scene.cpp

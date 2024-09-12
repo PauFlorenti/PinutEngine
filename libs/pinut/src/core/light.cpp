@@ -9,26 +9,6 @@ constexpr glm::vec3 up      = glm::vec3(0.0f, 1.0f, 0.0f);
 
 namespace Pinut
 {
-glm::vec3 Light::GetPosition() const { return m_transform[3]; }
-glm::quat Light::GetRotation() const { return glm::toQuat(m_transform); }
-glm::vec3 Light::GetDirection() const { return GetRotation() * forward; }
-glm::mat4 Light::GetTransform() const { return m_transform; }
-
-void Light::Position(glm::vec3 position) { m_transform = glm::translate(m_transform, position); }
-void Light::Rotation(glm::quat rotation) { m_transform *= glm::toMat4(rotation); }
-
-void Light::SetPosition(glm::vec3 position)
-{
-    m_transform = glm::translate(glm::toMat4(GetRotation()), position);
-}
-
-void Light::SetRotation(glm::quat quaterion)
-{
-    m_transform = glm::translate(glm::mat4(1.0f), GetPosition()) * glm::toMat4(quaterion);
-}
-
-void Light::SetTransform(glm::mat4 transform) { m_transform = std::move(transform); }
-
 void DirectionalLight::DrawDebug()
 {
     if (ImGui::TreeNode("DirectionalLight"))
@@ -86,10 +66,13 @@ void SpotLight::DrawDebug()
                 m_innerCone = m_outerCone;
         }
         ImGui::DragFloat("Angle exponent", &m_cosineExponent, 1.0f, 0.0f, 100.0f, "%.0f");
+
         auto rotation = glm::toQuat(m_transform);
         auto euler    = glm::degrees(glm::eulerAngles(rotation));
-        if (ImGui::DragFloat3("Rotation", &euler[0], 1.0f, -360.0f, 360.0f, "%0.f"))
-            SetRotation(glm::quat(glm::radians(euler)));
+        if (ImGui::DragFloat4("Rotation", &rotation[0], 0.01f, -1.0f, 1.0f))
+        {
+            SetRotation(glm::normalize(rotation));
+        }
 
         ImGui::TreePop();
     }

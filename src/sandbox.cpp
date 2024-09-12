@@ -136,6 +136,14 @@ void Sandbox::OnUpdate()
     {
         m_currentCamera->UpdateCameraWASD(-m_currentCamera->Right() * dt);
     }
+    if (glfwGetKey(m_window, GLFW_KEY_Z))
+    {
+        m_currentCamera->UpdateCameraWASD(-m_currentCamera->Up() * dt);
+    }
+    if (glfwGetKey(m_window, GLFW_KEY_X))
+    {
+        m_currentCamera->UpdateCameraWASD(m_currentCamera->Up() * dt);
+    }
 
     if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_2))
     {

@@ -171,7 +171,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     DrawOpaque(cmd, scene);
 
     // Draw skybox
-    //DrawSkybox(cmd, camera);
+    DrawSkybox(cmd, camera);
 
     if (!transparentRenderables.empty())
         DrawTransparents(cmd, scene);
@@ -231,9 +231,7 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
     m_skyboxMaterial.BindPipeline(cmd);
     const auto sphereMesh = m_assetManager.GetAsset<Mesh>("sphere.obj");
 
-    const auto model =
-      glm::translate(glm::mat4(1.0f), camera->Position()) *
-      glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    const auto model = glm::translate(glm::mat4(1.0f), camera->Position());
     vkCmdPushConstants(cmd,
                        m_skyboxMaterial.m_pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT,
@@ -256,7 +254,7 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
                             nullptr);
 
     // TODO This should be provided by the scene ...
-    const auto t         = m_assetManager.GetAsset<Texture>("ciel_diffuse.jpg");
+    const auto t         = m_assetManager.GetAsset<Texture>("woods.jpg");
     auto       imageInfo = vkinit::DescriptorImageInfo(t->ImageView(),
                                                  t->Sampler(),
                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

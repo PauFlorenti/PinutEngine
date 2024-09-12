@@ -6,14 +6,13 @@
 
 namespace Pinut
 {
-void Camera::LookAt(const glm::vec3& eye, const glm::vec3& target)
+void Camera::LookAt(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up)
 {
-    static const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
     m_position = eye;
     m_view     = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
     m_forward  = glm::normalize(target - eye);
     m_right    = glm::normalize(glm::cross(up, m_forward));
+    m_up       = glm::normalize(glm::cross(m_forward, m_right));
 }
 
 void Camera::SetProjection(float fov_rad, float width, float height, float near, float far)

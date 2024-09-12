@@ -1,28 +1,15 @@
 #pragma once
 
+#include "entity.h"
+
 namespace Pinut
 {
 #define MAX_LIGHTS 10
 
 class Texture;
-class Light
+class Light : public Entity
 {
   public:
-    Light()          = default;
-    virtual ~Light() = default;
-
-    glm::vec3 GetPosition() const;
-    glm::quat GetRotation() const;
-    glm::vec3 GetDirection() const;
-    glm::mat4 GetTransform() const;
-
-    void Position(glm::vec3 position); // Adds position to the previous one.
-    void Rotation(glm::quat rotation); // Adds rotation to the previous one;
-
-    void SetPosition(glm::vec3 position); // Sets position.
-    void SetRotation(glm::quat quaterion); // Sets rotation.
-    void SetTransform(glm::mat4 transform);
-
     virtual void DrawDebug() = 0;
 
     bool      m_enabled{true};
@@ -35,19 +22,23 @@ class Light
 #endif
 
   protected:
-    glm::mat4                m_transform{glm::mat4(1.0f)};
+    Light()          = default;
+    virtual ~Light() = default;
+
     std::shared_ptr<Texture> m_shadowMap{nullptr};
 };
 
 class DirectionalLight final : public Light
 {
   public:
+    ~DirectionalLight() = default;
     void DrawDebug() override;
 };
 
 class PointLight : public Light
 {
   public:
+    ~PointLight() = default;
     void DrawDebug() override;
 
     f32 m_radius{1.0f};
@@ -56,6 +47,7 @@ class PointLight : public Light
 class SpotLight final : public PointLight
 {
   public:
+    ~SpotLight() = default;
     void DrawDebug() override;
 
     f32 m_innerCone{15.0f};

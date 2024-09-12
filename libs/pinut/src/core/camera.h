@@ -7,7 +7,9 @@ class Camera
   public:
     Camera() = default;
 
-    void LookAt(const glm::vec3& eye, const glm::vec3& target);
+    void LookAt(const glm::vec3& eye,
+                const glm::vec3& target,
+                const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
     void SetProjection(f32 fov_rad, f32 width, f32 height, f32 near, f32 far);
     void SetProjection(f32 fov_rad, f32 aspectRatio, f32 near, f32 far);
     void SetOrthographic(f32 left, f32 right, f32 bottom, f32 top);
@@ -18,6 +20,7 @@ class Camera
 
     const glm::vec3& Forward() const { return m_forward; }
     const glm::vec3& Right() const { return m_right; }
+    const glm::vec3& Up() const { return m_up; }
 
     bool IsOrthographic() const { return m_isOrthographic; }
 
@@ -32,11 +35,12 @@ class Camera
   private:
     bool m_isOrthographic{false};
 
-    glm::mat4 m_view = glm::mat4(1.0f);
-    glm::mat4 m_projection;
-    glm::vec3 m_position = glm::vec3(0.0f);
-    glm::vec3 m_forward  = glm::vec3(0.0f, 0.0f, 1.0f);
-    glm::vec3 m_right    = glm::vec3(1.0f, 0.0f, 0.0f);
+    glm::mat4 m_view       = glm::mat4(1.0f);
+    glm::mat4 m_projection = glm::mat4(1.0f);
+    glm::vec3 m_position   = glm::vec3(0.0f);
+    glm::vec3 m_forward    = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 m_right      = glm::vec3(1.0f, 0.0f, 0.0f);
+    glm::vec3 m_up         = glm::vec3(0.0f, 1.0f, 0.0f);
 
     f32 m_sensibility = 5.0f;
     f32 m_near{0.01f};

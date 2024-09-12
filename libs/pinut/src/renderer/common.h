@@ -2,8 +2,6 @@
 
 namespace Pinut
 {
-struct Light;
-
 constexpr int MAX_ENTITIES = 1000;
 struct PerFrameData
 {
