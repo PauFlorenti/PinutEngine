@@ -60,27 +60,6 @@ bool AssetManager::FindFile(const std::filesystem::path& filepath,
     return false;
 }
 
-std::shared_ptr<Renderable> AssetManager::GetRenderable(std::filesystem::path filepath,
-                                                        const std::string&    name)
-{
-    std::filesystem::path absolutePath;
-    if (!FindFile(filepath, absolutePath))
-        return nullptr;
-
-    if (absolutePath.extension() == ".obj")
-    {
-        if (auto mesh = LoadMesh(std::move(absolutePath), name))
-        {
-            auto renderable = std::make_shared<Renderable>(name);
-            renderable->SetMesh(std::move(mesh));
-            RegisterAsset(name, renderable);
-            return renderable;
-        }
-    }
-
-    return nullptr;
-}
-
 std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
                                                const std::string&    name)
 {

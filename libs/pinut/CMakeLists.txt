@@ -17,6 +17,10 @@ set(Pinut_core
     src/core/entity.h
     src/core/light.cpp
     src/core/light.h
+    src/core/node.cpp
+    src/core/node.h
+    src/renderer/renderable.cpp
+    src/renderer/renderable.h
     src/core/scene.cpp
     src/core/scene.h)
 
@@ -38,8 +42,6 @@ set(Pinut_renderer
     src/renderer/pipeline.h
     src/renderer/primitives.cpp
     src/renderer/primitives.h
-    src/renderer/renderable.cpp
-    src/renderer/renderable.h
     src/renderer/swapchain.cpp
     src/renderer/swapchain.h
     src/renderer/utils.cpp

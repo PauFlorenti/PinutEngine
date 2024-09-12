@@ -9,7 +9,7 @@ namespace Pinut
 class Mesh;
 class GPUBuffer;
 struct MaterialInstance;
-class Renderable final : public Asset
+class Renderable final
 {
   public:
     explicit Renderable(std::string name);

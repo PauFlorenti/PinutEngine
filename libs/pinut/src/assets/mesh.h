@@ -10,6 +10,7 @@ namespace Pinut
 {
 class AssetManager;
 class Device;
+class Material;
 class Renderable;
 struct MaterialInstance;
 struct Vertex
@@ -30,38 +31,21 @@ struct Vertex
 class Mesh final : public Asset
 {
   public:
-    struct DrawCall
-    {
-        u32                               m_vertexCount;
-        u32                               m_indexCount;
-        u64                               m_vertexOffset;
-        u64                               m_indexOffset;
-        std::shared_ptr<MaterialInstance> m_material;
-        std::shared_ptr<GPUBuffer>        m_vertexBuffer;
-        std::shared_ptr<GPUBuffer>        m_indexBuffer;
-        std::shared_ptr<Renderable>       m_owner;
-
-        void Draw(VkCommandBuffer cmd) const;
-    };
-
     static std::shared_ptr<Mesh> Create(Device*             device,
                                         std::vector<Vertex> vertices,
                                         std::vector<u16>    indices);
 
     Mesh()  = default;
     ~Mesh() = default;
+
     void Destroy() override;
+    void Draw(VkCommandBuffer cmd);
 
-    const std::vector<std::shared_ptr<MaterialInstance>> Materials() const;
-    std::vector<DrawCall>&                               DrawCalls() { return m_drawCalls; };
-
-    void SetMaterial(std::shared_ptr<MaterialInstance> material, u32 slot = 0);
-
-    GPUBuffer m_vertexBuffer;
-    GPUBuffer m_indexBuffer;
-
-  private:
-    std::vector<DrawCall> m_drawCalls;
+    std::vector<Vertex>       m_vertices;
+    std::vector<u16>          m_indices;
+    GPUBuffer                 m_vertexBuffer;
+    GPUBuffer                 m_indexBuffer;
+    std::shared_ptr<Material> m_material{nullptr};
 };
 } // namespace Pinut
 

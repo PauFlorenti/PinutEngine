@@ -54,13 +54,10 @@ class AssetManager
                                                           MaterialType type = MaterialType::COUNT,
                                                           MaterialData data = {});
 
-    std::shared_ptr<Renderable> GetRenderable(std::filesystem::path filepath,
-                                              const std::string&    name);
-
   private:
     bool FindFile(const std::filesystem::path& filepath, std::filesystem::path& outAbsolutePath);
-    std::shared_ptr<Asset>      LoadAsset(std::filesystem::path filename, const std::string& name);
-    std::shared_ptr<Mesh>       LoadMesh(std::filesystem::path filename, const std::string& name);
+    std::shared_ptr<Asset> LoadAsset(std::filesystem::path filename, const std::string& name);
+    std::shared_ptr<Mesh>  LoadMesh(std::filesystem::path filename, const std::string& name);
 
     Device*                                       m_device{nullptr};
     MaterialManager                               m_materialManager;

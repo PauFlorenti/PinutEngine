@@ -106,24 +106,5 @@ void Mesh::Destroy()
 {
     m_vertexBuffer.Destroy();
     m_indexBuffer.Destroy();
-    m_drawCalls.clear();
-}
-
-const std::vector<std::shared_ptr<MaterialInstance>> Mesh::Materials() const
-{
-    std::vector<std::shared_ptr<MaterialInstance>> materials;
-    for (const auto& dc : m_drawCalls)
-    {
-        if (dc.m_material)
-            materials.push_back(dc.m_material);
-    }
-
-    return materials;
-}
-
-void Mesh::SetMaterial(std::shared_ptr<MaterialInstance> material, u32 slot)
-{
-    assert(m_drawCalls.size() > slot);
-    m_drawCalls.at(slot).m_material = std::move(material);
 }
 } // namespace Pinut
