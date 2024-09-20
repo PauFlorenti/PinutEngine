@@ -1,7 +1,9 @@
 #include "stdafx.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 
 #include "src/renderer/buffer.h"
 #include "src/renderer/device.h"

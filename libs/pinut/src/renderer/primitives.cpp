@@ -176,10 +176,7 @@ void DrawLine(VkCommandBuffer  cmd,
                        sizeof(glm::vec3),
                        &color);
 
-    for (auto& dc : line->DrawCalls())
-    {
-        dc.Draw(cmd);
-    }
+    line->Draw(cmd);
 }
 
 void DrawWiredCircle(VkCommandBuffer  cmd,
@@ -197,10 +194,7 @@ void DrawWiredCircle(VkCommandBuffer  cmd,
                        sizeof(glm::vec3),
                        &color);
 
-    for (auto& dc : wiredCircle->DrawCalls())
-    {
-        dc.Draw(cmd);
-    }
+    wiredCircle->Draw(cmd);
 }
 
 void DrawWiredSphere(VkCommandBuffer  cmd,
@@ -220,10 +214,7 @@ void DrawWiredSphere(VkCommandBuffer  cmd,
                            sizeof(glm::vec3),
                            &color);
 
-        for (auto& dc : wiredCircle->DrawCalls())
-        {
-            dc.Draw(cmd);
-        }
+        wiredCircle->Draw(cmd);
     };
 
     draw(glm::mat4(1.0f));
@@ -256,10 +247,7 @@ void DrawWiredCone(VkCommandBuffer  cmd,
                        sizeof(glm::vec3),
                        &color);
 
-    for (auto& dc : wiredCircle->DrawCalls())
-    {
-        dc.Draw(cmd);
-    }
+    wiredCircle->Draw(cmd);
 
     u16 samples = 16;
     for (u16 i = 0; i < samples; i++)

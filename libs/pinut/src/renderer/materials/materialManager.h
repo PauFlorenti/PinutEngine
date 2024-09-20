@@ -20,7 +20,7 @@ class MaterialManager
     void                              Init(Device* device);
     void                              Shutdown();
     std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
-                                                          MaterialType type = MaterialType::COUNT,
+                                                          //MaterialType type = MaterialType::COUNT,
                                                           MaterialData materialData = {});
 
   private:

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <map>
 
+#include "src/loaders/objLoader.h"
 #include "src/renderer/materials/materialManager.h"
 
 namespace Pinut
@@ -51,20 +52,18 @@ class AssetManager
     }
 
     std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
-                                                          MaterialType type = MaterialType::COUNT,
+                                                          //MaterialType type = MaterialType::COUNT,
                                                           MaterialData data = {});
-
-    std::shared_ptr<Renderable> GetRenderable(std::filesystem::path filepath,
-                                              const std::string&    name);
 
   private:
     bool FindFile(const std::filesystem::path& filepath, std::filesystem::path& outAbsolutePath);
-    std::shared_ptr<Asset>      LoadAsset(std::filesystem::path filename, const std::string& name);
-    std::shared_ptr<Mesh>       LoadMesh(std::filesystem::path filename, const std::string& name);
+    std::shared_ptr<Asset> LoadAsset(std::filesystem::path filename, const std::string& name);
 
     Device*                                       m_device{nullptr};
     MaterialManager                               m_materialManager;
     std::map<std::string, std::shared_ptr<Asset>> m_assets;
     std::filesystem::path                         m_assetsPath;
+
+    OBJLoader m_objLoader;
 };
 } // namespace Pinut

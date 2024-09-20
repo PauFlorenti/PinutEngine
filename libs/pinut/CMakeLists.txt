@@ -17,8 +17,18 @@ set(Pinut_core
     src/core/entity.h
     src/core/light.cpp
     src/core/light.h
+    src/core/node.cpp
+    src/core/node.h
+    src/core/renderable.cpp
+    src/core/renderable.h
     src/core/scene.cpp
     src/core/scene.h)
+
+set(Pinut_loaders
+    src/loaders/gltfLoader.cpp
+    src/loaders/gltfLoader.h
+    src/loaders/objLoader.cpp
+    src/loaders/objLoader.h)
 
 set(Pinut_imgui
     src/imgui/pinutImgui.cpp
@@ -38,8 +48,6 @@ set(Pinut_renderer
     src/renderer/pipeline.h
     src/renderer/primitives.cpp
     src/renderer/primitives.h
-    src/renderer/renderable.cpp
-    src/renderer/renderable.h
     src/renderer/swapchain.cpp
     src/renderer/swapchain.h
     src/renderer/utils.cpp
@@ -63,13 +71,19 @@ set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
 
-add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_materials} ${Pinut_pipelines})
+add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_materials} ${Pinut_pipelines})
+
+#tinygltf
+add_library(tinygltf INTERFACE)
+set(TINYGLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tinygltf)
+target_sources(tinygltf INTERFACE ${TINYGLTF_DIR}/tiny_gltf.h ${TINYGLTF_DIR}/json.hpp)
+target_include_directories(tinygltf SYSTEM INTERFACE ${TINYGLTF_DIR})
 
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/imgui)
-add_subdirectory(external/tinygltf)
+# add_subdirectory(external/tinygltf)
 add_subdirectory(external/tinyobjloader)
 add_subdirectory(external/vkbootstrap)
 add_subdirectory(external/vma)

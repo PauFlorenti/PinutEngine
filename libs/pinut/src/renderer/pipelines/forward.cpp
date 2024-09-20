@@ -5,12 +5,13 @@
 #include "src/assets/texture.h"
 #include "src/core/assetManager.h"
 #include "src/core/camera.h"
+#include "src/core/node.h"
+#include "src/core/renderable.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/device.h"
 #include "src/renderer/pipeline.h"
 #include "src/renderer/primitives.h"
-#include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
@@ -162,13 +163,19 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
     u32 i = 0;
     for (const auto& r : scene->Renderables())
     {
+        if (i == MAX_ENTITIES)
+            break;
+
         auto transforms = (glm::mat4*)m_transformsBuffer.AllocationInfo().pMappedData;
-        transforms[i]   = r->Model();
-        r->SetInstanceIndex(i);
-        ++i;
+        for (auto& node : r->GetAllNodes())
+        {
+            transforms[i] = node->GetGlobalMatrix();
+            node->SetInstanceIndex(i);
+            ++i;
+        }
     }
 
-    DrawOpaque(cmd, scene);
+    // DrawOpaque(cmd, scene);
 
     // Draw skybox
     DrawSkybox(cmd, camera);
@@ -213,16 +220,9 @@ void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
     };
     vkUpdateDescriptorSets(m_device->GetDevice(), 3, perFrameWrites, 0, nullptr);
 
-    std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
-    for (const auto& dc : scene->OpaqueRenderables())
+    for (const auto& renderable : scene->Renderables())
     {
-        if (!currentMaterial || *currentMaterial != *dc.m_material)
-        {
-            currentMaterial = dc.m_material;
-            currentMaterial->Bind(cmd);
-        }
-
-        dc.Draw(cmd);
+        renderable->Draw(cmd);
     }
 }
 
@@ -278,13 +278,7 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
 
     vkUpdateDescriptorSets(m_device->GetDevice(), 2, writes, 0, nullptr);
 
-    for (const auto& dc : sphereMesh->DrawCalls())
-    {
-        VkDeviceSize offset = 0;
-        vkCmdBindVertexBuffers(cmd, 0, 1, &dc.m_vertexBuffer->m_buffer, &offset);
-        vkCmdBindIndexBuffer(cmd, dc.m_indexBuffer->m_buffer, offset, VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(cmd, dc.m_indexCount, 1, 0, 0, 0);
-    }
+    sphereMesh->Draw(cmd);
 }
 
 void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
@@ -322,16 +316,16 @@ void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
 
     std::shared_ptr<MaterialInstance> currentMaterial{nullptr};
 
-    for (auto& dc : scene->TransparentRenderables())
-    {
-        if (!currentMaterial || currentMaterial != dc.m_material)
-        {
-            currentMaterial = dc.m_material;
-            currentMaterial->Bind(cmd);
-        }
+    //for (auto& dc : scene->TransparentRenderables())
+    //{
+    //    if (!currentMaterial || currentMaterial != dc.m_material)
+    //    {
+    //        currentMaterial = dc.m_material;
+    //        currentMaterial->Bind(cmd);
+    //    }
 
-        dc.Draw(cmd);
-    }
+    //    dc.Draw(cmd);
+    //}
 }
 
 void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "src/core/assetManager.h"
+#include "src/loaders/gltfLoader.h"
+#include "src/loaders/objLoader.h"
 #include "src/renderer/commandBufferManager.h"
 #include "src/renderer/descriptorSetManager.h"
 #include "src/renderer/device.h"
@@ -58,7 +60,7 @@ class Application
         return m_assetManager.GetAsset<T>(name);
     }
 
-    std::shared_ptr<Renderable> GetRenderable(const std::string& filename, const std::string& name);
+    std::shared_ptr<Renderable> CreateRenderableFromFile(const std::filesystem::path& filename);
 
     std::shared_ptr<Texture> CreateTextureFromData(const u32          width,
                                                    const u32          height,
@@ -71,7 +73,7 @@ class Application
                                                    const std::string& name = "");
 
     std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
-                                                          MaterialType type = MaterialType::COUNT,
+                                                          //MaterialType type = MaterialType::COUNT,
                                                           MaterialData data = {});
 
     std::string m_name;
@@ -95,6 +97,9 @@ class Application
     Device       m_device;
     Swapchain    m_swapchain;
     AssetManager m_assetManager;
+
+    GLTFLoader m_gltfLoader;
+    OBJLoader  m_objLoader;
 
     ForwardPipeline m_forwardPipeline;
 

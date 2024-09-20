@@ -148,6 +148,6 @@ std::shared_ptr<MaterialInstance> OpaqueMaterial::CreateMaterialInstance(
 
     vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
 
-    return std::make_shared<MaterialInstance>(this, set, MaterialType::OPAQUE, id);
+    return std::make_shared<MaterialInstance>(this, set, id);
 }
 } // namespace Pinut

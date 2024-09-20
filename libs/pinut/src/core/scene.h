@@ -7,6 +7,7 @@
 
 namespace Pinut
 {
+class Node;
 class Renderable;
 class Scene
 {
@@ -20,8 +21,11 @@ class Scene
     void Clear();
 
     const std::vector<std::shared_ptr<Renderable>>& Renderables() const { return m_renderables; }
-    const std::vector<Mesh::DrawCall>& OpaqueRenderables() const { return m_opaqueRenderables; }
-    const std::vector<Mesh::DrawCall>& TransparentRenderables() const
+    const std::vector<std::shared_ptr<Node>>&       OpaqueRenderables() const
+    {
+        return m_opaqueRenderables;
+    }
+    const std::vector<std::shared_ptr<Node>>& TransparentRenderables() const
     {
         return m_transparentRenderables;
     }
@@ -31,8 +35,8 @@ class Scene
     LightArray&       Lights() { return m_lights; }
 
   private:
-    std::vector<Mesh::DrawCall>              m_opaqueRenderables;
-    std::vector<Mesh::DrawCall>              m_transparentRenderables;
+    std::vector<std::shared_ptr<Node>>       m_opaqueRenderables;
+    std::vector<std::shared_ptr<Node>>       m_transparentRenderables;
     std::vector<std::shared_ptr<Renderable>> m_renderables;
     DirectionalLight                         m_directionalLight;
     LightArray                               m_lights;

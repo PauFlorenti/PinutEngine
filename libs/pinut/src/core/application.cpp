@@ -9,10 +9,10 @@
 #include "src/assets/texture.h"
 #include "src/core/camera.h"
 #include "src/core/light.h"
+#include "src/core/renderable.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/primitives.h"
-#include "src/renderer/renderable.h"
 #include "src/renderer/utils.h"
 
 #if _DEBUG
@@ -156,6 +156,9 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
+    m_gltfLoader.Init(&m_device);
+    m_objLoader.Init(&m_device);
+
     m_assetManager.Init(&m_device);
     Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
@@ -192,8 +195,8 @@ void Application::Init(GLFWwindow* window)
     MaterialData materialData{};
     materialData.diffuseTexture = whiteTexture;
 
-    GetMaterialInstance("DefaultMAT", MaterialType::OPAQUE, materialData);
-    GetMaterialInstance("DefaultTransparentMAT", MaterialType::TRANSPARENT, materialData);
+    //GetMaterialInstance("DefaultMAT", MaterialType::OPAQUE, materialData);
+    //GetMaterialInstance("DefaultTransparentMAT", MaterialType::TRANSPARENT, materialData);
 
     UpdateDisplay();
 
@@ -391,11 +394,19 @@ Camera* Application::GetCamera()
     return m_currentCamera;
 }
 
-std::shared_ptr<Renderable> Application::GetRenderable(const std::string& filename,
-                                                       const std::string& name)
-
+std::shared_ptr<Renderable> Application::CreateRenderableFromFile(
+  const std::filesystem::path& filename)
 {
-    return m_assetManager.GetRenderable(filename, name);
+    if (filename.extension() == ".gltf" || filename.extension() == ".glb")
+    {
+        return m_gltfLoader.LoadFromFile(filename, m_assetManager);
+    }
+    else if (filename.extension() == ".obj")
+    {
+        return m_objLoader.LoadRenderableFromFile(filename, m_assetManager);
+    }
+
+    return nullptr;
 }
 
 std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          width,
@@ -422,9 +433,9 @@ std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& f
 }
 
 std::shared_ptr<MaterialInstance> Application::GetMaterialInstance(const std::string& name,
-                                                                   MaterialType       type,
-                                                                   MaterialData       data)
+                                                                   //MaterialType       type,
+                                                                   MaterialData data)
 {
-    return m_assetManager.GetMaterialInstance(name, type, data);
+    return m_assetManager.GetMaterialInstance(name, /*type,*/ data);
 }
 } // namespace Pinut

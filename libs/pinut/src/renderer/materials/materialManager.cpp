@@ -35,7 +35,7 @@ void MaterialManager::Shutdown()
 }
 
 std::shared_ptr<MaterialInstance> MaterialManager::GetMaterialInstance(const std::string& name,
-                                                                       MaterialType       type,
+                                                                       //MaterialType       type,
                                                                        MaterialData materialData)
 {
     if (auto it = m_materials.find(name); it != m_materials.end())
@@ -47,7 +47,7 @@ std::shared_ptr<MaterialInstance> MaterialManager::GetMaterialInstance(const std
         return mi;
     }
 
-    switch (type)
+    /*switch (type)
     {
         case MaterialType::OPAQUE:
         {
@@ -79,7 +79,7 @@ std::shared_ptr<MaterialInstance> MaterialManager::GetMaterialInstance(const std
         default:
             printf("[ERROR]: Trying to create material with undefined material type.");
             break;
-    }
+    }*/
 
     return nullptr;
 }

@@ -6,12 +6,12 @@ class DescriptorSetManager;
 class GPUBuffer;
 class Texture;
 struct MaterialInstance;
-enum class MaterialType
-{
-    OPAQUE,
-    TRANSPARENT,
-    COUNT
-};
+//enum class MaterialType
+//{
+//    OPAQUE,
+//    TRANSPARENT,
+//    COUNT
+//};
 struct MaterialData
 {
     u32 diffuse;
@@ -50,31 +50,31 @@ struct Material
 
 struct MaterialInstance
 {
-    MaterialInstance(Material* material, VkDescriptorSet set, MaterialType type, const u32 id)
+    MaterialInstance(Material* material, VkDescriptorSet set, /*MaterialType type,*/ const u32 id)
     : m_material(material),
       m_descriptorSet(set),
-      m_type(type),
+      //m_type(type),
       m_id(id)
     {
         assert(m_material);
-        assert(m_type != MaterialType::COUNT);
+        //assert(m_type != MaterialType::COUNT);
     }
 
-    bool operator==(const MaterialInstance& other)
-    {
-        return m_id == other.m_id && m_type == other.m_type;
-    }
-    bool operator!=(const MaterialInstance& other) { return !(*this == other); }
+    //bool operator==(const MaterialInstance& other)
+    //{
+    //    return m_id == other.m_id && m_type == other.m_type;
+    //}
+    //bool operator!=(const MaterialInstance& other) { return !(*this == other); }
 
     const Material* GetMaterial() const { return m_material; }
     void            Bind(VkCommandBuffer cmd);
     void            BindPipeline(VkCommandBuffer cmd) { m_material->BindPipeline(cmd); }
-    MaterialType    Type() const { return m_type; }
+    //MaterialType    Type() const { return m_type; }
 
   private:
     Material*       m_material{nullptr};
     VkDescriptorSet m_descriptorSet{VK_NULL_HANDLE};
-    MaterialType    m_type;
+    //MaterialType    m_type;
     u32             m_id = 0xFFFFFFFF;
 };
 } // namespace Pinut

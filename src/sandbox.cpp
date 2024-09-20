@@ -6,10 +6,11 @@
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
 #include "src/core/camera.h"
+#include "src/core/node.h"
+#include "src/core/renderable.h"
 #include "src/core/scene.h"
 #include "src/renderer/materials/opaqueMaterial.h"
 #include "src/renderer/primitives.h"
-#include "src/renderer/renderable.h"
 
 int main()
 {
@@ -17,7 +18,7 @@ int main()
     return 0;
 }
 
-Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
+Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};
 
 void Sandbox::OnCreate()
 {
@@ -32,49 +33,47 @@ void Sandbox::OnCreate()
     whiteMaterialData.diffuse        = 0xFFFFFFFF;
     whiteMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultWhiteTexture");
 
-    const auto whiteMaterial =
-      GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
+    //const auto whiteMaterial =
+    //  GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
 
-    Pinut::MaterialData redMaterialData;
-    redMaterialData.diffuse        = 0xFFFFFFFF;
-    redMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
-    const auto redMaterial =
-      GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
+    //Pinut::MaterialData redMaterialData;
+    //redMaterialData.diffuse        = 0xFFFFFFFF;
+    //redMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
+    //const auto redMaterial =
+    //  GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
 
-    Pinut::MaterialData glassMaterialData;
-    glassMaterialData.diffuse        = 0x1FFFFFFF;
-    glassMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
+    //Pinut::MaterialData glassMaterialData;
+    //glassMaterialData.diffuse        = 0x1FFFFFFF;
+    //glassMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
 
-    const auto glassMaterial = GetMaterialInstance("GlassMAT",
-                                                   Pinut::MaterialType::TRANSPARENT,
-                                                   std::move(glassMaterialData));
+    //const auto glassMaterial = GetMaterialInstance("GlassMAT",
+    //                                               Pinut::MaterialType::TRANSPARENT,
+    //                                               std::move(glassMaterialData));
 
     // ------------------
     // Loading assets
     // ------------------
-    auto floor = std::make_shared<Pinut::Renderable>("Floor");
     auto m     = GetAsset<Pinut::Mesh>("UnitCube");
-    m->SetMaterial(whiteMaterial);
-    floor->SetMesh(std::move(m));
-    floor->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.5f, 0.0f)),
-                               glm::vec3(100.0f, 0.5f, 100.0f)));
+    auto floor = std::make_shared<Pinut::Renderable>(std::make_shared<Pinut::Node>(m));
+    floor->SetTransform(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.5f, 0.0f)),
+                                   glm::vec3(100.0f, 0.5f, 100.0f)));
 
-    auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
-    auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
-    planeMesh->SetMaterial(glassMaterial);
-    glassPlane->SetMesh(std::move(planeMesh));
-    glassPlane->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 15.0f)),
-                                    glm::vec3(10.0f, 10.0f, 1.0f)));
+    //auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
+    //auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
+    //planeMesh->SetMaterial(glassMaterial);
+    //glassPlane->SetMesh(std::move(planeMesh));
+    //glassPlane->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 15.0f)),
+    //                                glm::vec3(10.0f, 10.0f, 1.0f)));
 
-    auto monkey = GetRenderable("suzanne.obj", "Suzanne");
-    monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
+    //auto monkey = GetRenderable("suzanne.obj", "Suzanne");
+    //monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
 
-    auto vikingRoom = GetRenderable("viking_room.obj", "VikingRoom");
-    vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
+    //auto vikingRoom = GetRenderable("viking_room.obj", "VikingRoom");
+    //vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
-    auto cornellBox = GetRenderable("cornell_box.obj", "CornellBox");
-    cornellBox->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)) *
-                         glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+    //auto cornellBox = GetRenderable("cornell_box.obj", "CornellBox");
+    //cornellBox->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)) *
+    //                     glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
 
     // ------------------
     // Creating lights
@@ -104,8 +103,8 @@ void Sandbox::OnCreate()
     m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
     // m_currentScene->AddRenderable(std::move(glassPlane));
-    m_currentScene->AddRenderable(std::move(monkey));
-    m_currentScene->AddRenderable(std::move(vikingRoom));
+    //m_currentScene->AddRenderable(std::move(monkey));
+    //m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
     m_currentScene->AddLight(std::move(l));
     m_currentScene->AddLight(std::move(l2));
