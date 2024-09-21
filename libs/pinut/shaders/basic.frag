@@ -42,7 +42,7 @@ layout(set = 0, binding = 2) uniform perFrame
     DirectionalLight directionalLight;
 } lightData;
 
-layout(set = 1, binding = 0) readonly buffer perInstance
+layout(set = 1, binding = 0) uniform perInstance
 {
     uint diffuse;
     uint specularExponent;

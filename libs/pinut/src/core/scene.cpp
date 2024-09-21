@@ -1,8 +1,7 @@
 #include "stdafx.h"
 
-#include "scene.h"
 #include "src/core/renderable.h"
-#include "src/renderer/materials/material.h"
+#include "src/core/scene.h"
 
 namespace Pinut
 {

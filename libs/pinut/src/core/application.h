@@ -6,8 +6,8 @@
 #include "src/renderer/commandBufferManager.h"
 #include "src/renderer/descriptorSetManager.h"
 #include "src/renderer/device.h"
-#include "src/renderer/materials/materialManager.h"
 #include "src/renderer/pipelines/forward.h"
+#include "src/renderer/stages/materialManager.h"
 #include "src/renderer/swapchain.h"
 #ifdef _DEBUG
 #include "src/imgui/pinutImgui.h"
@@ -72,9 +72,7 @@ class Application
     std::shared_ptr<Texture> CreateTextureFromFile(const std::string& filename,
                                                    const std::string& name = "");
 
-    std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
-                                                          //MaterialType type = MaterialType::COUNT,
-                                                          MaterialData data = {});
+    std::shared_ptr<Material> CreateMaterial(const std::string& name, MaterialData data);
 
     std::string m_name;
     u32         m_width;

@@ -9,7 +9,6 @@
 #include "src/core/node.h"
 #include "src/core/renderable.h"
 #include "src/core/scene.h"
-#include "src/renderer/materials/opaqueMaterial.h"
 #include "src/renderer/primitives.h"
 
 int main()
@@ -18,7 +17,7 @@ int main()
     return 0;
 }
 
-Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};
+Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
 
 void Sandbox::OnCreate()
 {
@@ -32,6 +31,8 @@ void Sandbox::OnCreate()
     Pinut::MaterialData whiteMaterialData;
     whiteMaterialData.diffuse        = 0xFFFFFFFF;
     whiteMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultWhiteTexture");
+
+    const auto whiteMaterial = CreateMaterial("WhiteMat", std::move(whiteMaterialData));
 
     //const auto whiteMaterial =
     //  GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
@@ -57,6 +58,10 @@ void Sandbox::OnCreate()
     auto floor = std::make_shared<Pinut::Renderable>(std::make_shared<Pinut::Node>(m));
     floor->SetTransform(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.5f, 0.0f)),
                                    glm::vec3(100.0f, 0.5f, 100.0f)));
+    for (const auto& node : floor->GetAllNodes())
+    {
+        node->SetMaterial(whiteMaterial);
+    }
 
     //auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
     //auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");

@@ -2,6 +2,8 @@
 set(Pinut_assets
     src/assets/mesh.cpp
     src/assets/mesh.h
+    src/assets/material.cpp
+    src/assets/material.h
     src/assets/texture.cpp
     src/assets/texture.h)
 
@@ -53,27 +55,27 @@ set(Pinut_renderer
     src/renderer/utils.cpp
     src/renderer/utils.h)
 
-set(Pinut_materials
-    src/renderer/materials/material.cpp
-    src/renderer/materials/material.h
-    src/renderer/materials/materialManager.cpp
-    src/renderer/materials/materialManager.h
-    src/renderer/materials/opaqueMaterial.cpp
-    src/renderer/materials/opaqueMaterial.h
-    src/renderer/materials/skyboxMaterial.cpp
-    src/renderer/materials/skyboxMaterial.h
-    src/renderer/materials/wireframeMaterial.cpp
-    src/renderer/materials/wireframeMaterial.h
-    src/renderer/materials/transparentMaterial.cpp
-    src/renderer/materials/transparentMaterial.h)
-
 set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
 
-add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_materials} ${Pinut_pipelines})
+set(Pinut_stages
+    src/renderer/stages/materialManager.cpp
+    src/renderer/stages/materialManager.h
+    src/renderer/stages/opaqueStage.cpp
+    src/renderer/stages/opaqueStage.h
+    src/renderer/stages/pipelineStage.cpp
+    src/renderer/stages/pipelineStage.h
+    src/renderer/stages/skyboxStage.cpp
+    src/renderer/stages/skyboxStage.h
+    src/renderer/stages/transparentStage.cpp
+    src/renderer/stages/transparentStage.h
+    src/renderer/stages/wireframeStage.cpp
+    src/renderer/stages/wireframeStage.h)
 
-#tinygltf
+add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines} ${Pinut_stages})
+
+# tinygltf
 add_library(tinygltf INTERFACE)
 set(TINYGLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tinygltf)
 target_sources(tinygltf INTERFACE ${TINYGLTF_DIR}/tiny_gltf.h ${TINYGLTF_DIR}/json.hpp)
@@ -83,6 +85,7 @@ add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/imgui)
+
 # add_subdirectory(external/tinygltf)
 add_subdirectory(external/tinyobjloader)
 add_subdirectory(external/vkbootstrap)

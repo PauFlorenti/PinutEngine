@@ -432,10 +432,9 @@ std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& f
     return t;
 }
 
-std::shared_ptr<MaterialInstance> Application::GetMaterialInstance(const std::string& name,
-                                                                   //MaterialType       type,
-                                                                   MaterialData data)
+std::shared_ptr<Material> Application::CreateMaterial(const std::string& name, MaterialData data)
 {
-    return m_assetManager.GetMaterialInstance(name, /*type,*/ data);
+    auto descriptorSetLayout = m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout;
+    return m_assetManager.CreateMaterial(name, descriptorSetLayout, data);
 }
 } // namespace Pinut

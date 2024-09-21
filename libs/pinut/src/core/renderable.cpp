@@ -15,10 +15,11 @@ Renderable::Renderable(std::shared_ptr<Node> root) : m_root(root)
     m_allNodes = std::move(Node::GetAllNodes(m_root));
 }
 
-void Renderable::Draw(VkCommandBuffer cmd)
+void Renderable::Draw(VkCommandBuffer cmd, VkPipelineLayout layout)
 {
     for (const auto& node : m_allNodes)
     {
+        node->BindMaterial(cmd, layout);
         node->Draw(cmd);
     }
 }

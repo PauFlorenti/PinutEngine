@@ -1,13 +1,11 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-
 #include "src/renderer/buffer.h"
 #include "src/renderer/descriptorSetManager.h"
-#include "src/renderer/materials/opaqueMaterial.h"
-#include "src/renderer/materials/skyboxMaterial.h"
-#include "src/renderer/materials/transparentMaterial.h"
-#include "src/renderer/materials/wireframeMaterial.h"
+#include "src/renderer/stages/opaqueStage.h"
+#include "src/renderer/stages/skyboxStage.h"
+#include "src/renderer/stages/transparentStage.h"
+#include "src/renderer/stages/wireframeStage.h"
 
 namespace Pinut
 {
@@ -29,6 +27,8 @@ class ForwardPipeline
     void OnCreateWindowDependantResources(u32 width, u32 height);
 
     const std::shared_ptr<Texture>& GetDepthAttachment() const { return m_depthTexture; }
+    const OpaqueStage&              GetOpaqueStage() const { return m_opaqueStage; }
+    const TransparentStage&         GetTransparentStage() const { return m_transparentStage; }
 
     void Render(VkCommandBuffer cmd, Camera* camera, Scene* scene);
 
@@ -44,10 +44,10 @@ class ForwardPipeline
     DescriptorSetManager m_descriptorSetManager; // Used for global data.
     AssetManager&        m_assetManager;
 
-    OpaqueMaterial      m_opaqueMaterial;
-    SkyboxMaterial      m_skyboxMaterial;
-    TransparentMaterial m_transparentMaterial;
-    WireframeMaterial m_wireframeMaterial;
+    OpaqueStage      m_opaqueStage;
+    SkyboxStage      m_skyboxStage;
+    TransparentStage m_transparentStage;
+    WireframeStage   m_wireframeStage;
 
     GPUBuffer                m_perFrameBuffer;
     GPUBuffer                m_perObjectBuffer;

@@ -3,13 +3,13 @@
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
 #include "src/renderer/descriptorSetManager.h"
-#include "src/renderer/materials/transparentMaterial.h"
 #include "src/renderer/pipeline.h"
+#include "src/renderer/stages/transparentStage.h"
 #include "src/renderer/utils.h"
 
 namespace Pinut
 {
-void TransparentMaterial::BuildPipeline(VkDevice device)
+void TransparentStage::BuildPipeline(VkDevice device)
 {
     VkShaderModule vertex_shader;
     if (!vkinit::load_shader_module("shaders/transparent.vert.spv", device, &vertex_shader))
@@ -97,52 +97,12 @@ void TransparentMaterial::BuildPipeline(VkDevice device)
     vkDestroyShaderModule(device, fragment_shader, nullptr);
 }
 
-void TransparentMaterial::Destroy(VkDevice device)
+void TransparentStage::Destroy(VkDevice device)
 {
     vkDestroyDescriptorSetLayout(device, m_perFrameDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(device, m_perObjectDescriptorSetLayout, nullptr);
 
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
-}
-
-std::shared_ptr<MaterialInstance> TransparentMaterial::CreateMaterialInstance(
-  VkDevice              device,
-  MaterialData          materialData,
-  const GPUBuffer&      buffer,
-  u32                   offsetCount,
-  DescriptorSetManager& descriptorSetManager,
-  const u32             id)
-{
-    const auto set = descriptorSetManager.Allocate(m_perObjectDescriptorSetLayout);
-
-    auto data                          = (GPUMaterialData*)buffer.AllocationInfo().pMappedData;
-    data[offsetCount].diffuse          = materialData.diffuse;
-    data[offsetCount].specularExponent = materialData.specularExponent;
-
-    auto perObjectBufferInfo = vkinit::DescriptorBufferInfo(buffer.m_buffer,
-                                                            offsetCount * sizeof(GPUMaterialData),
-                                                            sizeof(GPUMaterialData));
-    auto textureInfo         = vkinit::DescriptorImageInfo(materialData.diffuseTexture->ImageView(),
-                                                   materialData.diffuseTexture->Sampler(),
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    VkWriteDescriptorSet writes[2] = {
-      vkinit::WriteDescriptorSet(set,
-                                 0,
-                                 1,
-                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                 &perObjectBufferInfo),
-      vkinit::WriteDescriptorSet(set,
-                                 1,
-                                 1,
-                                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                 nullptr,
-                                 &textureInfo),
-    };
-
-    vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
-
-    return std::make_shared<MaterialInstance>(this, set, id);
 }
 } // namespace Pinut

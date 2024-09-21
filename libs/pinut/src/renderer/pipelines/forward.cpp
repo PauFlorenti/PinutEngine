@@ -39,12 +39,12 @@ void ForwardPipeline::Init(Device* device)
 
     m_lightsBuffer.Create(m_device, sizeof(SceneLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-    m_opaqueMaterial.BuildPipeline(logicalDevice);
-    m_skyboxMaterial.BuildPipeline(logicalDevice);
-    m_transparentMaterial.BuildPipeline(logicalDevice);
+    m_opaqueStage.BuildPipeline(logicalDevice);
+    m_skyboxStage.BuildPipeline(logicalDevice);
+    m_transparentStage.BuildPipeline(logicalDevice);
 
 #ifdef _DEBUG
-    m_wireframeMaterial.BuildPipeline(logicalDevice);
+    m_wireframeStage.BuildPipeline(logicalDevice);
 #endif
 }
 
@@ -61,11 +61,11 @@ void ForwardPipeline::Shutdown()
     m_perObjectBuffer.Destroy();
     m_perFrameBuffer.Destroy();
 
-    m_opaqueMaterial.Destroy(device);
-    m_skyboxMaterial.Destroy(device);
-    m_transparentMaterial.Destroy(device);
+    m_opaqueStage.Destroy(device);
+    m_skyboxStage.Destroy(device);
+    m_transparentStage.Destroy(device);
 #ifdef _DEBUG
-    m_wireframeMaterial.Destroy(device);
+    m_wireframeStage.Destroy(device);
 #endif
 }
 
@@ -175,7 +175,7 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
         }
     }
 
-    // DrawOpaque(cmd, scene);
+    DrawOpaque(cmd, scene);
 
     // Draw skybox
     DrawSkybox(cmd, camera);
@@ -190,13 +190,12 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
 void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
 {
-    m_opaqueMaterial.BindPipeline(cmd);
+    m_opaqueStage.BindPipeline(cmd);
 
-    const auto set =
-      m_descriptorSetManager.Allocate(m_opaqueMaterial.m_perFrameDescriptorSetLayout);
+    const auto set = m_descriptorSetManager.Allocate(m_opaqueStage.m_perFrameDescriptorSetLayout);
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_opaqueMaterial.m_pipelineLayout,
+                            m_opaqueStage.m_pipelineLayout,
                             0,
                             1,
                             &set,
@@ -222,31 +221,31 @@ void ForwardPipeline::DrawOpaque(VkCommandBuffer cmd, Scene* scene)
 
     for (const auto& renderable : scene->Renderables())
     {
-        renderable->Draw(cmd);
+        renderable->Draw(cmd, m_opaqueStage.m_pipelineLayout);
     }
 }
 
 void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
 {
-    m_skyboxMaterial.BindPipeline(cmd);
+    m_skyboxStage.BindPipeline(cmd);
     const auto sphereMesh = m_assetManager.GetAsset<Mesh>("sphere.obj");
 
     const auto model = glm::translate(glm::mat4(1.0f), camera->Position());
     vkCmdPushConstants(cmd,
-                       m_skyboxMaterial.m_pipelineLayout,
+                       m_skyboxStage.m_pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT,
                        0,
                        sizeof(glm::mat4),
                        &model);
 
     std::array<VkDescriptorSet, 2> set = {
-      m_descriptorSetManager.Allocate(m_skyboxMaterial.m_perFrameDescriptorSetLayout),
-      m_descriptorSetManager.Allocate(m_skyboxMaterial.m_perObjectDescriptorSetLayout),
+      m_descriptorSetManager.Allocate(m_skyboxStage.m_perFrameDescriptorSetLayout),
+      m_descriptorSetManager.Allocate(m_skyboxStage.m_perObjectDescriptorSetLayout),
     };
 
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_skyboxMaterial.m_pipelineLayout,
+                            m_skyboxStage.m_pipelineLayout,
                             0,
                             2,
                             set.data(),
@@ -283,13 +282,13 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
 
 void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
 {
-    m_transparentMaterial.BindPipeline(cmd);
+    m_transparentStage.BindPipeline(cmd);
     const auto transparentSet =
-      m_descriptorSetManager.Allocate(m_transparentMaterial.m_perFrameDescriptorSetLayout);
+      m_descriptorSetManager.Allocate(m_transparentStage.m_perFrameDescriptorSetLayout);
 
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_transparentMaterial.m_pipelineLayout,
+                            m_transparentStage.m_pipelineLayout,
                             0,
                             1,
                             &transparentSet,
@@ -330,14 +329,14 @@ void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)
 
 void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
 {
-    m_wireframeMaterial.BindPipeline(cmd);
+    m_wireframeStage.BindPipeline(cmd);
 
     const auto set =
-      m_descriptorSetManager.Allocate(m_wireframeMaterial.m_perFrameDescriptorSetLayout);
+      m_descriptorSetManager.Allocate(m_wireframeStage.m_perFrameDescriptorSetLayout);
 
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_wireframeMaterial.m_pipelineLayout,
+                            m_wireframeStage.m_pipelineLayout,
                             0,
                             1,
                             &set,
@@ -378,13 +377,13 @@ void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
             };
 
             Primitives::DrawWiredCone(cmd,
-                                      m_wireframeMaterial.m_pipelineLayout,
+                                      m_wireframeStage.m_pipelineLayout,
                                       position,
                                       position + direction * radius,
                                       ComputeBaseConeRadius(spot->m_outerCone));
 
             Primitives::DrawWiredCone(cmd,
-                                      m_wireframeMaterial.m_pipelineLayout,
+                                      m_wireframeStage.m_pipelineLayout,
                                       position,
                                       position + direction * radius,
                                       ComputeBaseConeRadius(spot->m_innerCone),
@@ -393,7 +392,7 @@ void ForwardPipeline::DrawDebug(VkCommandBuffer cmd, Scene* scene)
         else if (const auto& point = std::dynamic_pointer_cast<PointLight>(l))
         {
             Primitives::DrawWiredSphere(cmd,
-                                        m_wireframeMaterial.m_pipelineLayout,
+                                        m_wireframeStage.m_pipelineLayout,
                                         glm::translate(glm::mat4(1.0f), point->GetPosition()),
                                         point->m_radius);
         }

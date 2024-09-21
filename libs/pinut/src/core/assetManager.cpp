@@ -4,13 +4,13 @@
 #include "tinyobjloader/tiny_obj_loader.h"
 
 #include "src/assets/asset.h"
+#include "src/assets/material.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
 #include "src/core/assetManager.h"
 #include "src/core/renderable.h"
 #include "src/renderer/device.h"
-#include "src/renderer/materials/material.h"
-#include "src/renderer/materials/materialManager.h"
+#include "src/renderer/stages/materialManager.h"
 
 namespace Pinut
 {
@@ -117,10 +117,12 @@ void AssetManager::ReleaseAsset(const std::string& name)
     it->second.reset();
 }
 
-std::shared_ptr<MaterialInstance> AssetManager::GetMaterialInstance(const std::string& name,
-                                                                    //MaterialType       type,
-                                                                    MaterialData data)
+std::shared_ptr<Material> AssetManager::CreateMaterial(const std::string&    name,
+                                                       VkDescriptorSetLayout layout,
+                                                       MaterialData          data)
 {
-    return m_materialManager.GetMaterialInstance(name, /*type,*/ data);
+    auto mat = m_materialManager.CreateMaterial(name, layout, std::move(data));
+    RegisterAsset(name, mat);
+    return mat;
 }
 } // namespace Pinut

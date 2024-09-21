@@ -12,7 +12,7 @@ class Renderable final
   public:
     explicit Renderable(std::shared_ptr<Node> root);
 
-    void Draw(VkCommandBuffer cmd);
+    void Draw(VkCommandBuffer cmd, VkPipelineLayout layout);
     void DrawImGui();
     void Destroy();
     bool IsValid() const;

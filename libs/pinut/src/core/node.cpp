@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "node.h"
+#include "src/assets/material.h"
 #include "src/assets/mesh.h"
 
 namespace Pinut
@@ -40,6 +41,12 @@ glm::mat4 Node::GetGlobalMatrix(bool fast)
 }
 
 const std::vector<std::shared_ptr<Node>>& Node::GetChildren() { return m_children; }
+
+void Node::BindMaterial(VkCommandBuffer cmd, VkPipelineLayout layout)
+{
+    assert(m_material);
+    m_material->Bind(cmd, layout);
+}
 
 void Node::Draw(VkCommandBuffer cmd)
 {

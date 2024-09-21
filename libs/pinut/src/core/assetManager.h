@@ -3,8 +3,9 @@
 #include <filesystem>
 #include <map>
 
+#include "src/assets/material.h"
 #include "src/loaders/objLoader.h"
-#include "src/renderer/materials/materialManager.h"
+#include "src/renderer/stages/materialManager.h"
 
 namespace Pinut
 {
@@ -13,7 +14,6 @@ class Device;
 class Mesh;
 class Renderable;
 class Texture;
-struct MaterialInstance;
 class AssetManager
 {
     friend Mesh;
@@ -51,9 +51,9 @@ class AssetManager
         return nullptr;
     }
 
-    std::shared_ptr<MaterialInstance> GetMaterialInstance(const std::string& name,
-                                                          //MaterialType type = MaterialType::COUNT,
-                                                          MaterialData data = {});
+    std::shared_ptr<Material> CreateMaterial(const std::string&    name,
+                                             VkDescriptorSetLayout layout,
+                                             MaterialData          data);
 
   private:
     bool FindFile(const std::filesystem::path& filepath, std::filesystem::path& outAbsolutePath);
