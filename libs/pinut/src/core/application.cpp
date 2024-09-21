@@ -156,12 +156,12 @@ void Application::Init(GLFWwindow* window)
     m_swapchain.OnCreate(&m_device, 3, m_window);
     m_commandBufferManager.OnCreate(&m_device, 3);
 
-    m_gltfLoader.Init(&m_device);
-    m_objLoader.Init(&m_device);
-
     m_assetManager.Init(&m_device);
     Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
     m_forwardPipeline.Init(&m_device);
+
+    m_gltfLoader.Init(&m_device, m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout);
+    m_objLoader.Init(&m_device);
 
     // TODO This should make in a function like in Primitives?
     u32        whiteData = 0xFFFFFFFF;

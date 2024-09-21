@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
-#include "mesh.h"
+#include "src/assets/material.h"
+#include "src/assets/mesh.h"
 #include "src/core/renderable.h"
 #include "src/renderer/device.h"
 
@@ -82,12 +83,15 @@ void Mesh::Upload(Device* device)
     stagingBuffer.Destroy();
 }
 
-void Mesh::Draw(VkCommandBuffer cmd) const
+void Mesh::Draw(VkCommandBuffer cmd, VkPipelineLayout layout) const
 {
     for (const auto& primitive : m_primitives)
     {
         VkDeviceSize vertexOffset = primitive.m_firstVertex;
         VkDeviceSize indexOffset  = primitive.m_firstIndex;
+
+        if (primitive.m_material)
+            primitive.m_material->Bind(cmd, layout);
 
         if (m_indexBuffer.m_buffer != VK_NULL_HANDLE && primitive.m_indexCount > 0)
         {

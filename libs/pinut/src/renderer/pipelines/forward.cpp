@@ -277,7 +277,7 @@ void ForwardPipeline::DrawSkybox(VkCommandBuffer cmd, Camera* camera)
 
     vkUpdateDescriptorSets(m_device->GetDevice(), 2, writes, 0, nullptr);
 
-    sphereMesh->Draw(cmd);
+    sphereMesh->Draw(cmd, m_skyboxStage.m_pipelineLayout);
 }
 
 void ForwardPipeline::DrawTransparents(VkCommandBuffer cmd, Scene* scene)

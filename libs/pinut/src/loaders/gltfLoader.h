@@ -15,7 +15,7 @@ class GLTFLoader final
 {
   public:
     GLTFLoader();
-    void Init(Device* device);
+    void Init(Device* device, VkDescriptorSetLayout layout);
 
     std::shared_ptr<Renderable> LoadFromFile(const std::filesystem::path& filepath,
                                              AssetManager&                assetManager);
@@ -28,5 +28,6 @@ class GLTFLoader final
                                    const bool             invertNormals = false);
 
     Device* m_device{nullptr};
+    VkDescriptorSetLayout m_layout; // TODO This is temporarily hardcoded
 };
 } // namespace Pinut

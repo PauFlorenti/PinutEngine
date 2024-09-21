@@ -60,7 +60,11 @@ void Sandbox::OnCreate()
                                    glm::vec3(100.0f, 0.5f, 100.0f)));
     for (const auto& node : floor->GetAllNodes())
     {
-        node->SetMaterial(whiteMaterial);
+        auto mesh = node->GetMesh();
+        for (auto& prim : mesh->m_primitives)
+        {
+            prim.m_material = whiteMaterial;
+        }
     }
 
     //auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");

@@ -42,16 +42,9 @@ glm::mat4 Node::GetGlobalMatrix(bool fast)
 
 const std::vector<std::shared_ptr<Node>>& Node::GetChildren() { return m_children; }
 
-void Node::BindMaterial(VkCommandBuffer cmd, VkPipelineLayout layout)
-{
-    assert(m_material);
-    m_material->Bind(cmd, layout);
-}
-
-void Node::Draw(VkCommandBuffer cmd)
+void Node::Draw(VkCommandBuffer cmd, VkPipelineLayout layout)
 {
     assert(m_mesh);
-    // TODO: Do material logic here.
-    m_mesh->Draw(cmd);
+    m_mesh->Draw(cmd, layout);
 }
 } // namespace Pinut

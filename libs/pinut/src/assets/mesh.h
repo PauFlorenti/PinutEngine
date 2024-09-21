@@ -50,7 +50,7 @@ class Mesh final : public Asset
     void Destroy() override;
 
     void Upload(Device* device);
-    void Draw(VkCommandBuffer cmd) const;
+    void Draw(VkCommandBuffer cmd, VkPipelineLayout layout) const;
 
     std::vector<Vertex>    m_vertices;
     std::vector<u16>       m_indices;

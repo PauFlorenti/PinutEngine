@@ -4,6 +4,7 @@
 #include "tinygltf/tiny_gltf.h"
 
 #include "src/assets/mesh.h"
+#include "src/assets/texture.h"
 #include "src/core/assetManager.h"
 #include "src/core/node.h"
 #include "src/core/renderable.h"
@@ -31,10 +32,11 @@ glm::mat4 GetLocalMatrix(const tinygltf::Node& inputNode)
 
 GLTFLoader::GLTFLoader() = default;
 
-void GLTFLoader::Init(Device* device)
+void GLTFLoader::Init(Device* device, VkDescriptorSetLayout layout)
 {
     assert(device);
     m_device = device;
+    m_layout = layout;
 }
 
 std::shared_ptr<Renderable> GLTFLoader::LoadFromFile(const std::filesystem::path& filepath,
@@ -222,6 +224,24 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
                                    accessor.componentType);
                             return nullptr;
                     }
+                }
+
+                if (tprimitive.material > -1)
+                {
+                    const auto& tmat = tmodel.materials[tprimitive.material];
+                    const auto& tpbr = tmat.pbrMetallicRoughness;
+
+                    MaterialData data{};
+                    data.diffuse = (u8)tpbr.baseColorFactor[0] * 255 << 16 |
+                                   (u8)tpbr.baseColorFactor[1] * 255 << 8 |
+                                   (u8)tpbr.baseColorFactor[2] * 255 << 0 |
+                                   (u8)tpbr.baseColorFactor[3] * 255 << 24;
+                    data.diffuseTexture = tpbr.baseColorTexture.index > -1 ?
+                                            assetManager.GetAsset<Texture>(
+                                              tmodel.images.at(tpbr.baseColorTexture.index).uri) :
+                                            assetManager.GetAsset<Texture>("");
+
+                    assetManager.CreateMaterial(tmat.name, m_layout, std::move(data));
                 }
 
                 Primitive prim;
