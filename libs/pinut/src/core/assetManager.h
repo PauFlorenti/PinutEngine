@@ -23,11 +23,16 @@ class AssetManager
     AssetManager()  = default;
     ~AssetManager() = default;
 
+    static bool FindFile(const std::filesystem::path& filepath,
+                         std::filesystem::path&       outAbsolutePath);
+
     void Init(Device* device);
     void Shutdown();
 
     void RegisterAsset(const std::string& name, std::shared_ptr<Asset> asset);
     void ReleaseAsset(const std::string& name);
+
+    Device* GetDevice() const { return m_device; }
 
     template <typename T>
     std::shared_ptr<T> GetAsset(std::filesystem::path filename)
@@ -55,14 +60,14 @@ class AssetManager
                                              VkDescriptorSetLayout layout,
                                              MaterialData          data);
 
+    static const std::filesystem::path m_assetsPath;
+
   private:
-    bool FindFile(const std::filesystem::path& filepath, std::filesystem::path& outAbsolutePath);
     std::shared_ptr<Asset> LoadAsset(std::filesystem::path filename, const std::string& name);
 
     Device*                                       m_device{nullptr};
     MaterialManager                               m_materialManager;
     std::map<std::string, std::shared_ptr<Asset>> m_assets;
-    std::filesystem::path                         m_assetsPath;
 
     OBJLoader m_objLoader;
 };

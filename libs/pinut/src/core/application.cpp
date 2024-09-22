@@ -397,13 +397,20 @@ Camera* Application::GetCamera()
 std::shared_ptr<Renderable> Application::CreateRenderableFromFile(
   const std::filesystem::path& filename)
 {
-    if (filename.extension() == ".gltf" || filename.extension() == ".glb")
+    assert(!filename.empty());
+
+    std::filesystem::path outPath;
+    if (!AssetManager::FindFile(filename, outPath))
+        return nullptr;
+
+    const auto extension = outPath.extension();
+    if (extension == ".gltf" || extension == ".glb")
     {
-        return m_gltfLoader.LoadFromFile(filename, m_assetManager);
+        return m_gltfLoader.LoadFromFile(outPath, m_assetManager);
     }
-    else if (filename.extension() == ".obj")
+    else if (extension == ".obj")
     {
-        return m_objLoader.LoadRenderableFromFile(filename, m_assetManager);
+        return m_objLoader.LoadRenderableFromFile(outPath, m_assetManager);
     }
 
     return nullptr;

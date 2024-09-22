@@ -30,6 +30,46 @@ glm::mat4 GetLocalMatrix(const tinygltf::Node& inputNode)
     return matrix;
 }
 
+std::shared_ptr<Texture> LoadTexture(const tinygltf::Model& tmodel,
+                                     const tinygltf::Image& image,
+                                     AssetManager&          assetManager)
+{
+    if (!image.uri.empty())
+    {
+        return assetManager.GetAsset<Texture>(image.uri);
+    }
+
+    const tinygltf::BufferView& bufferView = tmodel.bufferViews[image.bufferView];
+    const tinygltf::Buffer&     buffer     = tmodel.buffers[bufferView.buffer];
+
+    auto t = Texture::CreateFromData(image.width,
+                                     image.height,
+                                     4,
+                                     VK_FORMAT_R8G8B8A8_UNORM,
+                                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                                     (void*)buffer.data.data(),
+                                     assetManager.GetDevice());
+    assetManager.RegisterAsset(image.name, t);
+
+    return t;
+}
+
+void PopulateMaterialData(const tinygltf::Model&    tmodel,
+                          const tinygltf::Material& tmat,
+                          MaterialData&             outMaterialData,
+                          AssetManager&             assetManager)
+{
+    const auto& tpbr = tmat.pbrMetallicRoughness;
+
+    outMaterialData.diffuse =
+      (u8)tpbr.baseColorFactor[0] * 255 << 16 | (u8)tpbr.baseColorFactor[1] * 255 << 8 |
+      (u8)tpbr.baseColorFactor[2] * 255 << 0 | (u8)tpbr.baseColorFactor[3] * 255 << 24;
+    outMaterialData.diffuseTexture =
+      tpbr.baseColorTexture.index > -1 ?
+        LoadTexture(tmodel, tmodel.images.at(tpbr.baseColorTexture.index), assetManager) :
+        assetManager.GetAsset<Texture>("DefaultWhiteTexture");
+}
+
 GLTFLoader::GLTFLoader() = default;
 
 void GLTFLoader::Init(Device* device, VkDescriptorSetLayout layout)
@@ -91,7 +131,7 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
                                            const bool             invertNormals)
 {
     auto node = std::make_shared<Node>();
-    node->SetMatrix(GetLocalMatrix(tnode));
+    node->SetTransform(GetLocalMatrix(tnode));
 
     if (!tnode.children.empty())
     {
@@ -226,29 +266,22 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
                     }
                 }
 
-                if (tprimitive.material > -1)
-                {
-                    const auto& tmat = tmodel.materials[tprimitive.material];
-                    const auto& tpbr = tmat.pbrMetallicRoughness;
-
-                    MaterialData data{};
-                    data.diffuse = (u8)tpbr.baseColorFactor[0] * 255 << 16 |
-                                   (u8)tpbr.baseColorFactor[1] * 255 << 8 |
-                                   (u8)tpbr.baseColorFactor[2] * 255 << 0 |
-                                   (u8)tpbr.baseColorFactor[3] * 255 << 24;
-                    data.diffuseTexture = tpbr.baseColorTexture.index > -1 ?
-                                            assetManager.GetAsset<Texture>(
-                                              tmodel.images.at(tpbr.baseColorTexture.index).uri) :
-                                            assetManager.GetAsset<Texture>("");
-
-                    assetManager.CreateMaterial(tmat.name, m_layout, std::move(data));
-                }
-
                 Primitive prim;
                 prim.m_firstIndex  = firstIndex;
                 prim.m_indexCount  = indexCount;
                 prim.m_firstVertex = firstVertex;
                 prim.m_vertexCount = vertexCount;
+
+                if (tprimitive.material > -1)
+                {
+                    const auto&  tmat = tmodel.materials[tprimitive.material];
+                    MaterialData data{};
+                    PopulateMaterialData(tmodel, tmat, data, assetManager);
+
+                    prim.m_material =
+                      assetManager.CreateMaterial(tmat.name, m_layout, std::move(data));
+                }
+
                 m->m_primitives.push_back(prim);
             }
 
@@ -256,6 +289,12 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
             assetManager.RegisterAsset(mesh.name, m);
             node->SetMesh(std::move(m));
         }
+    }
+
+    if (parent)
+    {
+        node->SetParent(parent);
+        parent->AddChild(node);
     }
 
     return node;

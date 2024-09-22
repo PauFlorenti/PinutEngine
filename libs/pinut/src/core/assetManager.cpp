@@ -14,27 +14,9 @@
 
 namespace Pinut
 {
-void AssetManager::Init(Device* device)
-{
-    assert(device);
-    m_device = device;
 
-    m_materialManager.Init(m_device);
-    m_objLoader.Init(m_device);
-
-    // Setting potential asset paths
-    m_assetsPath = std::filesystem::current_path().parent_path() / std::filesystem::path("assets");
-}
-
-void AssetManager::Shutdown()
-{
-    for (auto& asset : m_assets)
-        asset.second->Destroy();
-
-    m_assets.clear();
-
-    m_materialManager.Shutdown();
-}
+const std::filesystem::path AssetManager::m_assetsPath =
+  std::filesystem::current_path().parent_path() / std::filesystem::path("assets");
 
 bool AssetManager::FindFile(const std::filesystem::path& filepath,
                             std::filesystem::path&       outAbsolutePath)
@@ -57,6 +39,25 @@ bool AssetManager::FindFile(const std::filesystem::path& filepath,
     }
 
     return false;
+}
+
+void AssetManager::Init(Device* device)
+{
+    assert(device);
+    m_device = device;
+
+    m_materialManager.Init(m_device);
+    m_objLoader.Init(m_device);
+}
+
+void AssetManager::Shutdown()
+{
+    for (auto& asset : m_assets)
+        asset.second->Destroy();
+
+    m_assets.clear();
+
+    m_materialManager.Shutdown();
 }
 
 std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,

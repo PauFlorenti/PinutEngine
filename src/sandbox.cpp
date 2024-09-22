@@ -17,7 +17,7 @@ int main()
     return 0;
 }
 
-Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
+Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};
 
 void Sandbox::OnCreate()
 {
@@ -67,6 +67,10 @@ void Sandbox::OnCreate()
         }
     }
 
+    auto cube = CreateRenderableFromFile("Avocado.gltf");
+    cube->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 0.0f)) *
+                      glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+
     //auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
     //auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
     //planeMesh->SetMaterial(glassMaterial);
@@ -111,6 +115,7 @@ void Sandbox::OnCreate()
     m_currentScene = new Pinut::Scene();
     m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
+    m_currentScene->AddRenderable(std::move(cube));
     // m_currentScene->AddRenderable(std::move(glassPlane));
     //m_currentScene->AddRenderable(std::move(monkey));
     //m_currentScene->AddRenderable(std::move(vikingRoom));

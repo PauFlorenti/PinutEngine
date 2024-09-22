@@ -83,7 +83,7 @@ void Mesh::Upload(Device* device)
     stagingBuffer.Destroy();
 }
 
-void Mesh::Draw(VkCommandBuffer cmd, VkPipelineLayout layout) const
+void Mesh::Draw(VkCommandBuffer cmd, VkPipelineLayout layout, u32 instanceIndex) const
 {
     for (const auto& primitive : m_primitives)
     {
@@ -98,12 +98,12 @@ void Mesh::Draw(VkCommandBuffer cmd, VkPipelineLayout layout) const
             vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer.m_buffer, &vertexOffset);
             vkCmdBindIndexBuffer(cmd, m_indexBuffer.m_buffer, indexOffset, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDrawIndexed(cmd, primitive.m_indexCount, 1, 0, 0, 0);
+            vkCmdDrawIndexed(cmd, primitive.m_indexCount, 1, 0, 0, instanceIndex);
         }
         else
         {
             vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer.m_buffer, &vertexOffset);
-            vkCmdDraw(cmd, primitive.m_vertexCount, 1, 0, 0);
+            vkCmdDraw(cmd, primitive.m_vertexCount, 1, 0, instanceIndex);
         }
     }
 }

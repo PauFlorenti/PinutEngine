@@ -33,18 +33,19 @@ Node::Node(std::shared_ptr<Mesh> mesh, std::shared_ptr<Node> parent)
 glm::mat4 Node::GetGlobalMatrix(bool fast)
 {
     if (m_parent)
-        m_globalMatrix = (fast ? m_parent->m_matrix : m_parent->GetGlobalMatrix() * m_matrix);
+        m_globalTransform =
+          (fast ? m_parent->GetTransform() : m_parent->GetGlobalMatrix() * m_transform);
     else
-        m_globalMatrix = m_matrix;
+        m_globalTransform = m_transform;
 
-    return m_globalMatrix;
+    return m_globalTransform;
 }
 
 const std::vector<std::shared_ptr<Node>>& Node::GetChildren() { return m_children; }
 
 void Node::Draw(VkCommandBuffer cmd, VkPipelineLayout layout)
 {
-    assert(m_mesh);
-    m_mesh->Draw(cmd, layout);
+    if (m_mesh)
+        m_mesh->Draw(cmd, layout, m_instanceIndex);
 }
 } // namespace Pinut
