@@ -48,4 +48,6 @@ void Node::Draw(VkCommandBuffer cmd, VkPipelineLayout layout)
     if (m_mesh)
         m_mesh->Draw(cmd, layout, m_instanceIndex);
 }
+
+void Node::DrawDebug(Camera* camera) { Entity::DrawDebug(std::move(camera)); }
 } // namespace Pinut

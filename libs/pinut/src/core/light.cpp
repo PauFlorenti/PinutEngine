@@ -9,7 +9,10 @@ constexpr glm::vec3 up      = glm::vec3(0.0f, 1.0f, 0.0f);
 
 namespace Pinut
 {
-void DirectionalLight::DrawDebug()
+
+void Light::DrawDebug(Camera* camera) { Entity::DrawDebug(camera); }
+
+void DirectionalLight::DrawDebug(Camera* camera)
 {
     if (ImGui::TreeNode("DirectionalLight"))
     {
@@ -31,14 +34,14 @@ void DirectionalLight::DrawDebug()
         m_renderDebug = false;
 }
 
-void PointLight::DrawDebug()
+void PointLight::DrawDebug(Camera* camera)
 {
     if (ImGui::TreeNode("Point Light"))
     {
+        Entity::DrawDebug(camera);
         m_renderDebug = true;
 
         ImGui::Checkbox("Enabled", &m_enabled);
-        ImGui::DragFloat3("Position", &m_transform[3][0], 0.1f);
         ImGui::ColorEdit3("Color", &m_color[0]);
         ImGui::DragFloat("Intensity", &m_intensity, 1, 0, FLT_MAX / 2);
         ImGui::DragFloat("Radius", &m_radius, 1, 0, FLT_MAX / 2);
@@ -48,14 +51,14 @@ void PointLight::DrawDebug()
         m_renderDebug = false;
 }
 
-void SpotLight::DrawDebug()
+void SpotLight::DrawDebug(Camera* camera)
 {
     if (ImGui::TreeNode("Spot Light"))
     {
+        Entity::DrawDebug(camera);
         m_renderDebug = true;
 
         ImGui::Checkbox("Enabled", &m_enabled);
-        ImGui::DragFloat3("Position", &m_transform[3][0], 0.1f);
         ImGui::ColorEdit3("Color", &m_color[0]);
         ImGui::DragFloat("Intensity", &m_intensity, 1, 0, FLT_MAX / 2);
         ImGui::DragFloat("Radius", &m_radius, 1, 0, FLT_MAX / 2);
@@ -66,14 +69,6 @@ void SpotLight::DrawDebug()
                 m_innerCone = m_outerCone;
         }
         ImGui::DragFloat("Angle exponent", &m_cosineExponent, 1.0f, 0.0f, 100.0f, "%.0f");
-
-        auto rotation = glm::toQuat(m_transform);
-        auto euler    = glm::degrees(glm::eulerAngles(rotation));
-        if (ImGui::DragFloat4("Rotation", &rotation[0], 0.01f, -1.0f, 1.0f))
-        {
-            SetRotation(glm::normalize(rotation));
-        }
-
         ImGui::TreePop();
     }
     else

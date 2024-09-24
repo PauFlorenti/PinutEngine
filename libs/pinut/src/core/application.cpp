@@ -324,7 +324,7 @@ void Application::Render()
     }
     if (ImGui::TreeNode("Lights"))
     {
-        m_currentScene->GetDirectionalLight().DrawDebug();
+        m_currentScene->GetDirectionalLight().DrawDebug(m_currentCamera);
 
         auto& lights = m_currentScene->Lights();
         for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)
@@ -332,7 +332,7 @@ void Application::Render()
             auto& light = lights.at(i);
 
             ImGui::PushID(&light);
-            light->DrawDebug();
+            light->DrawDebug(m_currentCamera);
             ImGui::PopID();
         }
         ImGui::TreePop();

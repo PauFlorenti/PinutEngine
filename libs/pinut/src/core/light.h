@@ -6,11 +6,12 @@ namespace Pinut
 {
 #define MAX_LIGHTS 10
 
+class Camera;
 class Texture;
 class Light : public Entity
 {
   public:
-    virtual void DrawDebug() = 0;
+    virtual void DrawDebug(Camera* camera);
 
     bool      m_enabled{true};
     bool      m_castShadows{false};
@@ -32,14 +33,14 @@ class DirectionalLight final : public Light
 {
   public:
     ~DirectionalLight() = default;
-    void DrawDebug() override;
+    void DrawDebug(Camera* camera) override;
 };
 
 class PointLight : public Light
 {
   public:
     ~PointLight() = default;
-    void DrawDebug() override;
+    void DrawDebug(Camera* camera) override;
 
     f32 m_radius{1.0f};
 };
@@ -48,7 +49,7 @@ class SpotLight final : public PointLight
 {
   public:
     ~SpotLight() = default;
-    void DrawDebug() override;
+    void DrawDebug(Camera* camera) override;
 
     f32 m_innerCone{15.0f};
     f32 m_outerCone{30.0f};

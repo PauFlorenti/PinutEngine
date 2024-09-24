@@ -4,6 +4,7 @@
 
 namespace Pinut
 {
+class Camera;
 class Material;
 class Mesh;
 class Node : public Entity
@@ -29,7 +30,7 @@ class Node : public Entity
     const std::vector<std::shared_ptr<Node>>& GetChildren();
 
     void Draw(VkCommandBuffer cmd, VkPipelineLayout layout);
-    void DrawDebug() override{};
+    void DrawDebug(Camera* camera) override;
 
   private:
     std::shared_ptr<Mesh>              m_mesh{nullptr};

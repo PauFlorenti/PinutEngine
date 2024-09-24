@@ -2,6 +2,7 @@
 
 namespace Pinut
 {
+class Camera;
 // Base class for all elements that have to be represented somewhere in the world.
 class Entity
 {
@@ -22,7 +23,7 @@ class Entity
     void SetRotation(const glm::quat& quaterion); // Sets rotation.
     void SetScale(const glm::vec3& transform);
 
-    virtual void DrawDebug() = 0;
+    virtual void DrawDebug(Camera* camera);
 
   protected:
     Entity()          = default;
