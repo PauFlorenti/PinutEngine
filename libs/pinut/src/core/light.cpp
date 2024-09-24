@@ -18,15 +18,10 @@ void DirectionalLight::DrawDebug(Camera* camera)
     {
         m_renderDebug = true;
 
+        Entity::DrawDebug(camera);
         ImGui::Checkbox("Enabled", &m_enabled);
-        ImGui::DragFloat3("Position", &m_transform[3][0], 0.1f);
         ImGui::ColorEdit3("Color", &m_color[0]);
         ImGui::DragFloat("Intensity", &m_intensity, 1, 0, FLT_MAX / 2);
-
-        auto rotation = glm::toQuat(m_transform);
-        auto euler    = glm::degrees(glm::eulerAngles(rotation));
-        if (ImGui::DragFloat3("Rotation", &euler[0], 1.0f, -360.0f, 360.0f, "%0.f"))
-            SetRotation(glm::quat(glm::radians(euler)));
 
         ImGui::TreePop();
     }
@@ -38,8 +33,9 @@ void PointLight::DrawDebug(Camera* camera)
 {
     if (ImGui::TreeNode("Point Light"))
     {
-        Entity::DrawDebug(camera);
         m_renderDebug = true;
+
+        Entity::DrawDebug(camera);
 
         ImGui::Checkbox("Enabled", &m_enabled);
         ImGui::ColorEdit3("Color", &m_color[0]);
@@ -55,8 +51,9 @@ void SpotLight::DrawDebug(Camera* camera)
 {
     if (ImGui::TreeNode("Spot Light"))
     {
-        Entity::DrawDebug(camera);
         m_renderDebug = true;
+
+        Entity::DrawDebug(camera);
 
         ImGui::Checkbox("Enabled", &m_enabled);
         ImGui::ColorEdit3("Color", &m_color[0]);
