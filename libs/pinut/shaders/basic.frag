@@ -124,7 +124,7 @@ void main()
 
         // Compute spot factor.
         float spotFactor = 1.0f;
-        if (light.outerCone >= 0)
+        if (light.outerCone > 0)
         {
             vec3 D          = normalize(light.direction);
             float theta     = dot(-L, D);

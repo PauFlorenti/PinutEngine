@@ -134,15 +134,15 @@ void ForwardPipeline::Render(VkCommandBuffer cmd, Camera* camera, Scene* scene)
 
             auto& data     = lightData->lights[index];
             data.color     = l->m_color;
-            data.intensity = l->m_intensity;
+            data.intensity = l->m_enabled ? l->m_intensity : 0.0f;
             data.position  = l->GetPosition();
             data.direction = l->GetDirection();
 
-            if (const auto& point = std::static_pointer_cast<PointLight>(l))
+            if (const auto& point = std::dynamic_pointer_cast<PointLight>(l))
             {
                 data.radius = point->m_radius;
             }
-            if (const auto& spot = std::static_pointer_cast<SpotLight>(l))
+            if (const auto& spot = std::dynamic_pointer_cast<SpotLight>(l))
             {
                 data.innerCone      = glm::radians(static_cast<f32>(spot->m_innerCone));
                 data.outerCone      = glm::radians(static_cast<f32>(spot->m_outerCone));
