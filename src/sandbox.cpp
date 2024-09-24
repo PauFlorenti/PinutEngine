@@ -55,7 +55,7 @@ void Sandbox::OnCreate()
     // Loading assets
     // ------------------
     auto m     = GetAsset<Pinut::Mesh>("UnitCube");
-    auto floor = std::make_shared<Pinut::Renderable>(std::make_shared<Pinut::Node>(m));
+    auto floor = std::make_shared<Pinut::Renderable>(std::make_shared<Pinut::Node>(m), "Floor");
     floor->SetTransform(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.5f, 0.0f)),
                                    glm::vec3(100.0f, 0.5f, 100.0f)));
     for (const auto& node : floor->GetAllNodes())

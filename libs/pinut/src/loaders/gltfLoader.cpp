@@ -86,6 +86,7 @@ std::shared_ptr<Renderable> GLTFLoader::LoadFromFile(const std::filesystem::path
     assert(filepath.has_extension());
 
     const auto extension = filepath.extension();
+    const auto filename  = filepath.filename();
     if (extension != ".glb" && extension != ".gltf")
     {
         printf("[ERROR]: No valid extension for a .gltf file type.");
@@ -121,7 +122,7 @@ std::shared_ptr<Renderable> GLTFLoader::LoadFromFile(const std::filesystem::path
     }
 
     auto root = LoadNode(gltfModel, gltfModel.nodes.at(0), nullptr, assetManager);
-    return std::make_shared<Renderable>(std::move(root));
+    return std::make_shared<Renderable>(std::move(root), filename.string());
 }
 
 std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,

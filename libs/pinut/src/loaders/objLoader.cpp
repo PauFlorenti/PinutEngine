@@ -22,7 +22,8 @@ std::shared_ptr<Renderable> OBJLoader::LoadRenderableFromFile(const std::filesys
                                                               AssetManager& assetManager)
 {
     auto mesh = LoadMeshFromFile(filepath, assetManager);
-    return std::make_shared<Renderable>(std::make_shared<Node>(std::move(mesh)));
+    return std::make_shared<Renderable>(std::make_shared<Node>(std::move(mesh)),
+                                        filepath.filename().string());
 }
 
 std::shared_ptr<Mesh> OBJLoader::LoadMeshFromFile(const std::filesystem::path& filepath,

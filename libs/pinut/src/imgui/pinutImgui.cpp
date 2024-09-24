@@ -1,11 +1,13 @@
 #include "stdafx.h"
 
 #define IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING
-#include <imgui/backends/imgui_impl_glfw.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-#include <imgui/imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
+// Needs to go after imgui
+#include <ImGuizmo.h>
 
-#include "pinutImgui.h"
+#include "src/imgui/pinutImgui.h"
 #include "src/renderer/device.h"
 #include "src/renderer/swapchain.h"
 #include "src/renderer/utils.h"
@@ -83,6 +85,7 @@ void PinutImGUI::BeginImGUIRender(VkCommandBuffer cmd)
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void PinutImGUI::EndImGUIRender(VkCommandBuffer cmd, u32 width, u32 height, VkImageView imageView)

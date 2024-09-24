@@ -81,17 +81,21 @@ set(TINYGLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tinygltf)
 target_sources(tinygltf INTERFACE ${TINYGLTF_DIR}/tiny_gltf.h ${TINYGLTF_DIR}/json.hpp)
 target_include_directories(tinygltf SYSTEM INTERFACE ${TINYGLTF_DIR})
 
+# ImGuizmo
+add_library(imguizmo INTERFACE)
+set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/ImGuizmo)
+target_sources(imguizmo INTERFACE ${IMGUIZMO_DIR}/ImGuizmo.h ${IMGUIZMO_DIR}/ImGuizmo.cpp)
+target_include_directories(imguizmo SYSTEM INTERFACE ${IMGUIZMO_DIR})
+
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/imgui)
-
-# add_subdirectory(external/tinygltf)
 add_subdirectory(external/tinyobjloader)
 add_subdirectory(external/vkbootstrap)
 add_subdirectory(external/vma)
 
 # add_subdirectory(external/stb)
-target_link_libraries(Pinut PUBLIC GLFW glm IMGUI tinygltf TINYOBJ VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
+target_link_libraries(Pinut PUBLIC GLFW glm IMGUI imguizmo tinygltf TINYOBJ VKBOOTSTRAP VMA ${Vulkan_LIBRARY})
 target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Vulkan_INCLUDE_DIR})
 target_compile_features(Pinut PRIVATE cxx_std_20)

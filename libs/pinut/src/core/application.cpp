@@ -317,7 +317,7 @@ void Application::Render()
         for (const auto& r : m_currentScene->Renderables())
         {
             ImGui::PushID(&r);
-            r->DrawImGui();
+            r->DrawImGui(m_currentCamera);
             ImGui::PopID();
         }
         ImGui::TreePop();
