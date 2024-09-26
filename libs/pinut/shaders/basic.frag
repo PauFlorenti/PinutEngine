@@ -1,5 +1,9 @@
 #version 460
 
+#extension GL_GOOGLE_include_directive : enable
+
+#include "helpers.glsl"
+
 layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec3 inPosition;
 layout(location = 2) in vec3 inCameraPosition;
@@ -7,8 +11,6 @@ layout(location = 3) in vec4 inColor;
 layout(location = 4) in vec2 inUv;
 
 layout(location = 0) out vec4 outColor;
-
-const float PI = 3.1415926535897932384626433832795;
 
 struct Light
 {
@@ -50,7 +52,7 @@ layout(set = 1, binding = 0) uniform perInstance
     uint dummy2;
 } perInstanceData;
 
-layout(set = 1, binding = 1) uniform sampler2D diffuseTexture;
+layout(set = 1, binding = 1) uniform sampler2D[5] materialTextures;
 
 float ambientLightIntensity = 0.01;
 
@@ -81,18 +83,27 @@ vec3 ComputeDirectionalLight(DirectionalLight l, vec3 N, vec3 materialDiffuseCol
 
 void main()
 {
-    vec3 N = normalize(inNormal);
-    vec3 V = normalize(inCameraPosition - inPosition);
+    const vec3 N        = normalize(inNormal);
+    const vec3 V        = normalize(inCameraPosition - inPosition);
+    const float NdotV   = max(dot(N, V), 0.0f);
 
-    vec3 diffuseTextureValue    = texture(diffuseTexture, inUv).xyz;
-    vec3 materialDiffuseColor   = diffuseTextureValue * inColor.xyz * UnpackColor(perInstanceData.diffuse).xyz;
+    const vec3 diffuseTexture             = texture(materialTextures[0], inUv).xyz;
+    const vec3 normalTexture              = texture(materialTextures[1], inUv).xyz;
+    const vec3 roughnessMetallicTexture   = texture(materialTextures[2], inUv).xyz;
+    const vec3 emissiveTexture            = texture(materialTextures[3], inUv).xyz;
+
+    const float roughness   = roughnessMetallicTexture.y;
+    const float metallic    = roughnessMetallicTexture.z;
+    const vec3 F0           = mix(vec3(0.04), diffuseTexture, metallic);
+
+    vec3 materialDiffuseColor   = diffuseTexture * inColor.xyz * UnpackColor(perInstanceData.diffuse).xyz;
 
     vec3 ambient = vec3(0.0f);
     vec3 diffuse = vec3(0.0f);
     vec3 specular = vec3(0.0f);
 
-    ambient = ambientLightIntensity * materialDiffuseColor;
-    diffuse += ComputeDirectionalLight(lightData.directionalLight, N, materialDiffuseColor);
+    vec3 Lo = vec3(0.0);
+    Lo += ComputeDirectionalLight(lightData.directionalLight, N, materialDiffuseColor);
 
     for (int i = 0; i < lightData.count; ++i)
     {
@@ -119,8 +130,12 @@ void main()
         attenuation = max(attenuation, 0.0f);
         attenuation = attenuation * attenuation;
 
-        L       = normalize(L);
-        vec3 R  = reflect(-L, N);
+        L                   = normalize(L);
+        const vec3 R        = reflect(-L, N);
+        const vec3 H        = normalize(V + L);
+        const float NdotL   = max(dot(N, L), 0.0);
+        const float NdotH   = max(dot(N, H), 0.0);
+        const float VdotR   = max(dot(V, R), 0.0);
 
         // Compute spot factor.
         float spotFactor = 1.0f;
@@ -139,9 +154,20 @@ void main()
 
         attenuation *= spotFactor;
 
-        diffuse += lightColor * max(dot(N, L), 0.0) * lightIntensity * materialDiffuseColor * attenuation;
-        specular += pow(max(dot(V, R), 0.0), perInstanceData.specularExponent) * lightIntensity * lightColor * attenuation * materialDiffuseColor;
+        const vec3 radiance = lightIntensity * lightColor * attenuation; // * shadowFactor;
+        const vec3 F        = FresnelSchlick(NdotH, F0);
+        const float D       = DistributionGGX(N, H, roughness);
+        const float G       = GeometrySmith(N, V, L, roughness);
+
+        const vec3 numerator    = D * G * F;
+        const float denominator = max(4.0 * NdotV * NdotL, 0.0000001);
+        specular += numerator / denominator;
+
+        const vec3 kS = F;
+        const vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
+
+        Lo += (kD * diffuseTexture / PI + specular) * radiance * NdotL;
     }
 
-    outColor = vec4(ambient + diffuse + specular, 1.0);
+    outColor = vec4(Lo + emissiveTexture, 1.0);
 }

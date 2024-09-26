@@ -48,7 +48,10 @@ class AssetManager
                 return std::make_shared<T>(*assetDerived);
         }
 
-        // Try load asset.
+        if (filename.extension().empty())
+            return nullptr;
+
+        // Try load asset if extension.
         if (auto assetDerived = std::dynamic_pointer_cast<T>(LoadAsset(std::move(filename), name)))
             return assetDerived;
 

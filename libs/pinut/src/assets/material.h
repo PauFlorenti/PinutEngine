@@ -13,8 +13,10 @@ struct MaterialData
     u32 specularExponent;
 
     std::shared_ptr<Texture> diffuseTexture{nullptr};
-    std::shared_ptr<Texture> normal{nullptr};
-    std::shared_ptr<Texture> metallicRoughness{nullptr};
+    std::shared_ptr<Texture> normalTexture{nullptr};
+    std::shared_ptr<Texture> metallicRoughnessTexture{nullptr};
+    std::shared_ptr<Texture> emissiveTexture{nullptr};
+    std::shared_ptr<Texture> ambientOcclusionTexture{nullptr};
 };
 
 struct GPUMaterialData

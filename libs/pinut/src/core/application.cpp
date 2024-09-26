@@ -192,6 +192,24 @@ void Application::Init(GLFWwindow* window)
                           &redData,
                           "DefaultRedTexture");
 
+    u32 blueData = 0xFF00FF00;
+    CreateTextureFromData(1,
+                          1,
+                          4,
+                          VK_FORMAT_R8G8B8A8_SRGB,
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          &blueData,
+                          "DefaultBlueTexture");
+
+    u32 greenData = 0xFFFF0000;
+    CreateTextureFromData(1,
+                          1,
+                          4,
+                          VK_FORMAT_R8G8B8A8_SRGB,
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          &greenData,
+                          "DefaultGreenTexture");
+
     MaterialData materialData{};
     materialData.diffuseTexture = whiteTexture;
 
@@ -442,6 +460,18 @@ std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& f
 std::shared_ptr<Material> Application::CreateMaterial(const std::string& name, MaterialData data)
 {
     auto descriptorSetLayout = m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout;
+
+    if (!data.diffuseTexture)
+        data.diffuseTexture = GetAsset<Texture>("DefaultWhiteTexture");
+    if (!data.normalTexture)
+        data.normalTexture = GetAsset<Texture>("DefaultBlueTexture");
+    if (!data.emissiveTexture)
+        data.emissiveTexture = GetAsset<Texture>("DefaultBlackTexture");
+    if (!data.metallicRoughnessTexture)
+        data.metallicRoughnessTexture = GetAsset<Texture>("DefaultBlackTexture");
+    if (!data.ambientOcclusionTexture)
+        data.ambientOcclusionTexture = GetAsset<Texture>("DefaultWhiteTexture");
+
     return m_assetManager.CreateMaterial(name, descriptorSetLayout, data);
 }
 } // namespace Pinut

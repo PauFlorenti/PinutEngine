@@ -22,13 +22,13 @@ Sandbox::Sandbox(const std::string& name) : Pinut::Application(name){};
 void Sandbox::OnCreate()
 {
     m_currentCamera = new Pinut::Camera();
-    m_currentCamera->LookAt(glm::vec3(18.0f, 15.0f, 32.0f), glm::vec3(0.0f));
+    m_currentCamera->LookAt(glm::vec3(4.0f, 5.0f, 7.0f), glm::vec3(0.0f));
     m_currentCamera->SetProjection(glm::radians(45.0f), (f32)m_width / m_height, 0.01f, 1000.0f);
 
     // ------------------
     // Creating materials
     // ------------------
-    Pinut::MaterialData whiteMaterialData;
+    Pinut::MaterialData whiteMaterialData{};
     whiteMaterialData.diffuse        = 0xFFFFFFFF;
     whiteMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultWhiteTexture");
 
@@ -67,9 +67,13 @@ void Sandbox::OnCreate()
         }
     }
 
-    auto cube = CreateRenderableFromFile("Avocado.gltf");
-    cube->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 0.0f)) *
-                      glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+    auto damagedHelmet = CreateRenderableFromFile("DamagedHelmet.gltf");
+    damagedHelmet->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 0.0f)) *
+                       glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f)) *
+                       glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)));
+
+    auto flightHelmet = CreateRenderableFromFile("FlightHelmet.gltf");
+    flightHelmet->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)));
 
     //auto glassPlane = std::make_shared<Pinut::Renderable>("Glass plane");
     //auto planeMesh  = GetAsset<Pinut::Mesh>("UnitPlane");
@@ -115,7 +119,8 @@ void Sandbox::OnCreate()
     m_currentScene = new Pinut::Scene();
     m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
-    m_currentScene->AddRenderable(std::move(cube));
+    m_currentScene->AddRenderable(std::move(damagedHelmet));
+    m_currentScene->AddRenderable(std::move(flightHelmet));
     // m_currentScene->AddRenderable(std::move(glassPlane));
     //m_currentScene->AddRenderable(std::move(monkey));
     //m_currentScene->AddRenderable(std::move(vikingRoom));
@@ -160,7 +165,6 @@ void Sandbox::OnUpdate()
 
     if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_2))
     {
-        // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         m_currentCamera->UpdateRotation(dt, -m_mouse.mouseOffset.x, -m_mouse.mouseOffset.y);
     }
 }

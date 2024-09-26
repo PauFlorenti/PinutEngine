@@ -61,7 +61,7 @@ void OpaqueStage::BuildPipeline(VkDevice device)
                                          VK_SHADER_STAGE_FRAGMENT_BIT),
       vkinit::DescriptorSetLayoutBinding(1,
                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                         1,
+                                         5,
                                          VK_SHADER_STAGE_FRAGMENT_BIT),
     };
 

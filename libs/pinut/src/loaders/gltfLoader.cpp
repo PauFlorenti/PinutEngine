@@ -68,6 +68,22 @@ void PopulateMaterialData(const tinygltf::Model&    tmodel,
       tpbr.baseColorTexture.index > -1 ?
         LoadTexture(tmodel, tmodel.images.at(tpbr.baseColorTexture.index), assetManager) :
         assetManager.GetAsset<Texture>("DefaultWhiteTexture");
+    outMaterialData.normalTexture =
+      tmat.normalTexture.index > -1 ?
+        LoadTexture(tmodel, tmodel.images.at(tmat.normalTexture.index), assetManager) :
+        assetManager.GetAsset<Texture>("DefaultBlueTexture");
+    outMaterialData.metallicRoughnessTexture =
+      tpbr.metallicRoughnessTexture.index > -1 ?
+        LoadTexture(tmodel, tmodel.images.at(tpbr.metallicRoughnessTexture.index), assetManager) :
+        assetManager.GetAsset<Texture>("DefaultWhiteTexture");
+    outMaterialData.emissiveTexture =
+      tmat.emissiveTexture.index > -1 ?
+        LoadTexture(tmodel, tmodel.images.at(tmat.emissiveTexture.index), assetManager) :
+        assetManager.GetAsset<Texture>("DefaultBlackTexture");
+    outMaterialData.ambientOcclusionTexture =
+      tmat.occlusionTexture.index > -1 ?
+        LoadTexture(tmodel, tmodel.images.at(tmat.occlusionTexture.index), assetManager) :
+        assetManager.GetAsset<Texture>("DefaultWhiteTexture");
 }
 
 GLTFLoader::GLTFLoader() = default;
