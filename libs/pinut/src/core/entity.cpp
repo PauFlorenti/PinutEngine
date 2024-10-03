@@ -1,8 +1,8 @@
 #include "stdafx.h"
 
-#include <imgui.h>
+#include <external/imgui/imgui.h>
 // Needs to go after imgui
-#include <ImGuizmo.h>
+#include <external/ImGuizmo/ImGuizmo.h>
 
 #include "src/core/camera.h"
 #include "src/core/entity.h"

@@ -7,3 +7,21 @@
 [submodule "libs/pinut/external/ImGuizmo"]
 	path = libs/pinut/external/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "libs/pinut/external/vk-bootstrap"]
+	path = libs/pinut/external/vk-bootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap.git
+[submodule "libs/pinut/external/glfw"]
+	path = libs/pinut/external/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "libs/render_device/external/VulkanMemoryAllocator"]
+	path = libs/render_device/external/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "libs/pinut/external/imgui"]
+	path = libs/pinut/external/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "libs/pinut/external/stb"]
+	path = libs/pinut/external/stb
+	url = https://github.com/nothings/stb.git
+[submodule "libs/pinut/external/tinyobjloader"]
+	path = libs/pinut/external/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git

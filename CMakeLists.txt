@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
+include(utils.cmake)
+
 project(Sandbox)
 
 set_property(DIRECTORY ${CMAKE_PROJECT_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
@@ -18,8 +20,9 @@ endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 add_compile_options(/MP)
 
+add_subdirectory(libs/render_device)
 add_subdirectory(libs/pinut)
 
 find_package(Vulkan REQUIRED)
-add_subdirectory(src)
+add_subdirectory(sandbox)
 

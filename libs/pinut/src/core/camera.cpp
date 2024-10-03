@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include <imgui.h>
+#include <external/imgui/imgui.h>
 
 #include "camera.h"
 

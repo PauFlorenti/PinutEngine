@@ -4,7 +4,7 @@
 #include <glm/gtx/hash.hpp>
 
 #include "src/assets/asset.h"
-#include "src/renderer/buffer.h"
+//#include "src/renderer/buffer.h"
 
 namespace Pinut
 {
@@ -49,14 +49,9 @@ class Mesh final : public Asset
 
     void Destroy() override;
 
-    void Upload(Device* device);
-    void Draw(VkCommandBuffer cmd, VkPipelineLayout layout, u32 instanceIndex = 0) const;
-
     std::vector<Vertex>    m_vertices;
     std::vector<u16>       m_indices;
     std::vector<Primitive> m_primitives;
-    GPUBuffer              m_vertexBuffer;
-    GPUBuffer              m_indexBuffer;
 };
 } // namespace Pinut
 

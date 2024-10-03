@@ -1,7 +1,6 @@
 #pragma once
 
 #include "src/assets/asset.h"
-#include "src/renderer/buffer.h"
 
 namespace Pinut
 {
@@ -30,10 +29,7 @@ struct GPUMaterialData
 class Material : public Asset
 {
   public:
-    Material(Device*            device,
-             const std::string& name,
-             MaterialData       materialData,
-             VkDescriptorSet    descriptorSet);
+    Material(const std::string& name, MaterialData materialData);
     ~Material();
 
     void Destroy() override;
@@ -50,7 +46,6 @@ class Material : public Asset
     MaterialData m_materialData;
 
     VkDescriptorSet                         m_descriptorSet{VK_NULL_HANDLE};
-    GPUBuffer                               m_buffer;
     std::array<std::shared_ptr<Texture>, 4> m_textures;
 };
 } // namespace Pinut

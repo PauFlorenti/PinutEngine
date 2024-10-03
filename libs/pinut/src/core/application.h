@@ -1,23 +1,20 @@
 #pragma once
 
-#include "src/core/assetManager.h"
-#include "src/loaders/gltfLoader.h"
-#include "src/loaders/objLoader.h"
-#include "src/renderer/commandBufferManager.h"
-#include "src/renderer/descriptorSetManager.h"
-#include "src/renderer/device.h"
-#include "src/renderer/pipelines/forward.h"
-#include "src/renderer/stages/materialManager.h"
-#include "src/renderer/swapchain.h"
-#ifdef _DEBUG
-#include "src/imgui/pinutImgui.h"
-#endif
+//#include "src/core/assetManager.h"
+//#include "src/loaders/gltfLoader.h"
+//#include "src/loaders/objLoader.h"
+//#include "src/renderer/pipelines/forward.h"
+//#include "src/renderer/stages/materialManager.h"
+//#ifdef _DEBUG
+//#include "src/imgui/pinutImgui.h"
+//#endif
+
+#include "src/renderer/renderer.h"
 
 struct GLFWwindow;
 namespace Pinut
 {
 class Camera;
-class Renderable;
 class Scene;
 
 struct Mouse
@@ -30,6 +27,7 @@ class Application
 {
   public:
     Application(const std::string& name, i32 width = 1280, i32 height = 720);
+    ~Application() = default;
 
     virtual void OnCreate()  = 0;
     virtual void OnDestroy() = 0;
@@ -37,14 +35,12 @@ class Application
     virtual void OnUpdate()  = 0;
 
     static void OnWindowMoved(GLFWwindow* window, int x, int y);
-    static void OnWindowResized(GLFWwindow* window, int width, int height);
     static void OnMouseMoved(GLFWwindow* window, double xpos, double ypos);
     static void OnMouseWheelRolled(GLFWwindow* window, double xoffset, double yoffset);
 
-    void Init(GLFWwindow* window);
+    void Init();
+    void Run();
     void Shutdown();
-    void Update();
-    void Render();
 
     const std::string GetName() const { return m_name; }
     const i32         GetWidth() const { return m_width; }
@@ -54,31 +50,9 @@ class Application
     Camera* GetCamera();
 
   protected:
-    template <typename T>
-    std::shared_ptr<T> GetAsset(const std::string& name)
-    {
-        return m_assetManager.GetAsset<T>(name);
-    }
-
-    std::shared_ptr<Renderable> CreateRenderableFromFile(const std::filesystem::path& filename);
-
-    std::shared_ptr<Texture> CreateTextureFromData(const u32          width,
-                                                   const u32          height,
-                                                   const u32          channels,
-                                                   VkFormat           format,
-                                                   VkImageUsageFlags  usage,
-                                                   void*              data,
-                                                   const std::string& name = "");
-    std::shared_ptr<Texture> CreateTextureFromFile(const std::string& filename,
-                                                   const std::string& name = "");
-
-    std::shared_ptr<Material> CreateMaterial(const std::string& name, MaterialData data);
-
     std::string m_name;
     u32         m_width;
     u32         m_height;
-
-    GLFWwindow* m_window{nullptr};
 
     // TODO Shared_ptr
     Camera* m_currentCamera = nullptr;
@@ -87,26 +61,21 @@ class Application
     Mouse m_mouse;
 
   private:
-    void UpdateDisplay();
+    bool SetupGlfw();
+    void ShutdownGlfw();
+    void Update();
+    void Render();
 
     f64 m_deltaTime{0};
     f64 m_lastFrameTime{0};
 
-    Device       m_device;
-    Swapchain    m_swapchain;
-    AssetManager m_assetManager;
-
-    GLTFLoader m_gltfLoader;
-    OBJLoader  m_objLoader;
-
-    ForwardPipeline m_forwardPipeline;
+    std::unique_ptr<Renderer> m_renderer{nullptr};
+    GLFWwindow*               m_window{nullptr};
 
 #ifdef _DEBUG
-    PinutImGUI m_imgui;
+    //PinutImGUI m_imgui;
 #endif
-
-    CommandBufferManager m_commandBufferManager;
 };
 } // namespace Pinut
 
-i32 Run(Pinut::Application* application);
+i32 Run(std::unique_ptr<Pinut::Application> application);

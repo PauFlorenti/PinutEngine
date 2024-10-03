@@ -2,7 +2,7 @@
 
 #include "light.h"
 
-#include <imgui.h>
+#include <external/imgui/imgui.h>
 
 constexpr glm::vec3 forward = glm::vec3(0.0f, 0.0f, -1.0f);
 constexpr glm::vec3 up      = glm::vec3(0.0f, 1.0f, 0.0f);

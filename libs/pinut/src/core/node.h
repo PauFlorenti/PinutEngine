@@ -29,7 +29,7 @@ class Node : public Entity
 
     const std::vector<std::shared_ptr<Node>>& GetChildren();
 
-    void Draw(VkCommandBuffer cmd, VkPipelineLayout layout);
+    //void Draw(VkCommandBuffer cmd, VkPipelineLayout layout);
     void DrawDebug(Camera* camera) override;
 
   private:

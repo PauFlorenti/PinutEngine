@@ -1,19 +1,18 @@
 #include "stdafx.h"
 
-#define GLFW_INCLUDE_VULKAN
-#include <glfw3.h>
-#include <imgui.h>
+#include <GLFW/glfw3.h>
+#include <external/imgui/imgui.h>
 
-#include "application.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
+#include "src/core/application.h"
 #include "src/core/camera.h"
 #include "src/core/light.h"
 #include "src/core/renderable.h"
 #include "src/core/scene.h"
 #include "src/renderer/common.h"
 #include "src/renderer/primitives.h"
-#include "src/renderer/utils.h"
+#include "src/renderer/renderer.h"
 
 #if _DEBUG
 static constexpr bool ENABLE_CPU_VALIDATION_DEFAULT = true;
@@ -25,53 +24,16 @@ static constexpr bool ENABLE_GPU_VALIDATION_DEFAULT = false;
 
 static bool bMinimized{false};
 
-i32 Run(Pinut::Application* application)
+i32 Run(std::unique_ptr<Pinut::Application> application)
 {
     assert(application);
     if (!application)
         return -1;
 
-    if (!glfwInit())
-        return -1;
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    auto window = glfwCreateWindow(application->GetWidth(),
-                                   application->GetHeight(),
-                                   application->GetName().c_str(),
-                                   nullptr,
-                                   nullptr);
-
-    if (!window)
-        return -1;
-
-    glfwSetWindowUserPointer(window, application);
-    glfwSetWindowSizeCallback(window, &Pinut::Application::OnWindowResized);
-    glfwSetWindowPosCallback(window, &Pinut::Application::OnWindowMoved);
-    glfwSetCursorPosCallback(window, &Pinut::Application::OnMouseMoved);
-    glfwSetScrollCallback(window, &Pinut::Application::OnMouseWheelRolled);
-
-    application->Init(window);
+    application->Init();
     application->OnCreate();
 
-    while (!glfwWindowShouldClose(window))
-    {
-        // Check if we should close
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        {
-            glfwSetWindowShouldClose(window, true);
-        }
-
-        glfwPollEvents();
-
-        if (!bMinimized)
-        {
-            application->Update();
-            application->OnUpdate();
-            application->OnRender();
-            application->Render();
-        }
-    }
+    application->Run();
 
     application->OnDestroy();
     application->Shutdown();
@@ -84,39 +46,13 @@ namespace Pinut
 Application::Application(const std::string& name, i32 width, i32 height)
 : m_name(name),
   m_width(width),
-  m_height(height),
-  m_assetManager(),
-  m_forwardPipeline(m_assetManager)
+  m_height(height)
 {
 }
 
 void Application::OnWindowMoved(GLFWwindow* window, int x, int y)
 {
     printf("Window moved to x: %d y: %d\n", x, y);
-}
-
-void Application::OnWindowResized(GLFWwindow* window, int width, int height)
-{
-    printf("Window resized [%d, %d]\n", width, height);
-
-    auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-    assert(app != nullptr);
-
-    if (app->m_width == width && app->m_height == height)
-        return;
-
-    if (width == 0 || height == 0)
-    {
-        bMinimized = true;
-        return;
-    }
-
-    bMinimized = false;
-
-    app->m_width  = width;
-    app->m_height = height;
-
-    app->UpdateDisplay();
 }
 
 void Application::OnMouseMoved(GLFWwindow* window, double xpos, double ypos)
@@ -137,34 +73,27 @@ void Application::OnMouseWheelRolled(GLFWwindow* window, double xoffset, double 
     app->m_mouse.wheelSteps += static_cast<f32>(yoffset);
 }
 
-void Application::Init(GLFWwindow* window)
+void Application::Init()
 {
-    assert(window);
-    if (!window)
+    if (!SetupGlfw())
         return;
 
-    m_window = window;
-
-    // Get framebuffer size
-    i32 w, h;
-    glfwGetWindowSize(m_window, &w, &h);
-    m_width  = w;
-    m_height = h;
+    m_renderer = std::make_unique<Renderer>(m_window, m_width, m_height);
 
     // TODO Make number backbuffers a variable.
-    m_device.OnCreate("Sandbox", "PinutEngine", ENABLE_GPU_VALIDATION_DEFAULT, m_window);
-    m_swapchain.OnCreate(&m_device, 3, m_window);
-    m_commandBufferManager.OnCreate(&m_device, 3);
+    //m_device.OnCreate("Sandbox", "PinutEngine", ENABLE_GPU_VALIDATION_DEFAULT, m_window);
+    //m_swapchain.OnCreate(&m_device, 3, m_window);
+    //m_commandBufferManager.OnCreate(&m_device, 3);
 
-    m_assetManager.Init(&m_device);
-    Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
-    m_forwardPipeline.Init(&m_device);
+    //m_assetManager.Init(&m_device);
+    //Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
+    //m_forwardPipeline.Init(&m_device);
 
-    m_gltfLoader.Init(&m_device, m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout);
-    m_objLoader.Init(&m_device);
+    //m_gltfLoader.Init(&m_device, m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout);
+    //m_objLoader.Init(&m_device);
 
     // TODO This should make in a function like in Primitives?
-    u32        whiteData = 0xFFFFFFFF;
+    /*u32        whiteData = 0xFFFFFFFF;
     const auto whiteTexture =
       CreateTextureFromData(1,
                             1,
@@ -211,36 +140,61 @@ void Application::Init(GLFWwindow* window)
                           "DefaultGreenTexture");
 
     MaterialData materialData{};
-    materialData.diffuseTexture = whiteTexture;
+    materialData.diffuseTexture = whiteTexture;*/
 
     //GetMaterialInstance("DefaultMAT", MaterialType::OPAQUE, materialData);
     //GetMaterialInstance("DefaultTransparentMAT", MaterialType::TRANSPARENT, materialData);
 
-    UpdateDisplay();
+    //UpdateDisplay();
 
 #ifdef _DEBUG
-    m_imgui.Init(&m_device, &m_swapchain, window);
+    //m_imgui.Init(&m_device, &m_swapchain, window);
 #endif
+}
+
+void Application::Run()
+{
+    while (!glfwWindowShouldClose(m_window))
+    {
+        // Check if we should close
+        if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        {
+            glfwSetWindowShouldClose(m_window, true);
+        }
+
+        glfwPollEvents();
+
+        if (!bMinimized)
+        {
+            Update();
+            OnUpdate();
+            OnRender();
+            Render();
+        }
+    }
 }
 
 void Application::Shutdown()
 {
-    auto ok = vkDeviceWaitIdle(m_device.GetDevice());
-    assert(ok == VK_SUCCESS);
+    //auto ok = vkDeviceWaitIdle(m_device.GetDevice());
+    //assert(ok == VK_SUCCESS);
 
     if (m_currentScene)
         m_currentScene->Clear();
 
+    m_renderer->Shutdown();
+    ShutdownGlfw();
+
 #ifdef _DEBUG
-    m_imgui.Shutdown();
+    //m_imgui.Shutdown();
 #endif
 
-    m_assetManager.Shutdown();
-    m_forwardPipeline.Shutdown();
-    m_commandBufferManager.OnDestroy();
-    m_swapchain.OnDestroy();
-    m_device.OnDestroy();
-    glfwDestroyWindow(m_window);
+    //m_assetManager.Shutdown();
+    //m_forwardPipeline.Shutdown();
+    //m_commandBufferManager.OnDestroy();
+    //m_swapchain.OnDestroy();
+    //m_device.OnDestroy();
+    // glfwDestroyWindow(m_window);
 }
 
 void Application::Update()
@@ -254,154 +208,147 @@ void Application::Update()
 
 void Application::Render()
 {
-    auto frameIndex = m_swapchain.WaitForSwapchain();
+    m_renderer->Update();
+    //auto frameIndex = m_swapchain.WaitForSwapchain();
 
     // Draw
     VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
     VkFence     fence{VK_NULL_HANDLE};
-    m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
+    //m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
 
-    m_commandBufferManager.OnBeginFrame();
-    const auto cmd = m_commandBufferManager.GetNewCommandBuffer();
+    //m_commandBufferManager.OnBeginFrame();
+    //const auto cmd = m_commandBufferManager.GetNewCommandBuffer();
 
-    const auto cmdBeginInfo =
-      vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    auto ok = vkBeginCommandBuffer(cmd, &cmdBeginInfo);
-    assert(ok == VK_SUCCESS);
+    //const auto cmdBeginInfo =
+    //  vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    //auto ok = vkBeginCommandBuffer(cmd, &cmdBeginInfo);
+    //assert(ok == VK_SUCCESS);
 
-    const auto depthTexture = m_forwardPipeline.GetDepthAttachment();
+    //const auto depthTexture = m_forwardPipeline.GetDepthAttachment();
 
-    Texture::TransitionImageLayout(cmd,
-                                   m_swapchain.GetCurrentImage(),
-                                   0,
-                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                   VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+    //Texture::TransitionImageLayout(cmd,
+    //                               m_swapchain.GetCurrentImage(),
+    //                               0,
+    //                               VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+    //                               VK_IMAGE_LAYOUT_UNDEFINED,
+    //                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //                               {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
-    Texture::TransitionImageLayout(cmd,
-                                   depthTexture->Image(),
-                                   0,
-                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                   VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
+    //Texture::TransitionImageLayout(cmd,
+    //                               depthTexture->Image(),
+    //                               0,
+    //                               VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+    //                               VK_IMAGE_LAYOUT_UNDEFINED,
+    //                               VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //                               {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
 
-    auto attachment = vkinit::RenderingAttachmentInfo(m_swapchain.GetCurrentImageView(),
-                                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                      VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                                      VK_ATTACHMENT_STORE_OP_STORE,
-                                                      {0.0f, 0.f, 0.f, 0.f});
+    //auto attachment = vkinit::RenderingAttachmentInfo(m_swapchain.GetCurrentImageView(),
+    //                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    //                                                  VK_ATTACHMENT_LOAD_OP_CLEAR,
+    //                                                  VK_ATTACHMENT_STORE_OP_STORE,
+    //                                                  {0.0f, 0.f, 0.f, 0.f});
 
-    auto depthAttachment = vkinit::RenderingAttachmentInfo(depthTexture->ImageView(),
-                                                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                                                           VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                                           VK_ATTACHMENT_STORE_OP_STORE,
-                                                           {1.0, 0});
+    //auto depthAttachment = vkinit::RenderingAttachmentInfo(depthTexture->ImageView(),
+    //                                                       VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+    //                                                       VK_ATTACHMENT_LOAD_OP_CLEAR,
+    //                                                       VK_ATTACHMENT_STORE_OP_STORE,
+    //                                                       {1.0, 0});
 
-    const auto renderingInfo =
-      vkinit::RenderingInfo(1, &attachment, {0, 0, m_width, m_height}, &depthAttachment);
+    //const auto renderingInfo =
+    //  vkinit::RenderingInfo(1, &attachment, {0, 0, m_width, m_height}, &depthAttachment);
 
-    vkCmdBeginRendering(cmd, &renderingInfo);
+    //vkCmdBeginRendering(cmd, &renderingInfo);
 
-    VkRect2D scissors{};
-    scissors.extent = {m_width, m_height};
-    scissors.offset = {0, 0};
+    //VkRect2D scissors{};
+    //scissors.extent = {m_width, m_height};
+    //scissors.offset = {0, 0};
 
-    VkViewport viewport{};
-    viewport.x        = 0.0f;
-    viewport.y        = static_cast<float>(m_height);
-    viewport.width    = static_cast<float>(m_width);
-    viewport.height   = -static_cast<float>(m_height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    //VkViewport viewport{};
+    //viewport.x        = 0.0f;
+    //viewport.y        = static_cast<float>(m_height);
+    //viewport.width    = static_cast<float>(m_width);
+    //viewport.height   = -static_cast<float>(m_height);
+    //viewport.minDepth = 0.0f;
+    //viewport.maxDepth = 1.0f;
 
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
-    vkCmdSetScissor(cmd, 0, 1, &scissors);
+    //vkCmdSetViewport(cmd, 0, 1, &viewport);
+    //vkCmdSetScissor(cmd, 0, 1, &scissors);
 
-    m_forwardPipeline.Render(cmd, m_currentCamera, m_currentScene);
+    //m_forwardPipeline.Render(cmd, m_currentCamera, m_currentScene);
 
-    vkCmdEndRendering(cmd);
+    //vkCmdEndRendering(cmd);
 
 #ifdef _DEBUG
-    m_imgui.BeginImGUIRender(cmd);
-    ImGui::Begin("DebugWindow");
-    if (ImGui::TreeNode("Renderables"))
-    {
-        for (const auto& r : m_currentScene->Renderables())
-        {
-            ImGui::PushID(&r);
-            r->DrawImGui(m_currentCamera);
-            ImGui::PopID();
-        }
-        ImGui::TreePop();
-    }
-    if (ImGui::TreeNode("Lights"))
-    {
-        m_currentScene->GetDirectionalLight().DrawDebug(m_currentCamera);
+    //m_imgui.BeginImGUIRender(cmd);
+    //ImGui::Begin("DebugWindow");
+    //if (ImGui::TreeNode("Renderables"))
+    //{
+    //    for (const auto& r : m_currentScene->Renderables())
+    //    {
+    //        ImGui::PushID(&r);
+    //        r->DrawImGui(m_currentCamera);
+    //        ImGui::PopID();
+    //    }
+    //    ImGui::TreePop();
+    //}
+    //if (ImGui::TreeNode("Lights"))
+    //{
+    //    m_currentScene->GetDirectionalLight().DrawDebug(m_currentCamera);
 
-        auto& lights = m_currentScene->Lights();
-        for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)
-        {
-            auto& light = lights.at(i);
+    //    auto& lights = m_currentScene->Lights();
+    //    for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)
+    //    {
+    //        auto& light = lights.at(i);
 
-            ImGui::PushID(&light);
-            light->DrawDebug(m_currentCamera);
-            ImGui::PopID();
-        }
-        ImGui::TreePop();
-    }
+    //        ImGui::PushID(&light);
+    //        light->DrawDebug(m_currentCamera);
+    //        ImGui::PopID();
+    //    }
+    //    ImGui::TreePop();
+    //}
 
-    if (ImGui::TreeNode("Camera"))
-    {
-        m_currentCamera->DrawDebug();
-        ImGui::TreePop();
-    }
-    ImGui::End();
-    m_imgui.EndImGUIRender(cmd, m_width, m_height, m_swapchain.GetCurrentImageView());
+    //if (ImGui::TreeNode("Camera"))
+    //{
+    //    m_currentCamera->DrawDebug();
+    //    ImGui::TreePop();
+    //}
+    //ImGui::End();
+    //m_imgui.EndImGUIRender(cmd, m_width, m_height, m_swapchain.GetCurrentImageView());
 #endif
 
-    Texture::TransitionImageLayout(cmd,
-                                   m_swapchain.GetCurrentImage(),
-                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                   VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+    //Texture::TransitionImageLayout(cmd,
+    //                               m_swapchain.GetCurrentImage(),
+    //                               VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+    //                               VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+    //                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    //                               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //                               {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
-    vkEndCommandBuffer(cmd);
+    //vkEndCommandBuffer(cmd);
 
-    VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-    VkSubmitInfo submitInfo{
-      .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      .waitSemaphoreCount   = 1,
-      .pWaitSemaphores      = &imageAvailableSemaphore,
-      .pWaitDstStageMask    = &stage,
-      .commandBufferCount   = 1,
-      .pCommandBuffers      = &cmd,
-      .signalSemaphoreCount = 1,
-      .pSignalSemaphores    = &renderFinishedSemaphore,
-    };
+    //VkSubmitInfo submitInfo{
+    //  .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    //  .waitSemaphoreCount   = 1,
+    //  .pWaitSemaphores      = &imageAvailableSemaphore,
+    //  .pWaitDstStageMask    = &stage,
+    //  .commandBufferCount   = 1,
+    //  .pCommandBuffers      = &cmd,
+    //  .signalSemaphoreCount = 1,
+    //  .pSignalSemaphores    = &renderFinishedSemaphore,
+    //};
 
-    ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
-    assert(ok == VK_SUCCESS);
+    //ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
+    //assert(ok == VK_SUCCESS);
 
-    m_swapchain.Present();
-}
-
-void Application::UpdateDisplay()
-{
-    m_swapchain.OnDestroyWindowDependantResources();
-    m_forwardPipeline.OnDestroyWindowDependantResources();
-    m_swapchain.OnCreateWindowDependantResources(m_width, m_height);
-    m_forwardPipeline.OnCreateWindowDependantResources(m_width, m_height);
+    //m_swapchain.Present();
 }
 
 Camera* Application::GetCamera()
@@ -412,66 +359,99 @@ Camera* Application::GetCamera()
     return m_currentCamera;
 }
 
-std::shared_ptr<Renderable> Application::CreateRenderableFromFile(
-  const std::filesystem::path& filename)
+//std::shared_ptr<Renderable> Application::CreateRenderableFromFile(
+//  const std::filesystem::path& filename)
+//{
+//    assert(!filename.empty());
+//
+//    std::filesystem::path outPath;
+//    if (!AssetManager::FindFile(filename, outPath))
+//    return nullptr;
+//
+//    const auto extension = outPath.extension();
+//    if (extension == ".gltf" || extension == ".glb")
+//    {
+//        return m_gltfLoader.LoadFromFile(outPath, m_assetManager);
+//    }
+//    else if (extension == ".obj")
+//    {
+//        return m_objLoader.LoadRenderableFromFile(outPath, m_assetManager);
+//    }
+//
+//    return nullptr;
+//}
+
+//std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          width,
+//                                                            const u32          height,
+//                                                            const u32          channels,
+//                                                            VkFormat           format,
+//                                                            VkImageUsageFlags  usage,
+//                                                            void*              data,
+//                                                            const std::string& name)
+//{
+//    const auto t = Texture::CreateFromData(width, height, channels, format, usage, data, &m_device);
+//    m_assetManager.RegisterAsset(name, t);
+//
+//    return t;
+//}
+//
+//std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& filename,
+//                                                            const std::string& name)
+//{
+//    const auto t = Texture::CreateFromFile(filename, &m_device);
+//    m_assetManager.RegisterAsset(name, t);
+//
+//    return t;
+//}
+//
+//std::shared_ptr<Material> Application::CreateMaterial(const std::string& name, MaterialData data)
+//{
+//    auto descriptorSetLayout = m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout;
+//
+//    if (!data.diffuseTexture)
+//        data.diffuseTexture = GetAsset<Texture>("DefaultWhiteTexture");
+//    if (!data.normalTexture)
+//        data.normalTexture = GetAsset<Texture>("DefaultBlueTexture");
+//    if (!data.emissiveTexture)
+//        data.emissiveTexture = GetAsset<Texture>("DefaultBlackTexture");
+//    if (!data.metallicRoughnessTexture)
+//        data.metallicRoughnessTexture = GetAsset<Texture>("DefaultBlackTexture");
+//    if (!data.ambientOcclusionTexture)
+//        data.ambientOcclusionTexture = GetAsset<Texture>("DefaultWhiteTexture");
+//
+//    return m_assetManager.CreateMaterial(name, descriptorSetLayout, data);
+//}
+
+bool Application::SetupGlfw()
 {
-    assert(!filename.empty());
-
-    std::filesystem::path outPath;
-    if (!AssetManager::FindFile(filename, outPath))
-        return nullptr;
-
-    const auto extension = outPath.extension();
-    if (extension == ".gltf" || extension == ".glb")
+    if (!glfwInit())
     {
-        return m_gltfLoader.LoadFromFile(outPath, m_assetManager);
+        printf("[ERROR]: Failed to init GLFW.");
+        return false;
     }
-    else if (extension == ".obj")
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+    const std::string windowName = "PinutEngine";
+
+    m_window = glfwCreateWindow(m_width, m_height, windowName.c_str(), nullptr, nullptr);
+
+    if (!m_window)
     {
-        return m_objLoader.LoadRenderableFromFile(outPath, m_assetManager);
+        glfwTerminate();
+        printf("[ERROR]: Failed to create window.");
+        return false;
     }
 
-    return nullptr;
+    // TODO If debug, init ImGui here.
+
+    return true;
 }
 
-std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          width,
-                                                            const u32          height,
-                                                            const u32          channels,
-                                                            VkFormat           format,
-                                                            VkImageUsageFlags  usage,
-                                                            void*              data,
-                                                            const std::string& name)
+void Application::ShutdownGlfw()
 {
-    const auto t = Texture::CreateFromData(width, height, channels, format, usage, data, &m_device);
-    m_assetManager.RegisterAsset(name, t);
-
-    return t;
-}
-
-std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& filename,
-                                                            const std::string& name)
-{
-    const auto t = Texture::CreateFromFile(filename, &m_device);
-    m_assetManager.RegisterAsset(name, t);
-
-    return t;
-}
-
-std::shared_ptr<Material> Application::CreateMaterial(const std::string& name, MaterialData data)
-{
-    auto descriptorSetLayout = m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout;
-
-    if (!data.diffuseTexture)
-        data.diffuseTexture = GetAsset<Texture>("DefaultWhiteTexture");
-    if (!data.normalTexture)
-        data.normalTexture = GetAsset<Texture>("DefaultBlueTexture");
-    if (!data.emissiveTexture)
-        data.emissiveTexture = GetAsset<Texture>("DefaultBlackTexture");
-    if (!data.metallicRoughnessTexture)
-        data.metallicRoughnessTexture = GetAsset<Texture>("DefaultBlackTexture");
-    if (!data.ambientOcclusionTexture)
-        data.ambientOcclusionTexture = GetAsset<Texture>("DefaultWhiteTexture");
-
-    return m_assetManager.CreateMaterial(name, descriptorSetLayout, data);
+    glfwDestroyWindow(m_window);
+    glfwTerminate();
 }
 } // namespace Pinut

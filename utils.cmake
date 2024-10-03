@@ -1,0 +1,10 @@
+
+function(files_glob_recurse output_files)
+    file(GLOB_RECURSE temp_files LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS ${ARGN})
+    set(absolute_files)
+    foreach(file ${temp_files})
+        file(REAL_PATH "${file}" abs_file)
+        list(APPEND absolute_files "${abs_file}")
+    endforeach()
+    set(${output_files} ${absolute_files} PARENT_SCOPE)
+endfunction()
