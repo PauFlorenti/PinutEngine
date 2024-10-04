@@ -145,6 +145,27 @@ void Device::EndFrame()
     m_lastCommandBuffer    = nullptr;
 }
 
+void Device::EnableRendering(const VkRect2D&                               renderArea,
+                             const std::vector<VkRenderingAttachmentInfo>& attachments)
+{
+    BeginCommandRecording(QueueType::GRAPHICS);
+
+    VkRenderingInfo info{VK_STRUCTURE_TYPE_RENDERING_INFO};
+    info.colorAttachmentCount = static_cast<u32>(attachments.size());
+    info.pColorAttachments    = attachments.data();
+    info.renderArea           = renderArea;
+    info.layerCount           = 1;
+
+    const auto& cmd = m_currentCommandBuffer->commandBuffer;
+    vkCmdBeginRendering(cmd, &info);
+}
+
+void Device::DisableRendering()
+{
+    const auto& cmd = m_currentCommandBuffer->commandBuffer;
+    vkCmdEndRendering(cmd);
+}
+
 void Device::WaitIdle() const { vkDeviceWaitIdle(m_device); }
 
 void Device::BeginCommandRecording(QueueType type)

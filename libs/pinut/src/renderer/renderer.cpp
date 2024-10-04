@@ -5,6 +5,7 @@
 #include <external/glfw/include/GLFW/glfw3.h>
 
 #include "render_device/src/device.h"
+#include "render_device/src/init_utils.h"
 #include "src/renderer/renderer.h"
 
 namespace Pinut
@@ -206,6 +207,18 @@ void Renderer::Update()
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+    auto attachment = vulkan::vkinit::RenderingAttachmentInfo(
+      m_swapchainInfo.imageViews.at(m_swapchainInfo.imageIndex),
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      VK_ATTACHMENT_LOAD_OP_CLEAR,
+      VK_ATTACHMENT_STORE_OP_STORE,
+      {1.0f, 0.f, 0.f, 0.f});
+
+    m_device->EnableRendering({0, 0, static_cast<u32>(m_width), static_cast<u32>(m_height)},
+                              {attachment});
+
+    m_device->DisableRendering();
 
     m_device->TransitionImageLayout(m_swapchainInfo.images.at(m_swapchainInfo.imageIndex),
                                     VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,

@@ -62,6 +62,10 @@ class Device final
     void BeginFrame();
     void EndFrame();
 
+    void EnableRendering(const VkRect2D&                               renderArea,
+                         const std::vector<VkRenderingAttachmentInfo>& attachments);
+    void DisableRendering();
+
     void TransitionImageLayout(VkImage                 image,
                                VkAccessFlags           srcAccessFlags,
                                VkAccessFlags           dstAccessFlags,
