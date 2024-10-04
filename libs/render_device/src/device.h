@@ -39,10 +39,18 @@ static constexpr u32 MAX_FRAMES_IN_FLIGHT = 3;
 class Device final
 {
   private:
+    struct CommandBuffer
+    {
+        QueueType       queueType;
+        VkCommandBuffer commandBuffer;
+        VkSemaphore     signalSemaphore;
+    };
+
     struct CommandBufferSetData
     {
-        std::array<VkCommandPool, MAX_FRAMES_IN_FLIGHT> commandPools;
-        std::array<i32, MAX_FRAMES_IN_FLIGHT>           commandBufferIndex;
+        std::array<VkCommandPool, MAX_FRAMES_IN_FLIGHT>               commandPools;
+        std::array<std::vector<CommandBuffer*>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
+        std::array<i32, MAX_FRAMES_IN_FLIGHT>                         commandBufferIndex;
     };
 
   public:
@@ -54,12 +62,25 @@ class Device final
     void BeginFrame();
     void EndFrame();
 
-    VkCommandBuffer CreateImmediateCommandBuffer();
-    void            FlushCommandBuffer(VkCommandBuffer cmd) const;
+    void TransitionImageLayout(VkImage                 image,
+                               VkAccessFlags           srcAccessFlags,
+                               VkAccessFlags           dstAccessFlags,
+                               VkImageLayout           currentLayout,
+                               VkImageLayout           targetLayout,
+                               VkPipelineStageFlags    srcStageFlags,
+                               VkPipelineStageFlags    dstStageFlags,
+                               VkImageSubresourceRange subresourceRange);
 
     void WaitIdle() const;
 
   private:
+    void            BeginCommandRecording(QueueType type);
+    void            EndCommandRecording(bool waitForImage = true, bool signalFence = false);
+    VkCommandBuffer BeginImmediateCommandBuffer(VkCommandPool commandPool);
+    void            FlushImmediateCommandBuffer(VkCommandBuffer cmd,
+                                                VkQueue         queue,
+                                                VkFence         fence = VK_NULL_HANDLE) const;
+
     VkFence     CreateFence(VkFenceCreateFlags flags = 0x0) const;
     VkSemaphore CreateSemaphore(VkSemaphoreCreateFlags flags = 0x0) const;
 
@@ -68,10 +89,12 @@ class Device final
 
     VkDevice         m_device{VK_NULL_HANDLE};
     VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
-    VkCommandPool    m_commandPool{VK_NULL_HANDLE};
+    VkCommandPool    m_immediateCommandPool{VK_NULL_HANDLE};
     VmaAllocator     m_allocator{nullptr};
 
-    u32 m_currentIndexFrame{0};
+    u32            m_currentIndexFrame{0};
+    CommandBuffer* m_currentCommandBuffer{nullptr};
+    CommandBuffer* m_lastCommandBuffer{nullptr};
 
     void*                 m_rendererContext{nullptr};
     BeginFrameCallback_fn m_beginFrame_fn;

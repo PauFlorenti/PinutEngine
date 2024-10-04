@@ -160,7 +160,7 @@ void Renderer::BeginFrameCallback(void* context, VkSemaphore imageAvailableSemap
                                     VK_NULL_HANDLE,
                                     &renderer->m_swapchainInfo.imageIndex);
 
-    if (ok = VK_ERROR_OUT_OF_DATE_KHR)
+    if (ok == VK_ERROR_OUT_OF_DATE_KHR)
     {
         // TODO Recreate
         renderer->RecreateSwapchain(renderer->m_swapchainInfo.vsyncEnabled);
@@ -176,7 +176,8 @@ void Renderer::BeginFrameCallback(void* context, VkSemaphore imageAvailableSemap
 
 void Renderer::EndFrameCallback(void* context, VkSemaphore renderFinishedSemaphore)
 {
-    auto renderer = reinterpret_cast<Renderer*>(context);
+    auto renderer                 = reinterpret_cast<Renderer*>(context);
+    renderer->m_endFrameSemaphore = renderFinishedSemaphore;
 }
 
 Renderer::Renderer(GLFWwindow* window, i32 width, i32 height)
@@ -195,11 +196,29 @@ Renderer::Renderer(GLFWwindow* window, i32 width, i32 height)
 
 void Renderer::Update()
 {
-    // const auto frameIndex = m_swapchain->WaitForSwapchain();
+    m_device->BeginFrame();
 
-    VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
-    VkFence     fence{VK_NULL_HANDLE};
-    // m_swapchain->GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
+    m_device->TransitionImageLayout(m_swapchainInfo.images.at(m_swapchainInfo.imageIndex),
+                                    0,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+    m_device->TransitionImageLayout(m_swapchainInfo.images.at(m_swapchainInfo.imageIndex),
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+    m_device->EndFrame();
+
+    Present(m_endFrameSemaphore);
 }
 
 void Renderer::Shutdown()
@@ -257,6 +276,26 @@ void Renderer::ShutdownVulkan()
 
     vkDestroyInstance(m_deviceInfo.instance, nullptr);
     m_deviceInfo.instance = VK_NULL_HANDLE;
+}
+
+void Renderer::Present(VkSemaphore semaphore)
+{
+    if (semaphore == VK_NULL_HANDLE)
+        return;
+
+    VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+    presentInfo.swapchainCount     = 1;
+    presentInfo.pSwapchains        = &m_swapchainInfo.swapchain;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores    = &semaphore;
+    presentInfo.pImageIndices      = &m_swapchainInfo.imageIndex;
+
+    auto ok = vkQueuePresentKHR(m_deviceQueues.at(1).queue, &presentInfo);
+
+    if (ok == VK_ERROR_OUT_OF_DATE_KHR || ok == VK_SUBOPTIMAL_KHR)
+    {
+        // TODO Recreate
+    }
 }
 
 void Renderer::RecreateSwapchain(bool vsyncEnabled)

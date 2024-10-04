@@ -51,6 +51,7 @@ class Renderer final
     bool SetupVulkan();
     void ShutdownVulkan();
 
+    void Present(VkSemaphore semaphore);
     void RecreateSwapchain(bool vsyncEnabled);
 
     VkSurfaceKHR m_surface{VK_NULL_HANDLE};
@@ -62,6 +63,8 @@ class Renderer final
 
     GLFWwindow*                     m_window{nullptr};
     std::unique_ptr<vulkan::Device> m_device{nullptr};
+
+    VkSemaphore m_endFrameSemaphore{VK_NULL_HANDLE};
 
     vulkan::DeviceCallbacks m_callbacks;
 

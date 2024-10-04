@@ -38,6 +38,8 @@ Device::Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callb
 
     vmaCreateAllocator(&allocator_info, &m_allocator);
 
+    m_immediateCommandPool = CreateCommandPool(queues[static_cast<u32>(QueueType::GRAPHICS)].index);
+
     for (auto& commandBufferSet : m_commandBufferSets)
     {
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -57,18 +59,28 @@ Device::Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callb
 
 void Device::OnDestroy()
 {
+    vkDeviceWaitIdle(m_device);
+
     for (auto& commandBufferSet : m_commandBufferSets)
     {
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
         {
             vkDestroyCommandPool(m_device, commandBufferSet.commandPools.at(i), nullptr);
-            commandBufferSet.commandBufferIndex.at(i) = -1;
+            auto& commandBuffers = commandBufferSet.commandBuffers.at(i);
+
+            for (auto& cmd : commandBuffers)
+            {
+                vkDestroySemaphore(m_device, cmd->signalSemaphore, nullptr);
+            }
         }
     }
 
-    for (auto& imageAvailableSemaphore : m_imagesAvailableSemaphores)
+    vkDestroyCommandPool(m_device, m_immediateCommandPool, nullptr);
+
+    for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        vkDestroySemaphore(m_device, imageAvailableSemaphore, nullptr);
+        vkDestroyFence(m_device, m_frameCompletedFences[i], nullptr);
+        vkDestroySemaphore(m_device, m_imagesAvailableSemaphores[i], nullptr);
     }
 
     vmaDestroyAllocator(m_allocator);
@@ -117,57 +129,115 @@ void Device::BeginFrame()
                          .commandPools.at(m_currentIndexFrame),
                        0x0);
 
-    // TODO begin command recording
+    BeginCommandRecording(QueueType::GRAPHICS);
 }
 
-void Device::EndFrame() { m_endFrame_fn(m_rendererContext, nullptr); }
-
-VkCommandBuffer Device::CreateImmediateCommandBuffer()
+void Device::EndFrame()
 {
-    VkCommandBufferAllocateInfo info{
-      .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool        = m_commandPool,
-      .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      .commandBufferCount = 1,
-    };
+    EndCommandRecording(true, true);
 
-    VkCommandBuffer cmd;
-    auto            ok = vkAllocateCommandBuffers(m_device, &info, &cmd);
-    assert(ok == VK_SUCCESS);
+    if (m_lastCommandBuffer && m_lastCommandBuffer->queueType != QueueType::COUNT)
+    {
+        m_endFrame_fn(m_rendererContext, m_lastCommandBuffer->signalSemaphore);
+    }
 
-    VkCommandBufferBeginInfo beginInfo{
-      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-      .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-
-    ok = vkBeginCommandBuffer(cmd, &beginInfo);
-    assert(ok == VK_SUCCESS);
-    return cmd;
-}
-
-void Device::FlushCommandBuffer(VkCommandBuffer cmd) const
-{
-    vkEndCommandBuffer(cmd);
-
-    VkSubmitInfo info{.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                      .pNext              = nullptr,
-                      .commandBufferCount = 1,
-                      .pCommandBuffers    = &cmd};
-
-    vkQueueSubmit(m_queues[static_cast<u32>(QueueType::GRAPHICS)].queue, 1, &info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(m_queues[static_cast<u32>(QueueType::GRAPHICS)].queue);
-
-    vkFreeCommandBuffers(m_device, m_commandPool, 1, &cmd);
+    m_currentCommandBuffer = nullptr;
+    m_lastCommandBuffer    = nullptr;
 }
 
 void Device::WaitIdle() const { vkDeviceWaitIdle(m_device); }
+
+void Device::BeginCommandRecording(QueueType type)
+{
+    if (!m_currentCommandBuffer || m_currentCommandBuffer->queueType != type)
+    {
+        if (m_currentCommandBuffer && m_currentCommandBuffer->queueType != QueueType::COUNT)
+        {
+            EndCommandRecording();
+        }
+
+        auto& commandBufferIndex =
+          m_commandBufferSets.at(static_cast<u32>(type)).commandBufferIndex.at(m_currentIndexFrame);
+        auto& commandBuffers =
+          m_commandBufferSets.at(static_cast<u32>(type)).commandBuffers.at(m_currentIndexFrame);
+        auto& commandPool =
+          m_commandBufferSets.at(static_cast<u32>(type)).commandPools.at(m_currentIndexFrame);
+        ++commandBufferIndex;
+
+        if ((commandBufferIndex + 1) > static_cast<i32>(commandBuffers.size()))
+        {
+            auto cmd = new CommandBuffer(type, CreateCommandBuffer(commandPool), CreateSemaphore());
+            commandBuffers.emplace_back(std::move(cmd));
+        }
+
+        auto& commandBufferInfo = commandBuffers.at(commandBufferIndex);
+
+        VkCommandBufferBeginInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        auto                     ok = vkBeginCommandBuffer(commandBufferInfo->commandBuffer, &info);
+        if (ok == VK_SUCCESS)
+        {
+            m_currentCommandBuffer = commandBufferInfo;
+        }
+        else
+        {
+            m_currentCommandBuffer = nullptr;
+        }
+    }
+}
+
+void Device::EndCommandRecording(bool waitForImage, bool signalFence)
+{
+    if (!m_currentCommandBuffer || m_currentCommandBuffer->queueType == QueueType::COUNT)
+        return;
+
+    const auto& commandQueue = m_queues.at(static_cast<u32>(m_currentCommandBuffer->queueType));
+
+    auto ok = vkEndCommandBuffer(m_currentCommandBuffer->commandBuffer);
+    assert(ok == VK_SUCCESS);
+
+    VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.commandBufferCount   = 1;
+    submitInfo.pCommandBuffers      = &m_currentCommandBuffer->commandBuffer;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores    = &m_currentCommandBuffer->signalSemaphore;
+
+    if (!m_lastCommandBuffer || m_lastCommandBuffer->queueType == QueueType::COUNT)
+    {
+        if (waitForImage)
+        {
+            constexpr VkPipelineStageFlags waitStages[] = {
+              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+            submitInfo.pWaitSemaphores    = &m_imagesAvailableSemaphores.at(m_currentIndexFrame);
+            submitInfo.waitSemaphoreCount = 1;
+            submitInfo.pWaitDstStageMask  = waitStages;
+        }
+    }
+    else
+    {
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT};
+        submitInfo.pWaitDstStageMask      = waitStages;
+        submitInfo.waitSemaphoreCount     = 1;
+        submitInfo.pWaitSemaphores        = &m_lastCommandBuffer->signalSemaphore;
+    }
+
+    ok =
+      vkQueueSubmit(commandQueue.queue,
+                    1,
+                    &submitInfo,
+                    signalFence ? m_frameCompletedFences.at(m_currentIndexFrame) : VK_NULL_HANDLE);
+    assert(ok == VK_SUCCESS);
+
+    m_lastCommandBuffer    = m_currentCommandBuffer;
+    m_currentCommandBuffer = nullptr;
+}
 
 VkFence Device::CreateFence(VkFenceCreateFlags flags) const
 {
     VkFence           fence{VK_NULL_HANDLE};
     VkFenceCreateInfo info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, VK_NULL_HANDLE, flags};
     auto              ok = vkCreateFence(m_device, &info, nullptr, &fence);
-    assert(ok != VK_SUCCESS);
+    assert(ok == VK_SUCCESS);
     return fence;
 }
 
@@ -205,5 +275,71 @@ VkCommandBuffer Device::CreateCommandBuffer(const VkCommandPool& commandPool)
     assert(ok == VK_SUCCESS);
 
     return cmd;
+}
+
+VkCommandBuffer Device::BeginImmediateCommandBuffer(VkCommandPool commandPool)
+{
+    VkCommandBuffer             cmd;
+    VkCommandBufferAllocateInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                     VK_NULL_HANDLE,
+                                     commandPool,
+                                     VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                     1};
+    vkAllocateCommandBuffers(m_device, &info, &cmd);
+
+    VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                       VK_NULL_HANDLE,
+                                       VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                                       VK_NULL_HANDLE};
+    vkBeginCommandBuffer(cmd, &beginInfo);
+
+    return cmd;
+}
+
+void Device::FlushImmediateCommandBuffer(VkCommandBuffer cmd, VkQueue queue, VkFence fence) const
+{
+    vkEndCommandBuffer(cmd);
+
+    VkSubmitInfo info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    info.commandBufferCount = 1;
+    info.pCommandBuffers    = &cmd;
+
+    auto ok = vkQueueSubmit(queue, 1, &info, fence);
+    assert(ok == VK_SUCCESS);
+    vkQueueWaitIdle(queue);
+}
+
+void Device::TransitionImageLayout(VkImage                 image,
+                                   VkAccessFlags           srcAccessFlags,
+                                   VkAccessFlags           dstAccessFlags,
+                                   VkImageLayout           currentLayout,
+                                   VkImageLayout           targetLayout,
+                                   VkPipelineStageFlags    srcStageFlags,
+                                   VkPipelineStageFlags    dstStageFlags,
+                                   VkImageSubresourceRange subresourceRange)
+{
+    auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+
+    VkImageMemoryBarrier2 barrier{
+      .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+      .srcStageMask     = srcStageFlags,
+      .srcAccessMask    = srcAccessFlags,
+      .dstStageMask     = dstStageFlags,
+      .dstAccessMask    = dstAccessFlags,
+      .oldLayout        = currentLayout,
+      .newLayout        = targetLayout,
+      .image            = image,
+      .subresourceRange = subresourceRange,
+    };
+
+    VkDependencyInfo dependency{
+      .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+      .imageMemoryBarrierCount = 1,
+      .pImageMemoryBarriers    = &barrier,
+    };
+
+    vkCmdPipelineBarrier2(cmd, &dependency);
+
+    FlushImmediateCommandBuffer(cmd, m_queues[static_cast<u32>(QueueType::GRAPHICS)].queue);
 }
 } // namespace vulkan
