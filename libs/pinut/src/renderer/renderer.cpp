@@ -4,9 +4,15 @@
 #define GLFW_INCLUDE_VULKAN
 #include <external/glfw/include/GLFW/glfw3.h>
 
-#include "render_device/src/device.h"
-#include "render_device/src/init_utils.h"
+#include "render_device/src/drawCall.h"
+#include "render_device/src/renderPipeline.h"
+#include "render_device/src/shader.h"
+#include "render_device/src/states.h"
+#include "render_device/src/vulkan/device.h"
+#include "render_device/src/vulkan/utils.h"
 #include "src/renderer/renderer.h"
+#include "src/renderer/shaders/flat_fs.h"
+#include "src/renderer/shaders/flat_vs.h"
 
 namespace Pinut
 {
@@ -217,6 +223,20 @@ void Renderer::Update()
 
     m_device->EnableRendering({0, 0, static_cast<u32>(m_width), static_cast<u32>(m_height)},
                               {attachment});
+
+    DrawCall dc;
+    dc.vertexCount = 3;
+
+    GraphicsState graphicsState;
+    m_device->SetGraphicsState(&graphicsState);
+
+    RenderPipeline pipeline{ShaderFlatVS{}, ShaderFlatFS{}};
+    // pipeline.vertexShader   = vertexShader;
+    // pipeline.fragmentShader = fragmentShader;
+
+    m_device->SetRenderPipeline(&pipeline);
+
+    m_device->SubmitDrawCalls({dc});
 
     m_device->DisableRendering();
 

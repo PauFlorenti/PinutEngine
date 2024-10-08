@@ -38,8 +38,6 @@ set(Pinut_imgui
 
 set(Pinut_renderer
     src/renderer/common.h
-    src/renderer/pipeline.cpp
-    src/renderer/pipeline.h
     src/renderer/primitives.cpp
     src/renderer/primitives.h
     src/renderer/renderer.cpp
@@ -49,22 +47,8 @@ set(Pinut_pipelines
     src/renderer/pipelines/forward.cpp
     src/renderer/pipelines/forward.h)
 
-set(Pinut_stages
-    src/renderer/stages/materialManager.cpp
-    src/renderer/stages/materialManager.h
-    src/renderer/stages/opaqueStage.cpp
-    src/renderer/stages/opaqueStage.h
-    src/renderer/stages/pipelineStage.cpp
-    src/renderer/stages/pipelineStage.h
-    src/renderer/stages/skyboxStage.cpp
-    src/renderer/stages/skyboxStage.h
-    src/renderer/stages/transparentStage.cpp
-    src/renderer/stages/transparentStage.h
-    src/renderer/stages/wireframeStage.cpp
-    src/renderer/stages/wireframeStage.h)
-
 # files_glob_recurse(pinut_source_files "src/*.cpp src/*.h")
-add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines} ${Pinut_stages})
+add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines})
 
 # glm
 # add_library(glm INTERFACE)

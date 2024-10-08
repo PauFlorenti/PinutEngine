@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "src/init_utils.h"
+#include "src/vulkan/utils.h"
 
 namespace vulkan
 {
@@ -238,4 +238,4 @@ VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoo
     return info;
 }
 } // namespace vkinit
-} // namespace Pinut
+} // namespace vulkan

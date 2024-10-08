@@ -2,7 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
-namespace Pinut
+struct BlendState;
+struct RasterState;
+namespace vulkan
 {
 struct PipelineBuilder
 {
@@ -23,15 +25,13 @@ struct PipelineBuilder
     void       clear();
     void       set_shaders(VkShaderModule shader_module, VkShaderStageFlags shader_stage);
     void       set_topology(VkPrimitiveTopology topology);
-    void       set_rasterizer(VkPolygonMode   polygon_mode,
-                              VkCullModeFlags cull_mode_flags,
-                              VkFrontFace     front_face);
+    void       set_rasterizer(const RasterState& state);
     void       set_multisampling_none();
     void       set_input_attribute(std::vector<VkVertexInputAttributeDescription> attr_descriptions,
                                    size_t                                         stride_size);
     void       disable_blending();
-    void       enable_alpha_blending();
-    void       enable_skybox_blending();
+    void       enable_blending();
+    void       setBlendingState(const BlendState& state);
     void       set_color_attachment_format(VkFormat format);
     void       set_depth_format(VkFormat format);
     void       set_stencil_format(VkFormat format);
@@ -41,4 +41,4 @@ struct PipelineBuilder
     void       disable_depth_test();
     VkPipeline build(VkDevice device);
 };
-} // namespace Pinut
+} // namespace vulkan

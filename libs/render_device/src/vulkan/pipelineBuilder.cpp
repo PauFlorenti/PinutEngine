@@ -1,8 +1,9 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include "pipeline.h"
+#include "src/states.h"
+#include "src/vulkan/pipelineBuilder.h"
 
-namespace Pinut
+namespace vulkan
 {
 void PipelineBuilder::clear()
 {
@@ -35,13 +36,11 @@ void PipelineBuilder::set_topology(VkPrimitiveTopology topology)
     input_assembly.primitiveRestartEnable = VK_FALSE;
 }
 
-void PipelineBuilder::set_rasterizer(VkPolygonMode   polygon_mode,
-                                     VkCullModeFlags cull_mode_flags,
-                                     VkFrontFace     front_face)
+void PipelineBuilder::set_rasterizer(const RasterState& state)
 {
-    rasterizer.polygonMode = polygon_mode;
-    rasterizer.frontFace   = front_face;
-    rasterizer.cullMode    = cull_mode_flags;
+    rasterizer.polygonMode = state.polygonMode;
+    rasterizer.frontFace   = state.frontFace;
+    rasterizer.cullMode    = state.cullingMode;
 }
 
 void PipelineBuilder::set_multisampling_none()
@@ -75,30 +74,22 @@ void PipelineBuilder::disable_blending()
     color_blend_attachment.blendEnable = VK_FALSE;
 }
 
-void PipelineBuilder::enable_alpha_blending()
+void PipelineBuilder::enable_blending()
 {
     color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                             VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment.blendEnable         = VK_TRUE;
-    color_blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
-    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    color_blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
-    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attachment.blendEnable = VK_TRUE;
 }
 
-void PipelineBuilder::enable_skybox_blending()
+void PipelineBuilder::setBlendingState(const BlendState& state)
 {
-    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment.blendEnable         = VK_TRUE;
-    color_blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
-    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-    color_blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
-    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment.colorWriteMask      = state.writeMask;
+    color_blend_attachment.colorBlendOp        = state.colorBlendOp;
+    color_blend_attachment.dstColorBlendFactor = state.dstColor;
+    color_blend_attachment.srcColorBlendFactor = state.srcColor;
+    color_blend_attachment.alphaBlendOp        = state.alphaBlendOp;
+    color_blend_attachment.srcAlphaBlendFactor = state.srcAlpha;
+    color_blend_attachment.dstAlphaBlendFactor = state.dstAlpha;
 }
 
 void PipelineBuilder::set_color_attachment_format(VkFormat format)
@@ -210,4 +201,4 @@ VkPipeline PipelineBuilder::build(VkDevice device)
     assert(ok == VK_SUCCESS);
     return pipeline;
 }
-} // namespace Pinut
+} // namespace vulkan

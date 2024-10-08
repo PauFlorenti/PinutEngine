@@ -1,9 +1,22 @@
 #pragma once
 
+#include "src/states.h"
+#include "src/vulkan/pipeline.h"
+
 typedef struct VmaAllocator_T* VmaAllocator;
+
+struct DrawCall;
+struct RenderPipeline;
 
 namespace vulkan
 {
+struct PipelineKey
+{
+    const RenderPipeline* renderPipeline;
+    GraphicsState         graphicsState;
+    bool                  operator==(const PipelineKey&) const noexcept;
+};
+
 struct DeviceInfo
 {
     VkInstance       instance;
@@ -66,6 +79,11 @@ class Device final
                          const std::vector<VkRenderingAttachmentInfo>& attachments);
     void DisableRendering();
 
+    void SetGraphicsState(GraphicsState* state);
+    void SetRenderPipeline(RenderPipeline* pipeline);
+
+    void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls);
+
     void TransitionImageLayout(VkImage                 image,
                                VkAccessFlags           srcAccessFlags,
                                VkAccessFlags           dstAccessFlags,
@@ -91,6 +109,10 @@ class Device final
     VkCommandPool   CreateCommandPool(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags = 0x0);
     VkCommandBuffer CreateCommandBuffer(const VkCommandPool& commandPool);
 
+    Pipeline* GetRenderPipeline(const RenderPipeline* pipeline, const GraphicsState& graphicsState);
+
+    void SubmitDrawCall(const DrawCall& drawCall);
+
     VkDevice         m_device{VK_NULL_HANDLE};
     VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
     VkCommandPool    m_immediateCommandPool{VK_NULL_HANDLE};
@@ -108,6 +130,10 @@ class Device final
     std::array<CommandBufferSetData, 2> m_commandBufferSets;
     std::array<QueueInfo, 2>            m_queues;
 
+    //std::unordered_map<PipelineKey, Pipeline, PipelineKey::Hash> m_pipelines;
+    const RenderPipeline* m_currentRenderPipeline{nullptr};
+    GraphicsState         m_currentGraphicsState;
+
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT debugMessenger{nullptr};
 #endif
@@ -116,3 +142,14 @@ class Device final
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;
 };
 } // namespace vulkan
+
+template <>
+struct std::hash<vulkan::PipelineKey>
+{
+    inline size_t operator()(const vulkan::PipelineKey& key) const noexcept
+    {
+        size_t h1 = hash<const RenderPipeline*>{}(key.renderPipeline);
+        size_t h2 = hash<GraphicsState>{}(key.graphicsState);
+        return h1 ^ (h2 << 1);
+    };
+};

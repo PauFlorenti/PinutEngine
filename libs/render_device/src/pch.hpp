@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cassert>
+#include <fstream>
 #include <functional>
 #include <vector>
 

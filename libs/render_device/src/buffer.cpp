@@ -1,7 +1,7 @@
 #include "pch.hpp"
 
 #include "src/buffer.h"
-#include "src/device.h"
+#include "src/vulkan/device.h"
 
 namespace vulkan
 {

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <external/vk-bootstrap/src/VkBootstrap.h>
-#include <render_device/src/device.h>
+
+#include "render_device/src/vulkan/device.h"
 
 struct GLFWwindow;
 namespace vulkan

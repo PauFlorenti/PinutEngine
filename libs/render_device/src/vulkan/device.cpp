@@ -4,10 +4,15 @@
 #define VMA_DEBUG_LOG_FORMAT
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
-#include "device.h"
+#include "src/drawCall.h"
+#include "src/renderPipeline.h"
+#include "src/vulkan/device.h"
+#include "src/vulkan/pipeline.h"
 
 namespace vulkan
 {
+bool   PipelineKey::operator==(const PipelineKey&) const noexcept = default;
+
 Device::Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callbacks)
 {
     assert(deviceInfo);
@@ -141,8 +146,9 @@ void Device::EndFrame()
         m_endFrame_fn(m_rendererContext, m_lastCommandBuffer->signalSemaphore);
     }
 
-    m_currentCommandBuffer = nullptr;
-    m_lastCommandBuffer    = nullptr;
+    m_currentCommandBuffer  = nullptr;
+    m_lastCommandBuffer     = nullptr;
+    m_currentRenderPipeline = nullptr;
 }
 
 void Device::EnableRendering(const VkRect2D&                               renderArea,
@@ -164,6 +170,18 @@ void Device::DisableRendering()
 {
     const auto& cmd = m_currentCommandBuffer->commandBuffer;
     vkCmdEndRendering(cmd);
+}
+
+void Device::SetGraphicsState(GraphicsState* state) { m_currentGraphicsState = *state; }
+
+void Device::SetRenderPipeline(RenderPipeline* pipeline) { m_currentRenderPipeline = pipeline; }
+
+void Device::SubmitDrawCalls(const std::vector<DrawCall>& drawCalls)
+{
+    for (const auto& dc : drawCalls)
+    {
+        SubmitDrawCall(dc);
+    }
 }
 
 void Device::WaitIdle() const { vkDeviceWaitIdle(m_device); }
@@ -296,6 +314,30 @@ VkCommandBuffer Device::CreateCommandBuffer(const VkCommandPool& commandPool)
     assert(ok == VK_SUCCESS);
 
     return cmd;
+}
+
+Pipeline* Device::GetRenderPipeline(const RenderPipeline* pipeline,
+                                    const GraphicsState&  graphicsState)
+{
+    //auto key = PipelineKey{pipeline, graphicsState};
+
+    //auto it = m_pipelines.find(key);
+    //if (it != m_pipelines.end())
+    //    return &it->second;
+
+    //Pipeline renderPipeline = Pipeline::Create(m_device, *pipeline, graphicsState);
+
+    //m_pipelines.insert({key, renderPipeline});
+    //auto p = m_pipelines.find(key);
+    //if (p != m_pipelines.end())
+    //    return &p->second;
+
+    return nullptr;
+}
+
+void Device::SubmitDrawCall(const DrawCall& drawCall)
+{
+    auto pipeline = GetRenderPipeline(m_currentRenderPipeline, m_currentGraphicsState);
 }
 
 VkCommandBuffer Device::BeginImmediateCommandBuffer(VkCommandPool commandPool)
