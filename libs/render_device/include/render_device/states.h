@@ -1,5 +1,7 @@
 #pragma once
 
+namespace RED
+{
 struct RasterState
 {
     VkPolygonMode   polygonMode{VK_POLYGON_MODE_FILL};
@@ -22,17 +24,38 @@ struct BlendState
     bool operator==(const BlendState&) const noexcept = default;
 };
 
+struct ViewportState
+{
+    i32 x;
+    i32 y;
+    i32 width;
+    i32 height;
+
+    bool operator==(const ViewportState&) const noexcept = default;
+};
+
 struct GraphicsState
 {
     RasterState         raster{};
     BlendState          blend{};
     VkPrimitiveTopology topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+    ViewportState       viewport{};
 
     bool operator==(const GraphicsState&) const noexcept = default;
 };
 
+struct RenderPipeline;
+struct PipelineKey
+{
+    const RenderPipeline* renderPipeline;
+    GraphicsState         graphicsState;
+    bool                  operator==(const PipelineKey&) const noexcept = default;
+};
+} // namespace RED
+
 namespace std
 {
+using namespace RED;
 template <>
 struct hash<RasterState>
 {
@@ -41,6 +64,8 @@ struct hash<RasterState>
         size_t h1 = std::hash<VkPolygonMode>{}(state.polygonMode);
         size_t h2 = std::hash<VkCullModeFlags>{}(state.cullingMode);
         size_t h3 = std::hash<VkFrontFace>{}(state.frontFace);
+
+        return h1 ^ (h2 << 1) ^ (h3 << 2);
     }
 };
 
@@ -62,6 +87,20 @@ struct hash<BlendState>
 };
 
 template <>
+struct hash<ViewportState>
+{
+    inline size_t operator()(const ViewportState& state) const noexcept
+    {
+        size_t h1 = std::hash<i32>{}(state.x);
+        size_t h2 = std::hash<i32>{}(state.y);
+        size_t h3 = std::hash<i32>{}(state.width);
+        size_t h4 = std::hash<i32>{}(state.height);
+
+        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 4);
+    }
+};
+
+template <>
 struct hash<GraphicsState>
 {
     inline size_t operator()(const GraphicsState& state) const noexcept
@@ -69,8 +108,20 @@ struct hash<GraphicsState>
         size_t h1 = std::hash<RasterState>{}(state.raster);
         size_t h2 = std::hash<BlendState>{}(state.blend);
         size_t h3 = std::hash<VkPrimitiveTopology>{}(state.topology);
+        size_t h4 = std::hash<ViewportState>{}(state.viewport);
 
-        return h1 ^ (h2 << 1) ^ (h3 << 2);
+        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 4);
     }
+};
+
+template <>
+struct hash<RED::PipelineKey>
+{
+    inline size_t operator()(const RED::PipelineKey& key) const noexcept
+    {
+        size_t h1 = hash<const RED::RenderPipeline*>{}(key.renderPipeline);
+        size_t h2 = hash<RED::GraphicsState>{}(key.graphicsState);
+        return h1 ^ (h2 << 1);
+    };
 };
 } // namespace std

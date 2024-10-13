@@ -1,5 +1,7 @@
 #pragma once
 
+namespace RED
+{
 namespace vulkan
 {
 namespace vkinit
@@ -63,4 +65,5 @@ bool load_shader_module(const char* filename, VkDevice device, VkShaderModule* o
 
 VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags);
 } // namespace vkinit
-} // namespace Pinut
+} // namespace vulkan
+} // namespace RED

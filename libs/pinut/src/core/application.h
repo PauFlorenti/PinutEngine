@@ -27,7 +27,7 @@ class Application
 {
   public:
     Application(const std::string& name, i32 width = 1280, i32 height = 720);
-    ~Application() = default;
+    ~Application();
 
     virtual void OnCreate()  = 0;
     virtual void OnDestroy() = 0;

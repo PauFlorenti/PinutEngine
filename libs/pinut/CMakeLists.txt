@@ -1,54 +1,5 @@
-
-set(Pinut_assets
-    src/assets/mesh.cpp
-    src/assets/mesh.h
-    src/assets/material.cpp
-    src/assets/material.h
-    src/assets/texture.cpp
-    src/assets/texture.h)
-
-set(Pinut_core
-    src/core/application.cpp
-    src/core/application.h
-    src/core/assetManager.cpp
-    src/core/assetManager.h
-    src/core/camera.cpp
-    src/core/camera.h
-    src/core/defines.h
-    src/core/entity.cpp
-    src/core/entity.h
-    src/core/light.cpp
-    src/core/light.h
-    src/core/node.cpp
-    src/core/node.h
-    src/core/renderable.cpp
-    src/core/renderable.h
-    src/core/scene.cpp
-    src/core/scene.h)
-
-set(Pinut_loaders
-    src/loaders/gltfLoader.cpp
-    src/loaders/gltfLoader.h
-    src/loaders/objLoader.cpp
-    src/loaders/objLoader.h)
-
-set(Pinut_imgui
-    src/imgui/pinutImgui.cpp
-    src/imgui/pinutImgui.h)
-
-set(Pinut_renderer
-    src/renderer/common.h
-    src/renderer/primitives.cpp
-    src/renderer/primitives.h
-    src/renderer/renderer.cpp
-    src/renderer/renderer.h)
-
-set(Pinut_pipelines
-    src/renderer/pipelines/forward.cpp
-    src/renderer/pipelines/forward.h)
-
-# files_glob_recurse(pinut_source_files "src/*.cpp src/*.h")
-add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_imgui} ${Pinut_renderer} ${Pinut_pipelines})
+files_glob_recurse(source_files "src/*.cpp" "src/*.h" "src/pch.hpp")
+add_library(Pinut STATIC ${source_files})
 
 # glm
 # add_library(glm INTERFACE)
@@ -57,7 +8,6 @@ add_library(Pinut STATIC ${Pinut_assets} ${Pinut_core} ${Pinut_loaders} ${Pinut_
 # target_sources(glm INTERFACE ${glm_source_files})
 
 # add_subdirectory(external/glm)
-# add_subdirectory(external/imgui)
 
 # imgui
 add_library(imgui INTERFACE)
@@ -114,6 +64,6 @@ target_sources(VKBOOTSTRAP INTERFACE ${vkbootstrap_sources})
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 
-target_link_libraries(Pinut PUBLIC PRIVATE glfw RenderDevice imgui imguizmo VKBOOTSTRAP)
+target_link_libraries(Pinut PUBLIC RenderDevice PRIVATE glfw imgui imguizmo VKBOOTSTRAP)
 target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${GLFW_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR})
 target_compile_features(Pinut PRIVATE cxx_std_20)

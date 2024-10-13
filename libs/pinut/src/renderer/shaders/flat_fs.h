@@ -1,10 +1,11 @@
 #pragma once
 
-#include "render_device/src/shader.h"
+#include "render_device/shader.h"
 
 class ShaderFlatFS
 {
-    static constexpr const std::string name       = "shaders/flat.fs";
-    static constexpr const std::string entryPoint = "main";
-    static constexpr const ShaderType  shaderType{ShaderType::FRAGMENT};
+  public:
+    static constexpr const char* const     name       = "shaders/flat.frag";
+    static constexpr const char* const     entryPoint = "main";
+    static constexpr const RED::ShaderType shaderType{RED::ShaderType::FRAGMENT};
 };

@@ -1,8 +1,9 @@
 #include "pch.hpp"
 
-#include "src/states.h"
+#include "render_device/states.h"
 #include "src/vulkan/pipelineBuilder.h"
-
+namespace RED
+{
 namespace vulkan
 {
 void PipelineBuilder::clear()
@@ -202,3 +203,4 @@ VkPipeline PipelineBuilder::build(VkDevice device)
     return pipeline;
 }
 } // namespace vulkan
+} // namespace RED

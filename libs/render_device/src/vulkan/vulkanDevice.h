@@ -1,22 +1,17 @@
 #pragma once
 
-#include "src/states.h"
+#include "render_device/device.h"
+#include "render_device/states.h"
 #include "src/vulkan/pipeline.h"
 
 typedef struct VmaAllocator_T* VmaAllocator;
 
+namespace RED
+{
 struct DrawCall;
 struct RenderPipeline;
-
 namespace vulkan
 {
-struct PipelineKey
-{
-    const RenderPipeline* renderPipeline;
-    GraphicsState         graphicsState;
-    bool                  operator==(const PipelineKey&) const noexcept;
-};
-
 struct DeviceInfo
 {
     VkInstance       instance;
@@ -49,7 +44,7 @@ enum class QueueType
 
 static constexpr u32 MAX_FRAMES_IN_FLIGHT = 3;
 
-class Device final
+class VulkanDevice final : public Device
 {
   private:
     struct CommandBuffer
@@ -67,8 +62,8 @@ class Device final
     };
 
   public:
-    Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callbacks);
-    ~Device() = default;
+    VulkanDevice(void* deviceInfo, void* queues, void* callbacks);
+    ~VulkanDevice() override = default;
 
     void OnDestroy();
 
@@ -130,9 +125,10 @@ class Device final
     std::array<CommandBufferSetData, 2> m_commandBufferSets;
     std::array<QueueInfo, 2>            m_queues;
 
-    //std::unordered_map<PipelineKey, Pipeline, PipelineKey::Hash> m_pipelines;
-    const RenderPipeline* m_currentRenderPipeline{nullptr};
-    GraphicsState         m_currentGraphicsState;
+    std::unordered_map<PipelineKey, Pipeline> m_pipelines;
+    const RenderPipeline*                     m_currentRenderPipeline{nullptr};
+    Pipeline*                                 m_currentRenderPipelineInternal{nullptr};
+    GraphicsState                             m_currentGraphicsState;
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT debugMessenger{nullptr};
@@ -142,14 +138,4 @@ class Device final
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;
 };
 } // namespace vulkan
-
-template <>
-struct std::hash<vulkan::PipelineKey>
-{
-    inline size_t operator()(const vulkan::PipelineKey& key) const noexcept
-    {
-        size_t h1 = hash<const RenderPipeline*>{}(key.renderPipeline);
-        size_t h2 = hash<GraphicsState>{}(key.graphicsState);
-        return h1 ^ (h2 << 1);
-    };
-};
+} // namespace RED

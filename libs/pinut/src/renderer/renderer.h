@@ -2,19 +2,31 @@
 
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 
-#include "render_device/src/vulkan/device.h"
+#include "render_device/device.h"
 
 struct GLFWwindow;
-namespace vulkan
+namespace RED
 {
 class Device;
-class Swapchain;
-} // namespace vulkan
+} // namespace RED
 namespace Pinut
 {
 class Renderer final
 {
-    using DeviceQueues = std::array<vulkan::QueueInfo, 3>;
+    struct DeviceInfo
+    {
+        VkInstance       instance;
+        VkDevice         device;
+        VkPhysicalDevice physicalDevice;
+    };
+
+    struct QueueInfo
+    {
+        VkQueue queue{VK_NULL_HANDLE};
+        u32     index;
+    };
+
+    using DeviceQueues = std::array<QueueInfo, 3>;
 
     struct SwapchainInfo
     {
@@ -26,6 +38,13 @@ class Renderer final
         std::vector<VkImageView> imageViews;
         u32                      imageIndex{0};
         bool                     vsyncEnabled{true};
+    };
+
+    struct DeviceCallbacks
+    {
+        void*                                   context;
+        std::function<void(void*, VkSemaphore)> BeginFrame_fn;
+        std::function<void(void*, VkSemaphore)> EndFrame_fn;
     };
 
   public:
@@ -40,9 +59,9 @@ class Renderer final
     static vkb::Result<vkb::Device>   CreateDevice(const vkb::Instance& vkbInstance,
                                                    const VkSurfaceKHR&  surface);
     static DeviceQueues               CreateDeviceQueues(const vkb::Device& vkbDevice);
-    static SwapchainInfo              CreateSwapchain(const vkb::Device&       vkbDevice,
-                                                      const vulkan::QueueInfo& queueInfos,
-                                                      bool                     vsyncEnabled);
+    static SwapchainInfo              CreateSwapchain(const vkb::Device& vkbDevice,
+                                                      const QueueInfo&   queueInfos,
+                                                      bool               vsyncEnabled);
 
     static void DestroySwapchain(VkDevice& device, const SwapchainInfo& swapchainInfo);
 
@@ -57,17 +76,17 @@ class Renderer final
 
     VkSurfaceKHR m_surface{VK_NULL_HANDLE};
 
-    vkb::Device        m_vkbDevice;
-    DeviceQueues       m_deviceQueues;
-    vulkan::DeviceInfo m_deviceInfo;
-    SwapchainInfo      m_swapchainInfo;
+    vkb::Device   m_vkbDevice;
+    DeviceQueues  m_deviceQueues;
+    DeviceInfo    m_deviceInfo;
+    SwapchainInfo m_swapchainInfo;
 
-    GLFWwindow*                     m_window{nullptr};
-    std::unique_ptr<vulkan::Device> m_device{nullptr};
+    GLFWwindow*                  m_window{nullptr};
+    std::unique_ptr<RED::Device> m_device{nullptr};
 
     VkSemaphore m_endFrameSemaphore{VK_NULL_HANDLE};
 
-    vulkan::DeviceCallbacks m_callbacks;
+    DeviceCallbacks m_callbacks;
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT m_debugMessenger{nullptr};

@@ -1,12 +1,14 @@
 #include "pch.hpp"
 
-#include "src/renderPipeline.h"
-#include "src/shader.h"
-#include "src/states.h"
+#include "render_device/renderPipeline.h"
+#include "render_device/shader.h"
+#include "render_device/states.h"
 #include "src/vulkan/pipeline.h"
 #include "src/vulkan/pipelineBuilder.h"
 #include "src/vulkan/utils.h"
 
+namespace RED
+{
 namespace vulkan
 {
 Pipeline::Pipeline()                = default;
@@ -51,7 +53,7 @@ Pipeline Pipeline::Create(VkDevice              device,
     builder.set_rasterizer(graphicsState.raster);
     builder.disable_blending();
     // builder.setBlendingState(graphicsState.blend);
-    builder.set_input_attribute({inputAttribute}, sizeof(f32) * 3);
+    //builder.set_input_attribute({inputAttribute}, sizeof(f32) * 3);
     builder.set_multisampling_none();
     builder.enable_depth_test(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
     // builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
@@ -108,3 +110,4 @@ VkShaderModule Pipeline::CreateShaderModule(VkDevice device, const char* filenam
     return module;
 }
 } // namespace vulkan
+} // namespace RED

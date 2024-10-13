@@ -4,6 +4,8 @@
 
 struct BlendState;
 struct RasterState;
+namespace RED
+{
 namespace vulkan
 {
 struct PipelineBuilder
@@ -42,3 +44,4 @@ struct PipelineBuilder
     VkPipeline build(VkDevice device);
 };
 } // namespace vulkan
+} // namespace RED

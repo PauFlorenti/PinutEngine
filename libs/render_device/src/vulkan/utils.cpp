@@ -4,6 +4,8 @@
 
 #include "src/vulkan/utils.h"
 
+namespace RED
+{
 namespace vulkan
 {
 namespace vkinit
@@ -239,3 +241,4 @@ VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoo
 }
 } // namespace vkinit
 } // namespace vulkan
+} // namespace RED

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace RED
+{
 enum class ShaderType
 {
     VERTEX,
@@ -15,3 +17,4 @@ struct Shader
 
     ShaderType shaderType = ShaderType::COUNT;
 };
+} // namespace RED

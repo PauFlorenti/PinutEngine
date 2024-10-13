@@ -50,6 +50,8 @@ Application::Application(const std::string& name, i32 width, i32 height)
 {
 }
 
+Application::~Application() = default;
+
 void Application::OnWindowMoved(GLFWwindow* window, int x, int y)
 {
     printf("Window moved to x: %d y: %d\n", x, y);

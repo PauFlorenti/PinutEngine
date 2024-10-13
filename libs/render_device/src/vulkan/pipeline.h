@@ -1,5 +1,7 @@
 #pragma once
 
+namespace RED
+{
 struct RenderPipeline;
 struct GraphicsState;
 namespace vulkan
@@ -33,3 +35,4 @@ class Pipeline
     VkPipelineLayout m_pipelineLayout{VK_NULL_HANDLE};
 };
 } // namespace vulkan
+} // namespace RED

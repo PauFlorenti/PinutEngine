@@ -4,12 +4,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <external/glfw/include/GLFW/glfw3.h>
 
-#include "render_device/src/drawCall.h"
-#include "render_device/src/renderPipeline.h"
-#include "render_device/src/shader.h"
-#include "render_device/src/states.h"
-#include "render_device/src/vulkan/device.h"
-#include "render_device/src/vulkan/utils.h"
+#include "render_device/drawCall.h"
+#include "render_device/renderPipeline.h"
+#include "render_device/states.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/shaders/flat_fs.h"
 #include "src/renderer/shaders/flat_vs.h"
@@ -93,17 +90,17 @@ Renderer::DeviceQueues Renderer::CreateDeviceQueues(const vkb::Device& vkbDevice
         if (!vkbQueueResult)
         {
             printf("[ERROR]: Failed to retrieve desired queue.");
-            return vulkan::QueueInfo{};
+            return QueueInfo{};
         }
 
         auto vkbQueueIndex = vkbDevice.get_queue_index(vkbQueueType);
         if (!vkbQueueIndex)
         {
             printf("[ERROR]: Failed to retrieve desired queue index.");
-            return vulkan::QueueInfo{};
+            return QueueInfo{};
         }
 
-        return vulkan::QueueInfo{vkbQueueResult.value(), vkbQueueIndex.value()};
+        return QueueInfo{vkbQueueResult.value(), vkbQueueIndex.value()};
     };
 
     return {
@@ -113,9 +110,9 @@ Renderer::DeviceQueues Renderer::CreateDeviceQueues(const vkb::Device& vkbDevice
     };
 }
 
-Renderer::SwapchainInfo Renderer::CreateSwapchain(const vkb::Device&       vkbDevice,
-                                                  const vulkan::QueueInfo& queueInfos,
-                                                  bool                     vsyncEnabled)
+Renderer::SwapchainInfo Renderer::CreateSwapchain(const vkb::Device& vkbDevice,
+                                                  const QueueInfo&   queueInfos,
+                                                  bool               vsyncEnabled)
 {
     vkb::SwapchainBuilder builder{vkbDevice};
     auto                  result =
@@ -195,7 +192,7 @@ Renderer::Renderer(GLFWwindow* window, i32 width, i32 height)
     if (!SetupVulkan())
         return;
 
-    m_device = std::make_unique<vulkan::Device>(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
+    m_device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
 
     glfwSetWindowUserPointer(m_window, this);
     glfwSetWindowSizeCallback(m_window, &Renderer::OnWindowResized);
@@ -214,25 +211,33 @@ void Renderer::Update()
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
-    auto attachment = vulkan::vkinit::RenderingAttachmentInfo(
-      m_swapchainInfo.imageViews.at(m_swapchainInfo.imageIndex),
-      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-      VK_ATTACHMENT_LOAD_OP_CLEAR,
-      VK_ATTACHMENT_STORE_OP_STORE,
-      {1.0f, 0.f, 0.f, 0.f});
+    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+    attachment.imageView   = m_swapchainInfo.imageViews.at(m_swapchainInfo.imageIndex);
+    attachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    attachment.loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
+    attachment.clearValue  = {1.0f, 0.f, 0.f, 0.f};
 
     m_device->EnableRendering({0, 0, static_cast<u32>(m_width), static_cast<u32>(m_height)},
                               {attachment});
 
-    DrawCall dc;
+    RED::DrawCall dc;
     dc.vertexCount = 3;
 
-    GraphicsState graphicsState;
-    m_device->SetGraphicsState(&graphicsState);
+    RED::ViewportState viewport{};
+    viewport.x      = 0.0f;
+    viewport.y      = 0.0f;
+    viewport.width  = static_cast<float>(m_width);
+    viewport.height = static_cast<float>(m_height);
 
-    RenderPipeline pipeline{ShaderFlatVS{}, ShaderFlatFS{}};
-    // pipeline.vertexShader   = vertexShader;
-    // pipeline.fragmentShader = fragmentShader;
+    RED::GraphicsState graphicsState{};
+    graphicsState.viewport = std::move(viewport);
+
+    m_device->SetGraphicsState(&graphicsState);
+    RED::RenderPipeline pipeline{
+      "",
+      {ShaderFlatVS::name, ShaderFlatVS::entryPoint, ShaderFlatVS::shaderType},
+      {ShaderFlatFS::name, ShaderFlatFS::entryPoint, ShaderFlatFS::shaderType}};
 
     m_device->SetRenderPipeline(&pipeline);
 

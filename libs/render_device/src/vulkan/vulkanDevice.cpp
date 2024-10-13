@@ -4,26 +4,30 @@
 #define VMA_DEBUG_LOG_FORMAT
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
-#include "src/drawCall.h"
-#include "src/renderPipeline.h"
-#include "src/vulkan/device.h"
+#include "render_device/drawCall.h"
+#include "render_device/renderPipeline.h"
 #include "src/vulkan/pipeline.h"
+#include "src/vulkan/vulkanDevice.h"
 
+namespace RED
+{
 namespace vulkan
 {
-bool   PipelineKey::operator==(const PipelineKey&) const noexcept = default;
-
-Device::Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callbacks)
+VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
 {
     assert(deviceInfo);
     assert(queues);
 
-    m_device         = deviceInfo->device;
-    m_physicalDevice = deviceInfo->physicalDevice;
+    auto vulkanDeviceInfo = reinterpret_cast<DeviceInfo*>(deviceInfo);
+    auto vulkanQueues     = reinterpret_cast<QueueInfo*>(queues);
+    auto vulkanCallbacks  = reinterpret_cast<DeviceCallbacks*>(callbacks);
 
-    m_rendererContext = callbacks->context;
-    m_beginFrame_fn   = callbacks->BeginFrame_fn;
-    m_endFrame_fn     = callbacks->EndFrame_fn;
+    m_device         = vulkanDeviceInfo->device;
+    m_physicalDevice = vulkanDeviceInfo->physicalDevice;
+
+    m_rendererContext = vulkanCallbacks->context;
+    m_beginFrame_fn   = vulkanCallbacks->BeginFrame_fn;
+    m_endFrame_fn     = vulkanCallbacks->EndFrame_fn;
 
     /*
       Queues
@@ -31,26 +35,27 @@ Device::Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callb
       2 Present - used by renderer, not here
       3 Compute
     */
-    m_queues[static_cast<u32>(QueueType::GRAPHICS)] = queues[0];
-    m_queues[static_cast<u32>(QueueType::COMPUTE)]  = queues[2];
+    m_queues[static_cast<u32>(QueueType::GRAPHICS)] = vulkanQueues[0];
+    m_queues[static_cast<u32>(QueueType::COMPUTE)]  = vulkanQueues[2];
 
     VmaAllocatorCreateInfo allocator_info{
       .flags          = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
       .physicalDevice = m_physicalDevice,
       .device         = m_device,
-      .instance       = deviceInfo->instance,
+      .instance       = vulkanDeviceInfo->instance,
     };
 
     vmaCreateAllocator(&allocator_info, &m_allocator);
 
-    m_immediateCommandPool = CreateCommandPool(queues[static_cast<u32>(QueueType::GRAPHICS)].index);
+    m_immediateCommandPool =
+      CreateCommandPool(m_queues[static_cast<u32>(QueueType::GRAPHICS)].index);
 
     for (auto& commandBufferSet : m_commandBufferSets)
     {
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
         {
             commandBufferSet.commandPools.at(i) =
-              CreateCommandPool(queues[static_cast<u32>(QueueType::GRAPHICS)].index);
+              CreateCommandPool(m_queues[static_cast<u32>(QueueType::GRAPHICS)].index);
             commandBufferSet.commandBufferIndex.at(i) = -1;
         }
     }
@@ -62,9 +67,12 @@ Device::Device(DeviceInfo* deviceInfo, QueueInfo* queues, DeviceCallbacks* callb
     }
 }
 
-void Device::OnDestroy()
+void VulkanDevice::OnDestroy()
 {
     vkDeviceWaitIdle(m_device);
+
+    for (auto& pipeline : m_pipelines)
+        pipeline.second.Destroy(m_device);
 
     for (auto& commandBufferSet : m_commandBufferSets)
     {
@@ -97,7 +105,7 @@ void Device::OnDestroy()
     }
 }
 
-void Device::BeginFrame()
+void VulkanDevice::BeginFrame()
 {
     m_currentIndexFrame = ++m_currentIndexFrame % MAX_FRAMES_IN_FLIGHT;
 
@@ -137,7 +145,7 @@ void Device::BeginFrame()
     BeginCommandRecording(QueueType::GRAPHICS);
 }
 
-void Device::EndFrame()
+void VulkanDevice::EndFrame()
 {
     EndCommandRecording(true, true);
 
@@ -146,13 +154,14 @@ void Device::EndFrame()
         m_endFrame_fn(m_rendererContext, m_lastCommandBuffer->signalSemaphore);
     }
 
-    m_currentCommandBuffer  = nullptr;
-    m_lastCommandBuffer     = nullptr;
-    m_currentRenderPipeline = nullptr;
+    m_currentCommandBuffer          = nullptr;
+    m_lastCommandBuffer             = nullptr;
+    m_currentRenderPipeline         = nullptr;
+    m_currentRenderPipelineInternal = nullptr;
 }
 
-void Device::EnableRendering(const VkRect2D&                               renderArea,
-                             const std::vector<VkRenderingAttachmentInfo>& attachments)
+void VulkanDevice::EnableRendering(const VkRect2D&                               renderArea,
+                                   const std::vector<VkRenderingAttachmentInfo>& attachments)
 {
     BeginCommandRecording(QueueType::GRAPHICS);
 
@@ -166,17 +175,39 @@ void Device::EnableRendering(const VkRect2D&                               rende
     vkCmdBeginRendering(cmd, &info);
 }
 
-void Device::DisableRendering()
+void VulkanDevice::DisableRendering()
 {
     const auto& cmd = m_currentCommandBuffer->commandBuffer;
     vkCmdEndRendering(cmd);
 }
 
-void Device::SetGraphicsState(GraphicsState* state) { m_currentGraphicsState = *state; }
+void VulkanDevice::SetGraphicsState(GraphicsState* state)
+{
+    m_currentGraphicsState = *state;
+    auto& cmd              = m_currentCommandBuffer->commandBuffer;
 
-void Device::SetRenderPipeline(RenderPipeline* pipeline) { m_currentRenderPipeline = pipeline; }
+    VkViewport viewport = {static_cast<f32>(m_currentGraphicsState.viewport.x),
+                           static_cast<f32>(m_currentGraphicsState.viewport.height),
+                           static_cast<f32>(m_currentGraphicsState.viewport.width),
+                           static_cast<f32>(-m_currentGraphicsState.viewport.height),
+                           0.0f,
+                           1.0f};
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-void Device::SubmitDrawCalls(const std::vector<DrawCall>& drawCalls)
+    VkRect2D scissors = {
+      .offset = {0, 0},
+      .extent = {static_cast<u32>(m_currentGraphicsState.viewport.width),
+                 static_cast<u32>(m_currentGraphicsState.viewport.height)},
+    };
+    vkCmdSetScissor(cmd, 0, 1, &scissors);
+}
+
+void VulkanDevice::SetRenderPipeline(RenderPipeline* pipeline)
+{
+    m_currentRenderPipeline = pipeline;
+}
+
+void VulkanDevice::SubmitDrawCalls(const std::vector<DrawCall>& drawCalls)
 {
     for (const auto& dc : drawCalls)
     {
@@ -184,9 +215,9 @@ void Device::SubmitDrawCalls(const std::vector<DrawCall>& drawCalls)
     }
 }
 
-void Device::WaitIdle() const { vkDeviceWaitIdle(m_device); }
+void VulkanDevice::WaitIdle() const { vkDeviceWaitIdle(m_device); }
 
-void Device::BeginCommandRecording(QueueType type)
+void VulkanDevice::BeginCommandRecording(QueueType type)
 {
     if (!m_currentCommandBuffer || m_currentCommandBuffer->queueType != type)
     {
@@ -224,7 +255,7 @@ void Device::BeginCommandRecording(QueueType type)
     }
 }
 
-void Device::EndCommandRecording(bool waitForImage, bool signalFence)
+void VulkanDevice::EndCommandRecording(bool waitForImage, bool signalFence)
 {
     if (!m_currentCommandBuffer || m_currentCommandBuffer->queueType == QueueType::COUNT)
         return;
@@ -271,7 +302,7 @@ void Device::EndCommandRecording(bool waitForImage, bool signalFence)
     m_currentCommandBuffer = nullptr;
 }
 
-VkFence Device::CreateFence(VkFenceCreateFlags flags) const
+VkFence VulkanDevice::CreateFence(VkFenceCreateFlags flags) const
 {
     VkFence           fence{VK_NULL_HANDLE};
     VkFenceCreateInfo info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, VK_NULL_HANDLE, flags};
@@ -280,7 +311,7 @@ VkFence Device::CreateFence(VkFenceCreateFlags flags) const
     return fence;
 }
 
-VkSemaphore Device::CreateSemaphore(VkSemaphoreCreateFlags flags) const
+VkSemaphore VulkanDevice::CreateSemaphore(VkSemaphoreCreateFlags flags) const
 {
     VkSemaphore           semaphore{VK_NULL_HANDLE};
     VkSemaphoreCreateInfo info{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, VK_NULL_HANDLE, flags};
@@ -289,7 +320,7 @@ VkSemaphore Device::CreateSemaphore(VkSemaphoreCreateFlags flags) const
     return semaphore;
 }
 
-VkCommandPool Device::CreateCommandPool(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags)
+VkCommandPool VulkanDevice::CreateCommandPool(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags)
 {
     VkCommandPool           commandPool;
     VkCommandPoolCreateInfo info{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -301,7 +332,7 @@ VkCommandPool Device::CreateCommandPool(u32 queueFamilyIndex, VkCommandPoolCreat
     return commandPool;
 }
 
-VkCommandBuffer Device::CreateCommandBuffer(const VkCommandPool& commandPool)
+VkCommandBuffer VulkanDevice::CreateCommandBuffer(const VkCommandPool& commandPool)
 {
     VkCommandBuffer cmd;
 
@@ -316,31 +347,40 @@ VkCommandBuffer Device::CreateCommandBuffer(const VkCommandPool& commandPool)
     return cmd;
 }
 
-Pipeline* Device::GetRenderPipeline(const RenderPipeline* pipeline,
-                                    const GraphicsState&  graphicsState)
+Pipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
+                                          const GraphicsState&  graphicsState)
 {
-    //auto key = PipelineKey{pipeline, graphicsState};
+    auto key = PipelineKey{pipeline, graphicsState};
 
-    //auto it = m_pipelines.find(key);
-    //if (it != m_pipelines.end())
-    //    return &it->second;
+    auto it = m_pipelines.find(key);
+    if (it != m_pipelines.end())
+        return &it->second;
 
-    //Pipeline renderPipeline = Pipeline::Create(m_device, *pipeline, graphicsState);
+    Pipeline renderPipeline = Pipeline::Create(m_device, *pipeline, graphicsState);
 
-    //m_pipelines.insert({key, renderPipeline});
-    //auto p = m_pipelines.find(key);
-    //if (p != m_pipelines.end())
-    //    return &p->second;
+    m_pipelines.insert({key, renderPipeline});
+    auto p = m_pipelines.find(key);
+    if (p != m_pipelines.end())
+        return &p->second;
 
     return nullptr;
 }
 
-void Device::SubmitDrawCall(const DrawCall& drawCall)
+void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
 {
-    auto pipeline = GetRenderPipeline(m_currentRenderPipeline, m_currentGraphicsState);
+    auto        pipeline = GetRenderPipeline(m_currentRenderPipeline, m_currentGraphicsState);
+    const auto& cmd      = m_currentCommandBuffer->commandBuffer;
+
+    if (m_currentRenderPipelineInternal != pipeline)
+    {
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
+        m_currentRenderPipelineInternal = pipeline;
+    }
+
+    vkCmdDraw(cmd, drawCall.vertexCount, 1, 0, 0);
 }
 
-VkCommandBuffer Device::BeginImmediateCommandBuffer(VkCommandPool commandPool)
+VkCommandBuffer VulkanDevice::BeginImmediateCommandBuffer(VkCommandPool commandPool)
 {
     VkCommandBuffer             cmd;
     VkCommandBufferAllocateInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -359,7 +399,9 @@ VkCommandBuffer Device::BeginImmediateCommandBuffer(VkCommandPool commandPool)
     return cmd;
 }
 
-void Device::FlushImmediateCommandBuffer(VkCommandBuffer cmd, VkQueue queue, VkFence fence) const
+void VulkanDevice::FlushImmediateCommandBuffer(VkCommandBuffer cmd,
+                                               VkQueue         queue,
+                                               VkFence         fence) const
 {
     vkEndCommandBuffer(cmd);
 
@@ -372,14 +414,14 @@ void Device::FlushImmediateCommandBuffer(VkCommandBuffer cmd, VkQueue queue, VkF
     vkQueueWaitIdle(queue);
 }
 
-void Device::TransitionImageLayout(VkImage                 image,
-                                   VkAccessFlags           srcAccessFlags,
-                                   VkAccessFlags           dstAccessFlags,
-                                   VkImageLayout           currentLayout,
-                                   VkImageLayout           targetLayout,
-                                   VkPipelineStageFlags    srcStageFlags,
-                                   VkPipelineStageFlags    dstStageFlags,
-                                   VkImageSubresourceRange subresourceRange)
+void VulkanDevice::TransitionImageLayout(VkImage                 image,
+                                         VkAccessFlags           srcAccessFlags,
+                                         VkAccessFlags           dstAccessFlags,
+                                         VkImageLayout           currentLayout,
+                                         VkImageLayout           targetLayout,
+                                         VkPipelineStageFlags    srcStageFlags,
+                                         VkPipelineStageFlags    dstStageFlags,
+                                         VkImageSubresourceRange subresourceRange)
 {
     auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
 
@@ -406,3 +448,4 @@ void Device::TransitionImageLayout(VkImage                 image,
     FlushImmediateCommandBuffer(cmd, m_queues[static_cast<u32>(QueueType::GRAPHICS)].queue);
 }
 } // namespace vulkan
+} // namespace RED
