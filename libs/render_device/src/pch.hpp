@@ -1,6 +1,7 @@
 // pch.h precompiled headers
 
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <fstream>
 #include <functional>

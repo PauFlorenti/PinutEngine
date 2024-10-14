@@ -4,6 +4,7 @@
 #define VMA_DEBUG_LOG_FORMAT
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
+#include "render_device/bufferDescriptor.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
 #include "src/vulkan/pipeline.h"
@@ -214,6 +215,44 @@ void VulkanDevice::SubmitDrawCalls(const std::vector<DrawCall>& drawCalls)
         SubmitDrawCall(dc);
     }
 }
+
+BufferResource VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* data)
+{
+    const auto id = m_resourceGenerator.GenerateBufferResource();
+
+    VulkanBuffer buffer;
+    buffer.m_id = id;
+
+    VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    info.queueFamilyIndexCount = 1;
+    info.pQueueFamilyIndices   = &m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).index;
+    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+    info.usage                 = descriptor.usage;
+    info.size                  = descriptor.size;
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    auto ok = vmaCreateBuffer(m_allocator,
+                              &info,
+                              &allocInfo,
+                              &buffer.m_buffer,
+                              &buffer.m_allocation,
+                              nullptr);
+
+    assert(ok = VK_SUCCESS);
+
+    if (data != nullptr)
+    {
+        memcpy(buffer.m_allocation->GetMappedData(), data, descriptor.size);
+    }
+
+    m_buffers.insert({id, buffer});
+
+    return id;
+}
+
+void VulkanDevice::DestroyBuffer(BufferResource) {}
 
 void VulkanDevice::WaitIdle() const { vkDeviceWaitIdle(m_device); }
 

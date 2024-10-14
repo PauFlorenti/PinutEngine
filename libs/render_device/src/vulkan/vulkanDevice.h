@@ -2,7 +2,9 @@
 
 #include "render_device/device.h"
 #include "render_device/states.h"
+#include "src/resourceGenerator.h"
 #include "src/vulkan/pipeline.h"
+#include "src/vulkan/vulkanBuffer.h"
 
 typedef struct VmaAllocator_T* VmaAllocator;
 
@@ -79,6 +81,9 @@ class VulkanDevice final : public Device
 
     void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls);
 
+    BufferResource CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr);
+    void           DestroyBuffer(BufferResource);
+
     void TransitionImageLayout(VkImage                 image,
                                VkAccessFlags           srcAccessFlags,
                                VkAccessFlags           dstAccessFlags,
@@ -133,6 +138,10 @@ class VulkanDevice final : public Device
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT debugMessenger{nullptr};
 #endif
+
+    // Resources
+    ResourceGenerator                                m_resourceGenerator;
+    std::unordered_map<BufferResource, VulkanBuffer> m_buffers;
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;

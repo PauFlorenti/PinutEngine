@@ -1,8 +1,11 @@
 #pragma once
 
+#include "render_device/gpuresource.h"
+
 // RED = Rendering Engine Device
 namespace RED
 {
+struct BufferDescriptor;
 struct DrawCall;
 struct GraphicsState;
 struct RenderPipeline;
@@ -30,6 +33,9 @@ class Device
 
     virtual void SetGraphicsState(GraphicsState* state)      = 0;
     virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
+
+    virtual BufferResource CreateBuffer(const BufferDescriptor&, void* data) = 0;
+    virtual void           DestroyBuffer(BufferResource)                     = 0;
 
     virtual void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) = 0;
 
