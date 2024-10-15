@@ -1,7 +1,5 @@
 #include "pch.hpp"
 
-//#include <glfw3.h>
-
 #include "sandbox.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"

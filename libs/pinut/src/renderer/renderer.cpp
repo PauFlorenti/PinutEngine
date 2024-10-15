@@ -4,6 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <external/glfw/include/GLFW/glfw3.h>
 
+#include "render_device/bufferDescriptor.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
 #include "render_device/states.h"
@@ -184,6 +185,8 @@ void Renderer::EndFrameCallback(void* context, VkSemaphore renderFinishedSemapho
     renderer->m_endFrameSemaphore = renderFinishedSemaphore;
 }
 
+RED::DrawCall dc;
+
 Renderer::Renderer(GLFWwindow* window, i32 width, i32 height)
 : m_window(window),
   m_width(width),
@@ -196,6 +199,18 @@ Renderer::Renderer(GLFWwindow* window, i32 width, i32 height)
 
     glfwSetWindowUserPointer(m_window, this);
     glfwSetWindowSizeCallback(m_window, &Renderer::OnWindowResized);
+
+    std::array<glm::vec3, 3> vertices = {glm::vec3{-0.5f, -0.5f, 0.0f},
+                                         {0.5f, -0.5f, 0.0f},
+                                         {0.0f, 0.5f, 0.0f}};
+
+    RED::BufferDescriptor vertexBufferDescriptor{};
+    vertexBufferDescriptor.elementSize = sizeof(glm::vec3);
+    vertexBufferDescriptor.size        = sizeof(glm::vec3) * 3;
+    vertexBufferDescriptor.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    dc.vertexCount  = 3;
+    dc.vertexBuffer = m_device->CreateBuffer(vertexBufferDescriptor, vertices.data());
 }
 
 void Renderer::Update()
@@ -220,9 +235,6 @@ void Renderer::Update()
 
     m_device->EnableRendering({0, 0, static_cast<u32>(m_width), static_cast<u32>(m_height)},
                               {attachment});
-
-    RED::DrawCall dc;
-    dc.vertexCount = 3;
 
     RED::ViewportState viewport{};
     viewport.x      = 0.0f;

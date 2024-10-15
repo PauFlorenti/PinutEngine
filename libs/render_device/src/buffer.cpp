@@ -7,19 +7,17 @@ namespace RED
 {
 GPUBuffer::GPUBuffer() = default;
 
-GPUBuffer::GPUBuffer(BufferResource id, u64 size, std::weak_ptr<Device> device)
+GPUBuffer::GPUBuffer(BufferResource id, u64 size, Device* device)
 : m_id(id),
   m_size(size),
-  m_device(device){};
+  m_device(device) {};
 
-GPUBuffer::~GPUBuffer() { Destroy(); }
+GPUBuffer::~GPUBuffer() = default; //{ Destroy(); }
 
 void GPUBuffer::Destroy()
 {
-    if (const auto& device = m_device.lock())
-    {
-        device->DestroyBuffer(m_id);
-    }
+    assert(m_device);
+    m_device->DestroyBuffer(m_id);
 }
 
 BufferResource GPUBuffer::GetID() const { return m_id; }

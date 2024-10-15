@@ -9,7 +9,7 @@ class GPUBuffer final
 {
   public:
     GPUBuffer();
-    GPUBuffer(BufferResource id, u64 size, std::weak_ptr<Device> device);
+    GPUBuffer(BufferResource id, u64 size, Device* device);
     ~GPUBuffer();
 
     void Destroy();
@@ -18,9 +18,9 @@ class GPUBuffer final
     u64            GetSize() const;
 
   private:
-    BufferResource        m_id;
-    u64                   m_size; // in bytes
-    std::weak_ptr<Device> m_device;
+    BufferResource m_id{GPU_RESOURCE_INVALID};
+    u64            m_size{0}; // in bytes
+    Device*        m_device{nullptr};
 };
 
 class GPUBufferView final

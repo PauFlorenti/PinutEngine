@@ -81,8 +81,8 @@ class VulkanDevice final : public Device
 
     void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls);
 
-    BufferResource CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr);
-    void           DestroyBuffer(BufferResource);
+    GPUBuffer CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr);
+    void      DestroyBuffer(BufferResource);
 
     void TransitionImageLayout(VkImage                 image,
                                VkAccessFlags           srcAccessFlags,

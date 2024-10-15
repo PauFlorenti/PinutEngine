@@ -8,6 +8,7 @@
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
 #include "src/vulkan/pipeline.h"
+#include "src/vulkan/utils.h"
 #include "src/vulkan/vulkanDevice.h"
 
 namespace RED
@@ -74,6 +75,15 @@ void VulkanDevice::OnDestroy()
 
     for (auto& pipeline : m_pipelines)
         pipeline.second.Destroy(m_device);
+
+    m_pipelines.clear();
+
+    for (auto& buffer : m_buffers)
+    {
+        vmaDestroyBuffer(m_allocator, buffer.second.m_buffer, buffer.second.m_allocation);
+    }
+
+    m_buffers.clear();
 
     for (auto& commandBufferSet : m_commandBufferSets)
     {
@@ -216,7 +226,7 @@ void VulkanDevice::SubmitDrawCalls(const std::vector<DrawCall>& drawCalls)
     }
 }
 
-BufferResource VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* data)
+GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* data)
 {
     const auto id = m_resourceGenerator.GenerateBufferResource();
 
@@ -224,11 +234,10 @@ BufferResource VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, vo
     buffer.m_id = id;
 
     VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    info.queueFamilyIndexCount = 1;
-    info.pQueueFamilyIndices   = &m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).index;
-    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
-    info.usage                 = descriptor.usage;
-    info.size                  = descriptor.size;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    info.usage =
+      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | descriptor.usage;
+    info.size = descriptor.size;
 
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -240,19 +249,56 @@ BufferResource VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, vo
                               &buffer.m_allocation,
                               nullptr);
 
-    assert(ok = VK_SUCCESS);
+    assert(ok == VK_SUCCESS);
 
     if (data != nullptr)
     {
-        memcpy(buffer.m_allocation->GetMappedData(), data, descriptor.size);
+        VulkanBuffer staging;
+
+        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        stagingBufferInfo.size        = info.size;
+        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo stagingAllocInfo{};
+        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+        ok = vmaCreateBuffer(m_allocator,
+                             &stagingBufferInfo,
+                             &stagingAllocInfo,
+                             &staging.m_buffer,
+                             &staging.m_allocation,
+                             nullptr);
+        assert(ok == VK_SUCCESS);
+
+        vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, descriptor.size);
+
+        VkBufferCopy region{};
+        region.size = info.size;
+
+        const auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+        vkCmdCopyBuffer(cmd, staging.m_buffer, buffer.m_buffer, 1, &region);
+        FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
+
+        vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
     }
 
     m_buffers.insert({id, buffer});
 
-    return id;
+    return {id, info.size, this};
 }
 
-void VulkanDevice::DestroyBuffer(BufferResource) {}
+void VulkanDevice::DestroyBuffer(BufferResource resource)
+{
+    if (auto buffer = m_buffers.find(resource); buffer != m_buffers.end())
+    {
+        auto b = buffer->second;
+        vmaDestroyBuffer(m_allocator, b.m_buffer, b.m_allocation);
+
+        m_buffers.erase(buffer);
+    }
+}
 
 void VulkanDevice::WaitIdle() const { vkDeviceWaitIdle(m_device); }
 
