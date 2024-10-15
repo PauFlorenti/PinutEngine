@@ -462,6 +462,12 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
         m_currentRenderPipelineInternal = pipeline;
     }
 
+    const auto& buffer = m_buffers.find(drawCall.vertexBuffer.GetID());
+    assert(buffer != m_buffers.end());
+
+    VkDeviceSize offset{0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, &buffer->second.m_buffer, &offset);
+
     vkCmdDraw(cmd, drawCall.vertexCount, 1, 0, 0);
 }
 

@@ -40,11 +40,6 @@ Pipeline Pipeline::Create(VkDevice              device,
       vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipeline.m_pipelineLayout) ==
       VK_SUCCESS);
 
-    // TODO should be provided
-    // ! Hardcoded so far
-    auto inputAttribute =
-      vkinit::VertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0);
-
     PipelineBuilder builder;
     builder.layout = pipeline.m_pipelineLayout;
     builder.set_shaders(vertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT);
@@ -53,7 +48,7 @@ Pipeline Pipeline::Create(VkDevice              device,
     builder.set_rasterizer(graphicsState.raster);
     builder.disable_blending();
     // builder.setBlendingState(graphicsState.blend);
-    //builder.set_input_attribute({inputAttribute}, sizeof(f32) * 3);
+    builder.set_input_attribute(graphicsState.vertexInputAttributes, graphicsState.vertexStrideSize);
     builder.set_multisampling_none();
     builder.enable_depth_test(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
     // builder.set_depth_format(VK_FORMAT_D32_SFLOAT);

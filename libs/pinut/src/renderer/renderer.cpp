@@ -237,13 +237,15 @@ void Renderer::Update()
                               {attachment});
 
     RED::ViewportState viewport{};
-    viewport.x      = 0.0f;
-    viewport.y      = 0.0f;
-    viewport.width  = static_cast<float>(m_width);
-    viewport.height = static_cast<float>(m_height);
+    viewport.x      = 0;
+    viewport.y      = 0;
+    viewport.width  = m_width;
+    viewport.height = m_height;
 
     RED::GraphicsState graphicsState{};
     graphicsState.viewport = std::move(viewport);
+    graphicsState.vertexInputAttributes.emplace_back(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0);
+    graphicsState.vertexStrideSize = sizeof(glm::vec3);
 
     m_device->SetGraphicsState(&graphicsState);
     RED::RenderPipeline pipeline{

@@ -1,5 +1,8 @@
 #pragma once
 
+bool operator==(const VkVertexInputAttributeDescription& lhs,
+                const VkVertexInputAttributeDescription& rhs) noexcept;
+
 namespace RED
 {
 struct RasterState
@@ -36,10 +39,12 @@ struct ViewportState
 
 struct GraphicsState
 {
-    RasterState         raster{};
-    BlendState          blend{};
-    VkPrimitiveTopology topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
-    ViewportState       viewport{};
+    RasterState                                    raster{};
+    BlendState                                     blend{};
+    VkPrimitiveTopology                            topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+    ViewportState                                  viewport{};
+    std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+    u32                                            vertexStrideSize{0};
 
     bool operator==(const GraphicsState&) const noexcept = default;
 };
@@ -110,7 +115,17 @@ struct hash<GraphicsState>
         size_t h3 = std::hash<VkPrimitiveTopology>{}(state.topology);
         size_t h4 = std::hash<ViewportState>{}(state.viewport);
 
-        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 4);
+        size_t h5 = 0;
+        for (const auto& attribute : state.vertexInputAttributes)
+        {
+            h5 ^= hash<uint32_t>{}(attribute.location) ^
+                  (hash<uint32_t>{}(attribute.binding) << 1) ^
+                  (hash<uint32_t>{}(attribute.format) << 2) ^ (hash<uint32_t>{}(attribute.offset));
+        }
+
+        size_t h6 = std::hash<u32>{}(state.vertexStrideSize);
+
+        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4) ^ (h6 << 5);
     }
 };
 
