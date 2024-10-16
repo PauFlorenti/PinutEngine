@@ -1,0 +1,7 @@
+{
+	"flat": {
+		"vs": "flat.vert",
+		"fs": "flat.frag",
+		"input_vertex": "Pos"
+	}
+}

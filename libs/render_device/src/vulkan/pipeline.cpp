@@ -6,6 +6,7 @@
 #include "src/vulkan/pipeline.h"
 #include "src/vulkan/pipelineBuilder.h"
 #include "src/vulkan/utils.h"
+#include "src/vulkan/vulkanVertexDeclaration.h"
 
 namespace RED
 {
@@ -22,8 +23,8 @@ Pipeline Pipeline::Create(VkDevice              device,
     Pipeline pipeline;
 
     VkShaderModule vertexShaderModule, fragmentShaderModule;
-    const auto     vertexShaderPath   = renderPipeline.vertexShader.name + ".spv";
-    const auto     fragmentShaderPath = renderPipeline.fragmentShader.name + ".spv";
+    const auto     vertexShaderPath   = "shaders/" + renderPipeline.vertexShader.name + ".spv";
+    const auto     fragmentShaderPath = "shaders/" + renderPipeline.fragmentShader.name + ".spv";
     vertexShaderModule                = CreateShaderModule(device, vertexShaderPath.c_str());
     fragmentShaderModule              = CreateShaderModule(device, fragmentShaderPath.c_str());
 
@@ -40,6 +41,9 @@ Pipeline Pipeline::Create(VkDevice              device,
       vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipeline.m_pipelineLayout) ==
       VK_SUCCESS);
 
+    const auto vertexDeclaration =
+      getVertexDeclarationByName(renderPipeline.inputVertexDeclaration);
+
     PipelineBuilder builder;
     builder.layout = pipeline.m_pipelineLayout;
     builder.set_shaders(vertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT);
@@ -48,7 +52,7 @@ Pipeline Pipeline::Create(VkDevice              device,
     builder.set_rasterizer(graphicsState.raster);
     builder.disable_blending();
     // builder.setBlendingState(graphicsState.blend);
-    builder.set_input_attribute(graphicsState.vertexInputAttributes, graphicsState.vertexStrideSize);
+    builder.set_input_attribute(vertexDeclaration->layout, vertexDeclaration->stride);
     builder.set_multisampling_none();
     builder.enable_depth_test(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
     // builder.set_depth_format(VK_FORMAT_D32_SFLOAT);

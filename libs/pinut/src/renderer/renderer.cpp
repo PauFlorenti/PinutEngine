@@ -3,10 +3,10 @@
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 #define GLFW_INCLUDE_VULKAN
 #include <external/glfw/include/GLFW/glfw3.h>
+#include <external/tinygltf/json.hpp>
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/drawCall.h"
-#include "render_device/renderPipeline.h"
 #include "render_device/states.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/shaders/flat_fs.h"
@@ -200,6 +200,42 @@ Renderer::Renderer(GLFWwindow* window, i32 width, i32 height)
     glfwSetWindowUserPointer(m_window, this);
     glfwSetWindowSizeCallback(m_window, &Renderer::OnWindowResized);
 
+    // Init pipelines
+    std::ifstream pipelineFile(std::filesystem::path("../libs/pinut/pipelines/pipelines.json"));
+
+    if (!pipelineFile.is_open())
+    {
+        printf("[ERROR]: Could not open pipelines.json file.");
+        return;
+    }
+
+    nlohmann::json jPipelineFile;
+    try
+    {
+        jPipelineFile = nlohmann::json::parse(pipelineFile);
+    }
+    catch (nlohmann::json::parse_error& e)
+    {
+        pipelineFile.close();
+        printf("[ERROR]: Could not parse pipelines.json file.");
+        return;
+    }
+
+    for (auto& j : jPipelineFile.items())
+    {
+        auto jdata = j.value();
+
+        const auto vs          = jdata["vs"].get<std::string>();
+        const auto fs          = jdata["fs"].get<std::string>();
+        const auto inputVertex = jdata.value("input_vertex", "Pos");
+
+        m_pipelines.insert({j.key(),
+                            {j.key().c_str(),
+                             {vs, RED::ShaderType::VERTEX},
+                             {fs, RED::ShaderType::FRAGMENT},
+                             inputVertex}});
+    }
+
     std::array<glm::vec3, 3> vertices = {glm::vec3{-0.5f, -0.5f, 0.0f},
                                          {0.5f, -0.5f, 0.0f},
                                          {0.0f, 0.5f, 0.0f}};
@@ -244,16 +280,10 @@ void Renderer::Update()
 
     RED::GraphicsState graphicsState{};
     graphicsState.viewport = std::move(viewport);
-    graphicsState.vertexInputAttributes.emplace_back(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0);
-    graphicsState.vertexStrideSize = sizeof(glm::vec3);
 
     m_device->SetGraphicsState(&graphicsState);
-    RED::RenderPipeline pipeline{
-      "",
-      {ShaderFlatVS::name, ShaderFlatVS::entryPoint, ShaderFlatVS::shaderType},
-      {ShaderFlatFS::name, ShaderFlatFS::entryPoint, ShaderFlatFS::shaderType}};
 
-    m_device->SetRenderPipeline(&pipeline);
+    m_device->SetRenderPipeline(&m_pipelines.at("flat"));
 
     m_device->SubmitDrawCalls({dc});
 

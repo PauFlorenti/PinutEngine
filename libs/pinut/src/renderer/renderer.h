@@ -3,6 +3,7 @@
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 
 #include "render_device/device.h"
+#include "render_device/renderPipeline.h"
 
 struct GLFWwindow;
 namespace RED
@@ -87,6 +88,8 @@ class Renderer final
     VkSemaphore m_endFrameSemaphore{VK_NULL_HANDLE};
 
     DeviceCallbacks m_callbacks;
+
+    std::unordered_map<std::string, RED::RenderPipeline> m_pipelines;
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT m_debugMessenger{nullptr};

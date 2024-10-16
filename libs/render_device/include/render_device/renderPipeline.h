@@ -8,8 +8,9 @@ struct RenderPipeline
 {
     const char* name;
 
-    const Shader& vertexShader;
-    const Shader& fragmentShader;
+    Shader      vertexShader;
+    Shader      fragmentShader;
+    std::string inputVertexDeclaration;
 
     bool operator==(const RenderPipeline&) const noexcept = default;
 };
