@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "src/core/assetManager.h"
 //#include "src/loaders/gltfLoader.h"
 //#include "src/loaders/objLoader.h"
 //#include "src/renderer/pipelines/forward.h"
@@ -9,6 +8,7 @@
 //#include "src/imgui/pinutImgui.h"
 //#endif
 
+#include "src/core/assetManager.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
 
@@ -109,6 +109,8 @@ class Application
 
     f64 m_deltaTime{0};
     f64 m_lastFrameTime{0};
+
+    AssetManager m_assetManager;
 
     // RENDERING
     std::unique_ptr<Renderer> m_renderer{nullptr};

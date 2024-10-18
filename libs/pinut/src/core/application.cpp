@@ -225,6 +225,7 @@ void Application::Init()
         return;
 
     auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
+    m_assetManager.Init(device);
     m_renderer =
       std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, m_window, m_width, m_height);
 

@@ -13,7 +13,6 @@ class Renderable final
  public:
    explicit Renderable(std::shared_ptr<Node> root, const std::string& name = "");
 
-   void Draw(VkCommandBuffer cmd, VkPipelineLayout layout);
    void DrawImGui(Camera* camera);
    void Destroy();
    bool IsValid() const;

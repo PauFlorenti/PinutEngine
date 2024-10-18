@@ -53,7 +53,7 @@ target_include_directories(tinygltf SYSTEM INTERFACE ${TINYGLTF_DIR})
 # tinyobjloader
 add_library(tinyobj INTERFACE)
 set(TINYOBJ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyobjloader)
-target_sources(tinyobj INTERFACE ${TINYOBJ_DIR}/tiny_obj_loader.cc ${TINYGLTF_DIR}/tiny_obj_loader.h)
+target_sources(tinyobj INTERFACE ${TINYOBJ_DIR}/tiny_obj_loader.cc ${TINYOBJ_DIR}/tiny_obj_loader.h)
 
 # VKBOOTSTRAP
 add_library(VKBOOTSTRAP INTERFACE)
@@ -64,6 +64,6 @@ target_sources(VKBOOTSTRAP INTERFACE ${vkbootstrap_sources})
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 
-target_link_libraries(Pinut PUBLIC RenderDevice PRIVATE glfw imgui imguizmo VKBOOTSTRAP)
+target_link_libraries(Pinut PUBLIC RenderDevice PRIVATE glfw imgui imguizmo tinyobj VKBOOTSTRAP)
 target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${GLFW_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR})
 target_compile_features(Pinut PRIVATE cxx_std_20)
