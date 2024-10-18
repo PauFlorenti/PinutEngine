@@ -29,12 +29,14 @@ struct QueueInfo
 
 using BeginFrameCallback_fn = std::function<void(void*, VkSemaphore)>;
 using EndFrameCallback_fn   = std::function<void(void*, VkSemaphore)>;
+using PresentCallback_fn    = std::function<void()>;
 
 struct DeviceCallbacks
 {
-    void*                         context;
-    vulkan::BeginFrameCallback_fn BeginFrame_fn;
-    vulkan::EndFrameCallback_fn   EndFrame_fn;
+    void*                 context;
+    BeginFrameCallback_fn BeginFrame_fn;
+    EndFrameCallback_fn   EndFrame_fn;
+    PresentCallback_fn    Present_fn;
 };
 
 enum class QueueType
@@ -67,19 +69,20 @@ class VulkanDevice final : public Device
     VulkanDevice(void* deviceInfo, void* queues, void* callbacks);
     ~VulkanDevice() override = default;
 
-    void OnDestroy();
+    void OnDestroy() override;
 
-    void BeginFrame();
-    void EndFrame();
+    void BeginFrame() override;
+    void EndFrame() override;
+    void Present() override;
 
     void EnableRendering(const VkRect2D&                               renderArea,
-                         const std::vector<VkRenderingAttachmentInfo>& attachments);
-    void DisableRendering();
+                         const std::vector<VkRenderingAttachmentInfo>& attachments) override;
+    void DisableRendering() override;
 
-    void SetGraphicsState(GraphicsState* state);
-    void SetRenderPipeline(RenderPipeline* pipeline);
+    void SetGraphicsState(GraphicsState* state) override;
+    void SetRenderPipeline(RenderPipeline* pipeline) override;
 
-    void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls);
+    void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) override;
 
     GPUBuffer CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr);
     void      DestroyBuffer(BufferResource);
@@ -91,9 +94,9 @@ class VulkanDevice final : public Device
                                VkImageLayout           targetLayout,
                                VkPipelineStageFlags    srcStageFlags,
                                VkPipelineStageFlags    dstStageFlags,
-                               VkImageSubresourceRange subresourceRange);
+                               VkImageSubresourceRange subresourceRange) override;
 
-    void WaitIdle() const;
+    void WaitIdle() const override;
 
   private:
     void            BeginCommandRecording(QueueType type);
@@ -125,6 +128,7 @@ class VulkanDevice final : public Device
     void*                 m_rendererContext{nullptr};
     BeginFrameCallback_fn m_beginFrame_fn;
     EndFrameCallback_fn   m_endFrame_fn;
+    PresentCallback_fn    m_present_fn;
 
     // 1 Graphics, 2 Compute
     std::array<CommandBufferSetData, 2> m_commandBufferSets;

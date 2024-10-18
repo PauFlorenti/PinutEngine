@@ -43,6 +43,147 @@ i32 Run(std::unique_ptr<Pinut::Application> application)
 
 namespace Pinut
 {
+vkb::Result<vkb::Instance> Application::CreateInstance()
+{
+    vkb::InstanceBuilder instanceBuilder;
+
+    auto messaage_severity = //VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+      // VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+
+    return instanceBuilder.set_app_name("")
+      .set_debug_messenger_severity(messaage_severity)
+#ifdef _DEBUG
+      .request_validation_layers(true)
+#else
+      .request_validation_layers(false)
+#endif
+      .use_default_debug_messenger()
+      .require_api_version(1, 3, 0)
+      .build();
+}
+
+VkSurfaceKHR Application::CreateSurface(const VkInstance& instance, GLFWwindow* window)
+{
+    VkSurfaceKHR surface{VK_NULL_HANDLE};
+
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+    {
+        printf("[ERROR]: Failed to create surface.");
+    }
+
+    return surface;
+}
+
+vkb::Result<vkb::Device> Application::CreateDevice(const vkb::Instance& vkbInstance,
+                                                   const VkSurfaceKHR&  surface)
+{
+    VkPhysicalDeviceVulkan12Features features_12{
+      .bufferDeviceAddress = true,
+    };
+
+    VkPhysicalDeviceVulkan13Features features_13{
+      .synchronization2 = true,
+      .dynamicRendering = true,
+    };
+
+    vkb::PhysicalDeviceSelector gpu_selector{vkbInstance};
+    auto                        gpu_result = gpu_selector.set_minimum_version(1, 1)
+                        .set_required_features_12(features_12)
+                        .set_required_features_13(features_13)
+                        .set_surface(surface)
+                        .select();
+
+    if (!gpu_result)
+    {
+        printf("[ERROR]: %s", gpu_result.error().message().c_str());
+        return {gpu_result.error()};
+    }
+
+    auto gpu = gpu_result.value();
+
+    VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_features = {
+      .sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES,
+      .shaderDrawParameters = VK_TRUE,
+    };
+
+    vkb::DeviceBuilder device_builder{gpu};
+    return device_builder.add_pNext(&shader_draw_parameters_features).build();
+}
+
+Application::DeviceQueues Application::CreateDeviceQueues(const vkb::Device& vkbDevice)
+{
+    auto GetQueue = [](const vkb::Device& vkbDevice, vkb::QueueType vkbQueueType)
+    {
+        auto vkbQueueResult = vkbDevice.get_queue(vkbQueueType);
+        if (!vkbQueueResult)
+        {
+            printf("[ERROR]: Failed to retrieve desired queue.");
+            return QueueInfo{};
+        }
+
+        auto vkbQueueIndex = vkbDevice.get_queue_index(vkbQueueType);
+        if (!vkbQueueIndex)
+        {
+            printf("[ERROR]: Failed to retrieve desired queue index.");
+            return QueueInfo{};
+        }
+
+        return QueueInfo{vkbQueueResult.value(), vkbQueueIndex.value()};
+    };
+
+    return {
+      GetQueue(vkbDevice, vkb::QueueType::graphics),
+      GetQueue(vkbDevice, vkb::QueueType::present),
+      GetQueue(vkbDevice, vkb::QueueType::compute),
+    };
+}
+
+SwapchainInfo Application::CreateSwapchain(const vkb::Device& vkbDevice,
+                                           const QueueInfo&   queueInfos,
+                                           bool               vsyncEnabled)
+{
+    vkb::SwapchainBuilder builder{vkbDevice};
+    auto                  result =
+      builder
+        .set_desired_present_mode(vsyncEnabled ? VK_PRESENT_MODE_FIFO_KHR :
+                                                 VK_PRESENT_MODE_IMMEDIATE_KHR)
+        .set_desired_format({VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+        .build();
+
+    if (!result)
+    {
+        printf("[ERROR]: Failed to create swapchain.");
+        return {};
+    }
+
+    auto vkbSwapchain = result.value();
+
+    return {
+      .swapchain     = vkbSwapchain.swapchain,
+      .surfaceFormat = {vkbSwapchain.image_format, vkbSwapchain.color_space},
+      .surfaceExtent = vkbSwapchain.extent,
+      .images        = vkbSwapchain.get_images().value(),
+      .imageViews    = vkbSwapchain.get_image_views().value(),
+      .imageIndex    = 0,
+      .vsyncEnabled  = vsyncEnabled,
+    };
+}
+
+void Application::DestroySwapchain(VkDevice& device, const SwapchainInfo& swapchainInfo)
+{
+    for (auto& imageView : swapchainInfo.imageViews)
+    {
+        vkDestroyImageView(device, imageView, nullptr);
+    }
+
+    if (swapchainInfo.swapchain)
+    {
+        vkDestroySwapchainKHR(device, swapchainInfo.swapchain, nullptr);
+    }
+}
+
 Application::Application(const std::string& name, i32 width, i32 height)
 : m_name(name),
   m_width(width),
@@ -80,74 +221,12 @@ void Application::Init()
     if (!SetupGlfw())
         return;
 
-    m_renderer = std::make_unique<Renderer>(m_window, m_width, m_height);
+    if (!SetupVulkan())
+        return;
 
-    // TODO Make number backbuffers a variable.
-    //m_device.OnCreate("Sandbox", "PinutEngine", ENABLE_GPU_VALIDATION_DEFAULT, m_window);
-    //m_swapchain.OnCreate(&m_device, 3, m_window);
-    //m_commandBufferManager.OnCreate(&m_device, 3);
-
-    //m_assetManager.Init(&m_device);
-    //Primitives::InitializeDefaultPrimitives(&m_device, m_assetManager);
-    //m_forwardPipeline.Init(&m_device);
-
-    //m_gltfLoader.Init(&m_device, m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout);
-    //m_objLoader.Init(&m_device);
-
-    // TODO This should make in a function like in Primitives?
-    /*u32        whiteData = 0xFFFFFFFF;
-    const auto whiteTexture =
-      CreateTextureFromData(1,
-                            1,
-                            4,
-                            VK_FORMAT_R8G8B8A8_SRGB,
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                            &whiteData,
-                            "DefaultWhiteTexture");
-
-    u32 blackData = 0x00000000;
-    CreateTextureFromData(1,
-                          1,
-                          4,
-                          VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          &blackData,
-                          "DefaultBlackTexture");
-
-    u32 redData = 0xFF0000FF;
-    CreateTextureFromData(1,
-                          1,
-                          4,
-                          VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          &redData,
-                          "DefaultRedTexture");
-
-    u32 blueData = 0xFF00FF00;
-    CreateTextureFromData(1,
-                          1,
-                          4,
-                          VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          &blueData,
-                          "DefaultBlueTexture");
-
-    u32 greenData = 0xFFFF0000;
-    CreateTextureFromData(1,
-                          1,
-                          4,
-                          VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          &greenData,
-                          "DefaultGreenTexture");
-
-    MaterialData materialData{};
-    materialData.diffuseTexture = whiteTexture;*/
-
-    //GetMaterialInstance("DefaultMAT", MaterialType::OPAQUE, materialData);
-    //GetMaterialInstance("DefaultTransparentMAT", MaterialType::TRANSPARENT, materialData);
-
-    //UpdateDisplay();
+    auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
+    m_renderer =
+      std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, m_window, m_width, m_height);
 
 #ifdef _DEBUG
     //m_imgui.Init(&m_device, &m_swapchain, window);
@@ -178,13 +257,12 @@ void Application::Run()
 
 void Application::Shutdown()
 {
-    //auto ok = vkDeviceWaitIdle(m_device.GetDevice());
-    //assert(ok == VK_SUCCESS);
-
     if (m_currentScene)
         m_currentScene->Clear();
 
+    DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
     m_renderer->Shutdown();
+    ShutdownVulkan();
     ShutdownGlfw();
 
 #ifdef _DEBUG
@@ -192,11 +270,12 @@ void Application::Shutdown()
 #endif
 
     //m_assetManager.Shutdown();
-    //m_forwardPipeline.Shutdown();
     //m_commandBufferManager.OnDestroy();
-    //m_swapchain.OnDestroy();
-    //m_device.OnDestroy();
-    // glfwDestroyWindow(m_window);
+}
+
+void Application::RecreateSwapchain(bool bSync)
+{
+    // TODO Recreate swapchain ...
 }
 
 void Application::Update()
@@ -208,150 +287,7 @@ void Application::Update()
     m_lastFrameTime  = currentTime;
 }
 
-void Application::Render()
-{
-    m_renderer->Update();
-    //auto frameIndex = m_swapchain.WaitForSwapchain();
-
-    // Draw
-    VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
-    VkFence     fence{VK_NULL_HANDLE};
-    //m_swapchain.GetSyncObjects(&imageAvailableSemaphore, &renderFinishedSemaphore, &fence);
-
-    //m_commandBufferManager.OnBeginFrame();
-    //const auto cmd = m_commandBufferManager.GetNewCommandBuffer();
-
-    //const auto cmdBeginInfo =
-    //  vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    //auto ok = vkBeginCommandBuffer(cmd, &cmdBeginInfo);
-    //assert(ok == VK_SUCCESS);
-
-    //const auto depthTexture = m_forwardPipeline.GetDepthAttachment();
-
-    //Texture::TransitionImageLayout(cmd,
-    //                               m_swapchain.GetCurrentImage(),
-    //                               0,
-    //                               VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-    //                               VK_IMAGE_LAYOUT_UNDEFINED,
-    //                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-    //                               {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
-
-    //Texture::TransitionImageLayout(cmd,
-    //                               depthTexture->Image(),
-    //                               0,
-    //                               VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-    //                               VK_IMAGE_LAYOUT_UNDEFINED,
-    //                               VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-    //                               {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
-
-    //auto attachment = vkinit::RenderingAttachmentInfo(m_swapchain.GetCurrentImageView(),
-    //                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    //                                                  VK_ATTACHMENT_LOAD_OP_CLEAR,
-    //                                                  VK_ATTACHMENT_STORE_OP_STORE,
-    //                                                  {0.0f, 0.f, 0.f, 0.f});
-
-    //auto depthAttachment = vkinit::RenderingAttachmentInfo(depthTexture->ImageView(),
-    //                                                       VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-    //                                                       VK_ATTACHMENT_LOAD_OP_CLEAR,
-    //                                                       VK_ATTACHMENT_STORE_OP_STORE,
-    //                                                       {1.0, 0});
-
-    //const auto renderingInfo =
-    //  vkinit::RenderingInfo(1, &attachment, {0, 0, m_width, m_height}, &depthAttachment);
-
-    //vkCmdBeginRendering(cmd, &renderingInfo);
-
-    //VkRect2D scissors{};
-    //scissors.extent = {m_width, m_height};
-    //scissors.offset = {0, 0};
-
-    //VkViewport viewport{};
-    //viewport.x        = 0.0f;
-    //viewport.y        = static_cast<float>(m_height);
-    //viewport.width    = static_cast<float>(m_width);
-    //viewport.height   = -static_cast<float>(m_height);
-    //viewport.minDepth = 0.0f;
-    //viewport.maxDepth = 1.0f;
-
-    //vkCmdSetViewport(cmd, 0, 1, &viewport);
-    //vkCmdSetScissor(cmd, 0, 1, &scissors);
-
-    //m_forwardPipeline.Render(cmd, m_currentCamera, m_currentScene);
-
-    //vkCmdEndRendering(cmd);
-
-#ifdef _DEBUG
-    //m_imgui.BeginImGUIRender(cmd);
-    //ImGui::Begin("DebugWindow");
-    //if (ImGui::TreeNode("Renderables"))
-    //{
-    //    for (const auto& r : m_currentScene->Renderables())
-    //    {
-    //        ImGui::PushID(&r);
-    //        r->DrawImGui(m_currentCamera);
-    //        ImGui::PopID();
-    //    }
-    //    ImGui::TreePop();
-    //}
-    //if (ImGui::TreeNode("Lights"))
-    //{
-    //    m_currentScene->GetDirectionalLight().DrawDebug(m_currentCamera);
-
-    //    auto& lights = m_currentScene->Lights();
-    //    for (u32 i = 0; i < m_currentScene->LightsCount(); ++i)
-    //    {
-    //        auto& light = lights.at(i);
-
-    //        ImGui::PushID(&light);
-    //        light->DrawDebug(m_currentCamera);
-    //        ImGui::PopID();
-    //    }
-    //    ImGui::TreePop();
-    //}
-
-    //if (ImGui::TreeNode("Camera"))
-    //{
-    //    m_currentCamera->DrawDebug();
-    //    ImGui::TreePop();
-    //}
-    //ImGui::End();
-    //m_imgui.EndImGUIRender(cmd, m_width, m_height, m_swapchain.GetCurrentImageView());
-#endif
-
-    //Texture::TransitionImageLayout(cmd,
-    //                               m_swapchain.GetCurrentImage(),
-    //                               VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-    //                               VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-    //                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    //                               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-    //                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-    //                               {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
-
-    //vkEndCommandBuffer(cmd);
-
-    //VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-    //VkSubmitInfo submitInfo{
-    //  .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    //  .waitSemaphoreCount   = 1,
-    //  .pWaitSemaphores      = &imageAvailableSemaphore,
-    //  .pWaitDstStageMask    = &stage,
-    //  .commandBufferCount   = 1,
-    //  .pCommandBuffers      = &cmd,
-    //  .signalSemaphoreCount = 1,
-    //  .pSignalSemaphores    = &renderFinishedSemaphore,
-    //};
-
-    //ok = vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, fence);
-    //assert(ok == VK_SUCCESS);
-
-    //m_swapchain.Present();
-}
+void Application::Render() { m_renderer->Update(); }
 
 Camera* Application::GetCamera()
 {
@@ -360,69 +296,6 @@ Camera* Application::GetCamera()
 
     return m_currentCamera;
 }
-
-//std::shared_ptr<Renderable> Application::CreateRenderableFromFile(
-//  const std::filesystem::path& filename)
-//{
-//    assert(!filename.empty());
-//
-//    std::filesystem::path outPath;
-//    if (!AssetManager::FindFile(filename, outPath))
-//    return nullptr;
-//
-//    const auto extension = outPath.extension();
-//    if (extension == ".gltf" || extension == ".glb")
-//    {
-//        return m_gltfLoader.LoadFromFile(outPath, m_assetManager);
-//    }
-//    else if (extension == ".obj")
-//    {
-//        return m_objLoader.LoadRenderableFromFile(outPath, m_assetManager);
-//    }
-//
-//    return nullptr;
-//}
-
-//std::shared_ptr<Texture> Application::CreateTextureFromData(const u32          width,
-//                                                            const u32          height,
-//                                                            const u32          channels,
-//                                                            VkFormat           format,
-//                                                            VkImageUsageFlags  usage,
-//                                                            void*              data,
-//                                                            const std::string& name)
-//{
-//    const auto t = Texture::CreateFromData(width, height, channels, format, usage, data, &m_device);
-//    m_assetManager.RegisterAsset(name, t);
-//
-//    return t;
-//}
-//
-//std::shared_ptr<Texture> Application::CreateTextureFromFile(const std::string& filename,
-//                                                            const std::string& name)
-//{
-//    const auto t = Texture::CreateFromFile(filename, &m_device);
-//    m_assetManager.RegisterAsset(name, t);
-//
-//    return t;
-//}
-//
-//std::shared_ptr<Material> Application::CreateMaterial(const std::string& name, MaterialData data)
-//{
-//    auto descriptorSetLayout = m_forwardPipeline.GetOpaqueStage().m_perObjectDescriptorSetLayout;
-//
-//    if (!data.diffuseTexture)
-//        data.diffuseTexture = GetAsset<Texture>("DefaultWhiteTexture");
-//    if (!data.normalTexture)
-//        data.normalTexture = GetAsset<Texture>("DefaultBlueTexture");
-//    if (!data.emissiveTexture)
-//        data.emissiveTexture = GetAsset<Texture>("DefaultBlackTexture");
-//    if (!data.metallicRoughnessTexture)
-//        data.metallicRoughnessTexture = GetAsset<Texture>("DefaultBlackTexture");
-//    if (!data.ambientOcclusionTexture)
-//        data.ambientOcclusionTexture = GetAsset<Texture>("DefaultWhiteTexture");
-//
-//    return m_assetManager.CreateMaterial(name, descriptorSetLayout, data);
-//}
 
 bool Application::SetupGlfw()
 {
@@ -451,9 +324,112 @@ bool Application::SetupGlfw()
     return true;
 }
 
+bool Application::SetupVulkan()
+{
+    auto vkbInstanceResult = CreateInstance();
+    if (!vkbInstanceResult)
+    {
+        printf("[ERROR]: %s", vkbInstanceResult.error().message().c_str());
+        return false;
+    }
+
+    auto vkbInstance      = vkbInstanceResult.value();
+    m_deviceInfo.instance = vkbInstance.instance;
+
+#ifdef _DEBUG
+    m_debugMessenger = vkbInstance.debug_messenger;
+#endif
+
+    m_surface = CreateSurface(m_deviceInfo.instance, m_window);
+
+    auto vkbDeviceResult = CreateDevice(vkbInstance, m_surface);
+    if (!vkbDeviceResult)
+    {
+        printf("[ERROR]: %s", vkbDeviceResult.error().message().c_str());
+        return false;
+    }
+
+    m_vkbDevice                 = vkbDeviceResult.value();
+    m_deviceInfo.device         = m_vkbDevice.device;
+    m_deviceInfo.physicalDevice = m_vkbDevice.physical_device;
+
+    m_deviceQueues  = CreateDeviceQueues(m_vkbDevice);
+    m_swapchainInfo = CreateSwapchain(m_vkbDevice, m_deviceQueues.at(0), true);
+
+    auto BeginFrameCallback = [](void* context, VkSemaphore imageAvailableSemaphore)
+    {
+        auto app = reinterpret_cast<Application*>(context);
+        auto ok  = vkAcquireNextImageKHR(app->m_deviceInfo.device,
+                                        app->m_swapchainInfo.swapchain,
+                                        UINT64_MAX,
+                                        imageAvailableSemaphore,
+                                        VK_NULL_HANDLE,
+                                        &app->m_swapchainInfo.imageIndex);
+
+        if (ok == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            app->RecreateSwapchain(app->m_swapchainInfo.vsyncEnabled);
+
+            vkAcquireNextImageKHR(app->m_deviceInfo.device,
+                                  app->m_swapchainInfo.swapchain,
+                                  UINT64_MAX,
+                                  imageAvailableSemaphore,
+                                  VK_NULL_HANDLE,
+                                  &app->m_swapchainInfo.imageIndex);
+        }
+    };
+
+    auto EndFrameCallback = [](void* context, VkSemaphore renderFinishedSemaphore)
+    {
+        auto app                 = reinterpret_cast<Application*>(context);
+        app->m_endFrameSemaphore = renderFinishedSemaphore;
+    };
+
+    auto PresentCallbackFunc = [&]()
+    {
+        if (m_endFrameSemaphore == VK_NULL_HANDLE)
+            return;
+
+        VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+        presentInfo.swapchainCount     = 1;
+        presentInfo.pSwapchains        = &m_swapchainInfo.swapchain;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores    = &m_endFrameSemaphore;
+        presentInfo.pImageIndices      = &m_swapchainInfo.imageIndex;
+
+        auto ok = vkQueuePresentKHR(m_deviceQueues.at(1).queue, &presentInfo);
+
+        if (ok == VK_ERROR_OUT_OF_DATE_KHR || ok == VK_SUBOPTIMAL_KHR)
+        {
+            // TODO Vsync should be given by the application.
+            RecreateSwapchain(true);
+        }
+    };
+
+    m_callbacks = {this,
+                   std::move(BeginFrameCallback),
+                   std::move(EndFrameCallback),
+                   std::move(PresentCallbackFunc)};
+
+    return true;
+}
+
 void Application::ShutdownGlfw()
 {
     glfwDestroyWindow(m_window);
     glfwTerminate();
+}
+
+void Application::ShutdownVulkan()
+{
+    if (m_surface != VK_NULL_HANDLE)
+        vkDestroySurfaceKHR(m_deviceInfo.instance, m_surface, nullptr);
+
+#ifdef _DEBUG
+    vkb::destroy_debug_utils_messenger(m_deviceInfo.instance, m_debugMessenger, nullptr);
+#endif
+
+    vkDestroyInstance(m_deviceInfo.instance, nullptr);
+    m_deviceInfo.instance = VK_NULL_HANDLE;
 }
 } // namespace Pinut

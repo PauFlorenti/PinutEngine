@@ -13,7 +13,7 @@ struct RenderPipeline;
 class Device
 {
   public:
-    static std::unique_ptr<Device> Create(void* device, void* queues, void* callbacks);
+    static std::shared_ptr<Device> Create(void* device, void* queues, void* callbacks);
 
     Device();
     Device(const Device&)            = delete;
@@ -21,12 +21,13 @@ class Device
     Device(Device&&)                 = delete;
     Device& operator=(Device&&)      = delete;
 
-    virtual ~Device();
+    virtual ~Device() = 0;
 
     virtual void OnDestroy() = 0;
 
     virtual void BeginFrame() = 0;
     virtual void EndFrame()   = 0;
+    virtual void Present()    = 0;
 
     virtual void EnableRendering(const VkRect2D&                               renderArea,
                                  const std::vector<VkRenderingAttachmentInfo>& attachments) = 0;
@@ -35,10 +36,10 @@ class Device
     virtual void SetGraphicsState(GraphicsState* state)      = 0;
     virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
 
+    virtual void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) = 0;
+
     virtual GPUBuffer CreateBuffer(const BufferDescriptor&, void* data) = 0;
     virtual void      DestroyBuffer(BufferResource)                     = 0;
-
-    virtual void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) = 0;
 
     virtual void TransitionImageLayout(VkImage                 image,
                                        VkAccessFlags           srcAccessFlags,

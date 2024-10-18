@@ -3,8 +3,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include "render_device/buffer.h"
 #include "src/assets/asset.h"
-//#include "src/renderer/buffer.h"
 
 namespace Pinut
 {
@@ -52,6 +52,8 @@ class Mesh final : public Asset
     std::vector<Vertex>    m_vertices;
     std::vector<u16>       m_indices;
     std::vector<Primitive> m_primitives;
+    RED::GPUBuffer         m_vertexBuffer;
+    RED::GPUBuffer         m_indexBuffer;
 };
 } // namespace Pinut
 

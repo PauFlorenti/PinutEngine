@@ -5,9 +5,9 @@
 
 namespace RED
 {
-std::unique_ptr<Device> Device::Create(void* device, void* queues, void* callbacks)
+std::shared_ptr<Device> Device::Create(void* device, void* queues, void* callbacks)
 {
-    return std::make_unique<vulkan::VulkanDevice>(device, queues, callbacks);
+    return std::make_shared<vulkan::VulkanDevice>(device, queues, callbacks);
 }
 
 Device::Device()  = default;

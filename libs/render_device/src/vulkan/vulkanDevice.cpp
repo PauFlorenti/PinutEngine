@@ -30,6 +30,7 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
     m_rendererContext = vulkanCallbacks->context;
     m_beginFrame_fn   = vulkanCallbacks->BeginFrame_fn;
     m_endFrame_fn     = vulkanCallbacks->EndFrame_fn;
+    m_present_fn      = vulkanCallbacks->Present_fn;
 
     /*
       Queues
@@ -170,6 +171,8 @@ void VulkanDevice::EndFrame()
     m_currentRenderPipeline         = nullptr;
     m_currentRenderPipelineInternal = nullptr;
 }
+
+void VulkanDevice::Present() { m_present_fn(); }
 
 void VulkanDevice::EnableRendering(const VkRect2D&                               renderArea,
                                    const std::vector<VkRenderingAttachmentInfo>& attachments)
