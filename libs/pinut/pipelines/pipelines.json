@@ -1,7 +1,19 @@
 {
 	"flat": {
-		"vs": "flat.vert",
-		"fs": "flat.frag",
+		"vs": {
+			"name": "flat.vert",
+			"uniforms": [
+				{
+					"name": "Camera",
+					"binding": 0,
+					"set": 0,
+					"size": 128
+				}
+			]
+		},
+		"fs": {
+			"name": "flat.frag"
+		},
 		"input_vertex": "Pos"
 	}
 }

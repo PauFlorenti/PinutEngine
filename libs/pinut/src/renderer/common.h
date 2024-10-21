@@ -2,7 +2,8 @@
 
 namespace Pinut
 {
-constexpr int MAX_ENTITIES = 1000;
+constexpr i32 MAX_ENTITIES = 1000;
+constexpr i32 MAX_LIGHTS = 10;
 struct PerFrameData
 {
     glm::mat4 view{};

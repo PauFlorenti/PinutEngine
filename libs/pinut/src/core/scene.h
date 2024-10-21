@@ -4,6 +4,7 @@
 
 #include "src/assets/mesh.h"
 #include "src/core/light.h"
+#include "src/renderer/common.h" //TODO TEMP ??
 
 namespace Pinut
 {

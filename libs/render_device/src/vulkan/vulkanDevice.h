@@ -3,10 +3,9 @@
 #include "render_device/device.h"
 #include "render_device/states.h"
 #include "src/resourceGenerator.h"
-#include "src/vulkan/pipeline.h"
+#include "src/vulkan/descriptorSetManager.h"
 #include "src/vulkan/vulkanBuffer.h"
-
-typedef struct VmaAllocator_T* VmaAllocator;
+#include "src/vulkan/vulkanPipeline.h"
 
 namespace RED
 {
@@ -47,6 +46,7 @@ enum class QueueType
 };
 
 static constexpr u32 MAX_FRAMES_IN_FLIGHT = 3;
+constexpr u32        UNIFORM_BUFFER_SIZE  = 1024; // Currently just 1MB
 
 class VulkanDevice final : public Device
 {
@@ -111,8 +111,11 @@ class VulkanDevice final : public Device
 
     VkCommandPool   CreateCommandPool(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags = 0x0);
     VkCommandBuffer CreateCommandBuffer(const VkCommandPool& commandPool);
+    VulkanBuffer    CreateInternalBuffer(u32 size, VkBufferUsageFlagBits usage);
 
-    Pipeline* GetRenderPipeline(const RenderPipeline* pipeline, const GraphicsState& graphicsState);
+    VulkanPipeline* GetRenderPipeline(const RenderPipeline* pipeline,
+                                      const GraphicsState&  graphicsState);
+    VulkanBuffer    GetVulkanBuffer(BufferResource bufferResource);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 
@@ -134,21 +137,25 @@ class VulkanDevice final : public Device
     std::array<CommandBufferSetData, 2> m_commandBufferSets;
     std::array<QueueInfo, 2>            m_queues;
 
-    std::unordered_map<PipelineKey, Pipeline> m_pipelines;
-    const RenderPipeline*                     m_currentRenderPipeline{nullptr};
-    Pipeline*                                 m_currentRenderPipelineInternal{nullptr};
-    GraphicsState                             m_currentGraphicsState;
+    std::unordered_map<PipelineKey, VulkanPipeline> m_pipelines;
+    const RenderPipeline*                           m_currentRenderPipeline{nullptr};
+    VulkanPipeline*                                 m_currentRenderPipelineInternal{nullptr};
+    GraphicsState                                   m_currentGraphicsState;
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT debugMessenger{nullptr};
 #endif
 
     // Resources
+    DescriptorSetManager                             m_descriptorSetManager;
     ResourceGenerator                                m_resourceGenerator;
     std::unordered_map<BufferResource, VulkanBuffer> m_buffers;
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;
+
+    // Light uniform
+    std::array<VulkanBuffer, MAX_FRAMES_IN_FLIGHT> m_globalUniformBuffers;
 };
 } // namespace vulkan
 } // namespace RED

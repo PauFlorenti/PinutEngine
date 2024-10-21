@@ -7,9 +7,9 @@
 #include "render_device/bufferDescriptor.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
-#include "src/vulkan/pipeline.h"
 #include "src/vulkan/utils.h"
 #include "src/vulkan/vulkanDevice.h"
+#include "src/vulkan/vulkanPipeline.h"
 
 namespace RED
 {
@@ -68,6 +68,17 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
         m_frameCompletedFences.at(i)      = VK_NULL_HANDLE;
         m_imagesAvailableSemaphores.at(i) = CreateSemaphore();
     }
+
+    for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        m_globalUniformBuffers.at(i) =
+          CreateInternalBuffer(UNIFORM_BUFFER_SIZE, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    }
+
+    std::vector<VkDescriptorPoolSize> poolSizes = {
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+    };
+    m_descriptorSetManager.OnCreate(m_device, MAX_FRAMES_IN_FLIGHT, 2, std::move(poolSizes));
 }
 
 void VulkanDevice::OnDestroy()
@@ -234,7 +245,7 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
     const auto id = m_resourceGenerator.GenerateBufferResource();
 
     VulkanBuffer buffer;
-    buffer.m_id = id;
+    buffer.m_descriptor = descriptor;
 
     VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -435,8 +446,29 @@ VkCommandBuffer VulkanDevice::CreateCommandBuffer(const VkCommandPool& commandPo
     return cmd;
 }
 
-Pipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
-                                          const GraphicsState&  graphicsState)
+VulkanBuffer VulkanDevice::CreateInternalBuffer(u32 size, VkBufferUsageFlagBits usage)
+{
+    VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage;
+    info.size        = size;
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    VulkanBuffer buffer;
+    auto         ok = vmaCreateBuffer(m_allocator,
+                              &info,
+                              &allocInfo,
+                              &buffer.m_buffer,
+                              &buffer.m_allocation,
+                              nullptr);
+
+    return buffer;
+}
+
+VulkanPipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
+                                                const GraphicsState&  graphicsState)
 {
     auto key = PipelineKey{pipeline, graphicsState};
 
@@ -444,7 +476,7 @@ Pipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
     if (it != m_pipelines.end())
         return &it->second;
 
-    Pipeline renderPipeline = Pipeline::Create(m_device, *pipeline, graphicsState);
+    VulkanPipeline renderPipeline = VulkanPipeline::Create(m_device, *pipeline, graphicsState);
 
     m_pipelines.insert({key, renderPipeline});
     auto p = m_pipelines.find(key);
@@ -452,6 +484,15 @@ Pipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
         return &p->second;
 
     return nullptr;
+}
+
+VulkanBuffer VulkanDevice::GetVulkanBuffer(BufferResource bufferResource)
+{
+    auto buffer = m_buffers.find(bufferResource);
+    if (buffer != m_buffers.end())
+        return buffer->second;
+
+    return {};
 }
 
 void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
@@ -465,11 +506,84 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
         m_currentRenderPipelineInternal = pipeline;
     }
 
+    // Bind vertex buffers
     const auto& buffer = m_buffers.find(drawCall.vertexBuffer.GetID());
     assert(buffer != m_buffers.end());
 
     VkDeviceSize offset{0};
     vkCmdBindVertexBuffers(cmd, 0, 1, &buffer->second.m_buffer, &offset);
+
+    // Uniforms
+    if (!drawCall.uniforms.empty())
+    {
+        const std::array<Shader, 2> shaders{m_currentRenderPipeline->vertexShader,
+                                            m_currentRenderPipeline->fragmentShader};
+
+        std::array<std::vector<VkDescriptorBufferInfo>, MAX_DESCRIPTOR_SETS> descriptorSetInfos;
+        for (const auto& uniform : drawCall.uniforms)
+        {
+            if (const auto& bufferId = uniform.buffer.GetID();
+                bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
+            {
+                const auto             buffer = GetVulkanBuffer(bufferId);
+                VkDescriptorBufferInfo bufferInfo{};
+                bufferInfo.buffer = buffer.m_buffer;
+                bufferInfo.offset = 0;
+                bufferInfo.range  = buffer.m_descriptor.size;
+
+                descriptorSetInfos.at(uniform.set).emplace_back(std::move(bufferInfo));
+            }
+        }
+
+        std::vector<VkWriteDescriptorSet> writes;
+        writes.reserve(MAX_DESCRIPTOR_SETS * MAX_UNIFORM_SLOTS);
+        std::vector<VkDescriptorSet> sets;
+        sets.reserve(MAX_DESCRIPTOR_SETS);
+        u32 descriptorSetIndex{0};
+        for (const auto& descriptorSetLayout : pipeline->GetDescriptorSetLayouts())
+        {
+            if (descriptorSetLayout.descriptorSetLayout == VK_NULL_HANDLE)
+                continue;
+
+            auto set = m_descriptorSetManager.Allocate(descriptorSetLayout.descriptorSetLayout);
+            sets.emplace_back(set);
+
+            const auto& bindings = descriptorSetInfos.at(descriptorSetIndex);
+
+            u32 bindingIndex{0};
+            for (const auto& binding : bindings)
+            {
+                VkWriteDescriptorSet write{
+                  .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                  .dstSet          = set,
+                  .dstBinding      = bindingIndex,
+                  .descriptorCount = 1,
+                  .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                  .pBufferInfo     = &binding,
+                };
+
+                writes.emplace_back(write);
+
+                ++bindingIndex;
+            }
+            ++descriptorSetIndex;
+        }
+
+        vkCmdBindDescriptorSets(cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipeline->GetPipelineLayout(),
+                                0,
+                                static_cast<u32>(sets.size()),
+                                sets.data(),
+                                0,
+                                nullptr);
+
+        vkUpdateDescriptorSets(m_device,
+                               static_cast<u32>(writes.size()),
+                               writes.data(),
+                               0,
+                               nullptr);
+    }
 
     vkCmdDraw(cmd, drawCall.vertexCount, 1, 0, 0);
 }

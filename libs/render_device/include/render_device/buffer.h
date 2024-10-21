@@ -18,7 +18,7 @@ class GPUBuffer final
     u64            GetSize() const;
 
   private:
-    BufferResource m_id{GPU_RESOURCE_INVALID};
+    BufferResource m_id{GPU_RESOURCE_INVALID, ResourceType::BUFFER};
     u64            m_size{0}; // in bytes
     Device*        m_device{nullptr};
 };

@@ -4,8 +4,6 @@
 
 namespace Pinut
 {
-#define MAX_LIGHTS 10
-
 class Camera;
 class Texture;
 class Light : public Entity

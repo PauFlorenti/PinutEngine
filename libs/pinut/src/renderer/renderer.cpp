@@ -7,13 +7,45 @@
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/drawCall.h"
+#include "render_device/shader.h"
 #include "render_device/states.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
 
+// TODO TEMP
+#include "src/renderer/common.h"
+
 namespace Pinut
 {
-RED::DrawCall dc;
+RED::DrawCall  dc;
+RED::GPUBuffer uniformBuffer;
+
+RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType type)
+{
+    RED::Shader shader{j["name"].get<std::string>(), type};
+
+    if (j.contains("uniforms"))
+    {
+        const auto& jUniforms = j["uniforms"];
+        shader.uniformDataSlots.reserve(jUniforms.size());
+        for (const auto& uniform : j["uniforms"])
+        {
+            const auto set = uniform["set"].get<u32>();
+            shader.uniformDataSlots.emplace_back(type,
+                                                 uniform["name"].get<std::string>(),
+                                                 uniform["binding"].get<i32>(),
+                                                 set);
+
+            if (std::find(shader.descriptorSets.begin(), shader.descriptorSets.end(), set) ==
+                shader.descriptorSets.end())
+            {
+                shader.descriptorSets.emplace_back(set);
+            }
+        }
+    }
+
+    return shader;
+}
 
 Renderer::Renderer(std::shared_ptr<RED::Device> device,
                    SwapchainInfo*               swapchain,
@@ -54,15 +86,11 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
     {
         auto jdata = j.value();
 
-        const auto vs          = jdata["vs"].get<std::string>();
-        const auto fs          = jdata["fs"].get<std::string>();
-        const auto inputVertex = jdata.value("input_vertex", "Pos");
-
         m_pipelines.insert({j.key(),
                             {j.key().c_str(),
-                             {vs, RED::ShaderType::VERTEX},
-                             {fs, RED::ShaderType::FRAGMENT},
-                             inputVertex}});
+                             PopulateShaderFromJson(jdata["vs"], RED::ShaderType::VERTEX),
+                             PopulateShaderFromJson(jdata["fs"], RED::ShaderType::FRAGMENT),
+                             jdata.value("input_vertex", "Pos")}});
     }
 
     std::array<glm::vec3, 3> vertices = {glm::vec3{-0.5f, -0.5f, 0.0f},
@@ -76,6 +104,22 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
 
     dc.vertexCount  = 3;
     dc.vertexBuffer = m_device->CreateBuffer(vertexBufferDescriptor, vertices.data());
+
+    RED::BufferDescriptor uniformBufferDescriptor{};
+    uniformBufferDescriptor.elementSize = 128;
+    uniformBufferDescriptor.size        = 128;
+    uniformBufferDescriptor.usage       = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+    PerFrameData uniformData{};
+    uniformData.view =
+      glm::lookAt(glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    uniformData.projection =
+      glm::perspective(60.0f, static_cast<f32>(m_width) / m_height, 0.001f, 1000.0f);
+    uniformData.cameraPosition = glm::vec3(0.0f, 0.0f, -2.0f);
+
+    uniformBuffer = m_device->CreateBuffer(std::move(uniformBufferDescriptor), &uniformData);
+
+    dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
 }
 
 void Renderer::Update()
