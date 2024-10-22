@@ -21,8 +21,8 @@ class Renderer final
                       GLFWwindow*                  window,
                       i32                          width  = 720,
                       i32                          height = 1080);
+    ~Renderer();
     void Update();
-    void Shutdown();
 
   private:
     static void OnWindowResized(GLFWwindow* window, i32 width, i32 height);

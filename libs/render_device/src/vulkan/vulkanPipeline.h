@@ -23,8 +23,8 @@ class VulkanPipeline
     ~VulkanPipeline();
     VulkanPipeline(const VulkanPipeline&);
     // VulkanPipeline(VulkanPipeline&&)                 = delete;
-    //VulkanPipeline& operator=(const VulkanPipeline&) = delete;
-    //VulkanPipeline& operator=(VulkanPipeline&&)      = delete;
+    VulkanPipeline& operator=(const VulkanPipeline&) = delete;
+    VulkanPipeline& operator=(VulkanPipeline&&)      = delete;
 
     static VulkanPipeline Create(VkDevice              device,
                                  const RenderPipeline& pipeline,

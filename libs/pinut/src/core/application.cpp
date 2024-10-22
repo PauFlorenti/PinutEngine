@@ -30,13 +30,9 @@ i32 Run(std::unique_ptr<Pinut::Application> application)
     if (!application)
         return -1;
 
-    application->Init();
     application->OnCreate();
-
     application->Run();
-
     application->OnDestroy();
-    application->Shutdown();
 
     return 0;
 }
@@ -189,9 +185,32 @@ Application::Application(const std::string& name, i32 width, i32 height)
   m_width(width),
   m_height(height)
 {
+    if (!SetupGlfw())
+        return;
+
+    if (!SetupVulkan())
+        return;
+
+    auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
+    m_assetManager.Init(device);
+    m_renderer =
+      std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, m_window, m_width, m_height);
+
+#ifdef _DEBUG
+    //m_imgui.Init(&m_device, &m_swapchain, window);
+#endif
 }
 
-Application::~Application() = default;
+Application::~Application()
+{
+    if (m_currentScene)
+        m_currentScene->Clear();
+
+    DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
+    m_renderer.reset();
+    ShutdownVulkan();
+    ShutdownGlfw();
+}
 
 void Application::OnWindowMoved(GLFWwindow* window, int x, int y)
 {
@@ -216,23 +235,7 @@ void Application::OnMouseWheelRolled(GLFWwindow* window, double xoffset, double 
     app->m_mouse.wheelSteps += static_cast<f32>(yoffset);
 }
 
-void Application::Init()
-{
-    if (!SetupGlfw())
-        return;
-
-    if (!SetupVulkan())
-        return;
-
-    auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
-    m_assetManager.Init(device);
-    m_renderer =
-      std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, m_window, m_width, m_height);
-
-#ifdef _DEBUG
-    //m_imgui.Init(&m_device, &m_swapchain, window);
-#endif
-}
+void Application::Init() {}
 
 void Application::Run()
 {
@@ -254,24 +257,6 @@ void Application::Run()
             Render();
         }
     }
-}
-
-void Application::Shutdown()
-{
-    if (m_currentScene)
-        m_currentScene->Clear();
-
-    DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
-    m_renderer->Shutdown();
-    ShutdownVulkan();
-    ShutdownGlfw();
-
-#ifdef _DEBUG
-    //m_imgui.Shutdown();
-#endif
-
-    //m_assetManager.Shutdown();
-    //m_commandBufferManager.OnDestroy();
 }
 
 void Application::RecreateSwapchain(bool bSync)

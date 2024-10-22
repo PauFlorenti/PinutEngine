@@ -91,11 +91,14 @@ void VulkanDevice::OnDestroy()
     m_pipelines.clear();
 
     for (auto& buffer : m_buffers)
-    {
         vmaDestroyBuffer(m_allocator, buffer.second.m_buffer, buffer.second.m_allocation);
-    }
 
     m_buffers.clear();
+
+    m_descriptorSetManager.OnDestroy();
+
+    for (auto& uniformBuffers : m_globalUniformBuffers)
+        vmaDestroyBuffer(m_allocator, uniformBuffers.m_buffer, uniformBuffers.m_allocation);
 
     for (auto& commandBufferSet : m_commandBufferSets)
     {

@@ -81,6 +81,12 @@ void VulkanPipeline::Destroy(VkDevice device)
 {
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
+
+    for (auto& descriptorSetLayout : m_descriptorSetLayouts)
+    {
+      vkDestroyDescriptorSetLayout(device, descriptorSetLayout.descriptorSetLayout, nullptr);
+      descriptorSetLayout.bindings.clear();
+    }
 }
 
 VkPipeline       VulkanPipeline::GetPipeline() const { return m_pipeline; }

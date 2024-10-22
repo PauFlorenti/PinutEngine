@@ -64,7 +64,6 @@ class Application
 
     void Init();
     void Run();
-    void Shutdown();
     void RecreateSwapchain(bool bVsync);
 
     const std::string GetName() const { return m_name; }
