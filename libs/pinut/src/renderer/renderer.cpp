@@ -19,6 +19,7 @@ namespace Pinut
 {
 RED::DrawCall  dc;
 RED::GPUBuffer uniformBuffer;
+PerFrameData   uniformData{};
 
 RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType type)
 {
@@ -110,7 +111,6 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
     uniformBufferDescriptor.size        = 128;
     uniformBufferDescriptor.usage       = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
-    PerFrameData uniformData{};
     uniformData.view =
       glm::lookAt(glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     uniformData.projection =
@@ -165,13 +165,7 @@ void Renderer::Update()
     m_device->SetGraphicsState(&graphicsState);
     m_device->SetRenderPipeline(&m_pipelines.at("flat"));
 
-    PerFrameData uniformData{};
-    uniformData.view =
-      glm::lookAt(glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    uniformData.projection =
-      glm::perspective(60.0f, static_cast<f32>(m_width) / m_height, 0.001f, 1000.0f);
-    uniformData.cameraPosition = glm::vec3(0.0f, 0.0f, -2.0f);
-    glm::translate(uniformData.view, glm::vec3(0.0f, 0.0f, -0.01f));
+    uniformData.view = glm::translate(uniformData.view, glm::vec3(0.0f, 0.0f, -0.01f));
     m_device->UpdateBuffer(uniformBuffer.GetID(), &uniformData);
 
     m_device->SubmitDrawCalls({dc});

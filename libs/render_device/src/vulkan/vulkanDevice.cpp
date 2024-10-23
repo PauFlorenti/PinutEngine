@@ -306,6 +306,48 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
     return {id, info.size, this};
 }
 
+void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
+{
+    if (!data)
+        return;
+
+    auto vulkanBuffer = GetVulkanBuffer(bufferId);
+
+    VulkanBuffer staging;
+
+    VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    stagingBufferInfo.size        = vulkanBuffer.m_descriptor.size;
+    stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo stagingAllocInfo{};
+    stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+    auto ok = vmaCreateBuffer(m_allocator,
+                              &stagingBufferInfo,
+                              &stagingAllocInfo,
+                              &staging.m_buffer,
+                              &staging.m_allocation,
+                              nullptr);
+    assert(ok == VK_SUCCESS);
+
+    vmaCopyMemoryToAllocation(m_allocator,
+                              data,
+                              staging.m_allocation,
+                              0,
+                              vulkanBuffer.m_descriptor.size);
+
+    VkBufferCopy region{};
+    region.size = vulkanBuffer.m_descriptor.size;
+
+    const auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+    vkCmdCopyBuffer(cmd, staging.m_buffer, vulkanBuffer.m_buffer, 1, &region);
+    FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
+
+    vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
+}
+
 void VulkanDevice::DestroyBuffer(BufferResource resource)
 {
     if (auto buffer = m_buffers.find(resource); buffer != m_buffers.end())
