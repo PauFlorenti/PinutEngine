@@ -273,7 +273,7 @@ void Application::Update()
     m_lastFrameTime  = currentTime;
 }
 
-void Application::Render() { m_renderer->Update(); }
+void Application::Render() { m_renderer->Update(m_currentScene, m_currentCamera); }
 
 Camera* Application::GetCamera()
 {

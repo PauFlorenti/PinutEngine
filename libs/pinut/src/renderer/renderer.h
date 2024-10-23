@@ -12,6 +12,8 @@ class Device;
 } // namespace RED
 namespace Pinut
 {
+class Camera;
+class Scene;
 struct SwapchainInfo;
 class Renderer final
 {
@@ -22,7 +24,7 @@ class Renderer final
                       i32                          width  = 720,
                       i32                          height = 1080);
     ~Renderer();
-    void Update();
+    void Update(Scene* scene, Camera* camera);
 
   private:
     static void OnWindowResized(GLFWwindow* window, i32 width, i32 height);

@@ -85,7 +85,7 @@ class VulkanDevice final : public Device
     void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) override;
 
     GPUBuffer CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr) override;
-    void      UpdateBuffer(BufferResource bufferId, void* data = nullptr) override;
+    void      UpdateBuffer(BufferResource bufferId, void* data) override;
     void      DestroyBuffer(BufferResource) override;
 
     void TransitionImageLayout(VkImage                 image,

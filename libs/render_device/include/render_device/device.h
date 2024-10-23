@@ -38,8 +38,8 @@ class Device
 
     virtual void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) = 0;
 
-    virtual GPUBuffer CreateBuffer(const BufferDescriptor&, void* data)           = 0;
-    virtual void      UpdateBuffer(BufferResource bufferId, void* data = nullptr) = 0;
+    virtual GPUBuffer CreateBuffer(const BufferDescriptor&, void* data = nullptr) = 0;
+    virtual void      UpdateBuffer(BufferResource bufferId, void* data)           = 0;
     virtual void      DestroyBuffer(BufferResource)                               = 0;
 
     virtual void TransitionImageLayout(VkImage                 image,

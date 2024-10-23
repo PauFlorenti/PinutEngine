@@ -79,8 +79,9 @@ class Application
     u32         m_height;
 
     // TODO Shared_ptr
-    Camera* m_currentCamera = nullptr;
-    Scene*  m_currentScene  = nullptr;
+    Camera*     m_currentCamera = nullptr;
+    Scene*      m_currentScene  = nullptr;
+    GLFWwindow* m_window{nullptr}; // For glfw input
 
     Mouse m_mouse;
 
@@ -113,7 +114,6 @@ class Application
 
     // RENDERING
     std::unique_ptr<Renderer> m_renderer{nullptr};
-    GLFWwindow*               m_window{nullptr};
     VkSemaphore               m_endFrameSemaphore{VK_NULL_HANDLE};
 
     VkSurfaceKHR    m_surface{VK_NULL_HANDLE};

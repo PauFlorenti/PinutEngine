@@ -9,6 +9,8 @@
 #include "src/core/scene.h"
 #include "src/renderer/primitives.h"
 
+#include <external/glfw/include/GLFW/glfw3.h>
+
 int main()
 {
     Run(std::make_unique<Sandbox>("Sandbox application"));
@@ -114,55 +116,55 @@ void Sandbox::OnCreate()
     // Creating scene
     // ------------------
 
-    /*m_currentScene = new Pinut::Scene();
-    m_currentScene->SetDirectionalLight(std::move(directionalLight));
+    // m_currentScene = new Pinut::Scene();
+    /*m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(damagedHelmet));
     m_currentScene->AddRenderable(std::move(flightHelmet));*/
     // m_currentScene->AddRenderable(std::move(glassPlane));
-    //m_currentScene->AddRenderable(std::move(monkey));
-    //m_currentScene->AddRenderable(std::move(vikingRoom));
+    // m_currentScene->AddRenderable(std::move(monkey));
+    // m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
-    //m_currentScene->AddLight(std::move(l));
-    //m_currentScene->AddLight(std::move(l2));
+    // m_currentScene->AddLight(std::move(l));
+    // m_currentScene->AddLight(std::move(l2));
 }
 
 void Sandbox::OnUpdate()
 {
-    //if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT))
-    //    m_currentCamera->speed = 10.0f;
-    //else
-    //    m_currentCamera->speed = 5.0f;
+    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT))
+        m_currentCamera->speed = 10.0f;
+    else
+        m_currentCamera->speed = 5.0f;
 
-    //const auto dt = static_cast<f32>(GetDeltaTime());
+    const auto dt = static_cast<f32>(GetDeltaTime());
 
-    //if (glfwGetKey(m_window, GLFW_KEY_W))
-    //{
-    //    m_currentCamera->UpdateCameraWASD(m_currentCamera->Forward() * dt);
-    //}
-    //if (glfwGetKey(m_window, GLFW_KEY_A))
-    //{
-    //    m_currentCamera->UpdateCameraWASD(m_currentCamera->Right() * dt);
-    //}
-    //if (glfwGetKey(m_window, GLFW_KEY_S))
-    //{
-    //    m_currentCamera->UpdateCameraWASD(-m_currentCamera->Forward() * dt);
-    //}
-    //if (glfwGetKey(m_window, GLFW_KEY_D))
-    //{
-    //    m_currentCamera->UpdateCameraWASD(-m_currentCamera->Right() * dt);
-    //}
-    //if (glfwGetKey(m_window, GLFW_KEY_Z))
-    //{
-    //    m_currentCamera->UpdateCameraWASD(-m_currentCamera->Up() * dt);
-    //}
-    //if (glfwGetKey(m_window, GLFW_KEY_X))
-    //{
-    //    m_currentCamera->UpdateCameraWASD(m_currentCamera->Up() * dt);
-    //}
+    if (glfwGetKey(m_window, GLFW_KEY_W))
+    {
+        m_currentCamera->UpdateCameraWASD(m_currentCamera->Forward() * dt);
+    }
+    if (glfwGetKey(m_window, GLFW_KEY_A))
+    {
+        m_currentCamera->UpdateCameraWASD(m_currentCamera->Right() * dt);
+    }
+    if (glfwGetKey(m_window, GLFW_KEY_S))
+    {
+        m_currentCamera->UpdateCameraWASD(-m_currentCamera->Forward() * dt);
+    }
+    if (glfwGetKey(m_window, GLFW_KEY_D))
+    {
+        m_currentCamera->UpdateCameraWASD(-m_currentCamera->Right() * dt);
+    }
+    if (glfwGetKey(m_window, GLFW_KEY_Z))
+    {
+        m_currentCamera->UpdateCameraWASD(-m_currentCamera->Up() * dt);
+    }
+    if (glfwGetKey(m_window, GLFW_KEY_X))
+    {
+        m_currentCamera->UpdateCameraWASD(m_currentCamera->Up() * dt);
+    }
 
-    //if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_2))
-    //{
-    //    m_currentCamera->UpdateRotation(dt, -m_mouse.mouseOffset.x, -m_mouse.mouseOffset.y);
-    //}
+    if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_2))
+    {
+        m_currentCamera->UpdateRotation(dt, -m_mouse.mouseOffset.x, -m_mouse.mouseOffset.y);
+    }
 }
