@@ -115,7 +115,7 @@ class VulkanDevice final : public Device
 
     VulkanPipeline* GetRenderPipeline(const RenderPipeline* pipeline,
                                       const GraphicsState&  graphicsState);
-    VulkanBuffer    GetVulkanBuffer(BufferResource bufferResource);
+    VulkanBuffer    GetVulkanBuffer(const BufferResource& bufferResource);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 

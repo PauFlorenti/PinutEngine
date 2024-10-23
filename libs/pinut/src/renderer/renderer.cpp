@@ -126,7 +126,6 @@ Renderer::~Renderer()
 {
     m_device->WaitIdle();
     uniformBuffer.Destroy();
-    dc.vertexBuffer.Destroy();
 
     m_device->OnDestroy();
 }
@@ -173,7 +172,7 @@ void Renderer::Update()
       glm::perspective(60.0f, static_cast<f32>(m_width) / m_height, 0.001f, 1000.0f);
     uniformData.cameraPosition = glm::vec3(0.0f, 0.0f, -2.0f);
     glm::translate(uniformData.view, glm::vec3(0.0f, 0.0f, -0.01f));
-    m_device->UpdateBuffer(uniformBuffer, &uniformData);
+    m_device->UpdateBuffer(uniformBuffer.GetID(), &uniformData);
 
     m_device->SubmitDrawCalls({dc});
 

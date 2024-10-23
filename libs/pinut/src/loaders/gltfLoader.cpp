@@ -169,9 +169,9 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
     {
         const tinygltf::Mesh mesh = tmodel.meshes[tnode.mesh];
 
-        if (const auto foundMesh = assetManager.GetAsset<Mesh>(mesh.name))
+        if (false/*const auto foundMesh = assetManager.GetAsset<Mesh>(mesh.name)*/)
         {
-            node->SetMesh(std::move(foundMesh));
+            //node->SetMesh(std::move(foundMesh));
         }
         else
         {

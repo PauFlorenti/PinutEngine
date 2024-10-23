@@ -489,7 +489,7 @@ VulkanPipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
     return nullptr;
 }
 
-VulkanBuffer VulkanDevice::GetVulkanBuffer(BufferResource bufferResource)
+VulkanBuffer VulkanDevice::GetVulkanBuffer(const BufferResource& bufferResource)
 {
     auto buffer = m_buffers.find(bufferResource);
     if (buffer != m_buffers.end())
@@ -525,7 +525,7 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
         std::array<std::vector<VkDescriptorBufferInfo>, MAX_DESCRIPTOR_SETS> descriptorSetInfos;
         for (const auto& uniform : drawCall.uniforms)
         {
-            if (const auto& bufferId = uniform.buffer.GetID();
+            if (const auto& bufferId = uniform.bufferView.GetID();
                 bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
             {
                 const auto             buffer = GetVulkanBuffer(bufferId);
