@@ -26,8 +26,6 @@ struct DrawCall
 
     GPUBufferView vertexBuffer;
     GPUBufferView indexBuffer;
-    u32           vertexCount{0};
-    u32           indexCount{0};
 
     // TODO Hardcoded as assuming 2 uniform buffers per shader.
     // 0 and 1 for Vertex shader 2 and 3 for Pixel shader.

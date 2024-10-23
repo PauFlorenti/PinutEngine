@@ -551,13 +551,6 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
         m_currentRenderPipelineInternal = pipeline;
     }
 
-    // Bind vertex buffers
-    const auto& buffer = m_buffers.find(drawCall.vertexBuffer.GetID());
-    assert(buffer != m_buffers.end());
-
-    VkDeviceSize offset{0};
-    vkCmdBindVertexBuffers(cmd, 0, 1, &buffer->second.m_buffer, &offset);
-
     // Uniforms
     if (!drawCall.uniforms.empty())
     {
@@ -630,7 +623,33 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
                                nullptr);
     }
 
-    vkCmdDraw(cmd, drawCall.vertexCount, 1, 0, 0);
+    // Bind vertex buffers
+    const auto& bufferIt = m_buffers.find(drawCall.vertexBuffer.GetID());
+    assert(bufferIt != m_buffers.end());
+
+    const auto& buffer = bufferIt->second;
+
+    VkDeviceSize offset{0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, &buffer.m_buffer, &offset);
+
+    if (drawCall.indexBuffer.GetID().id != GPU_RESOURCE_INVALID)
+    {
+        VkDeviceSize indexOffset{0};
+        const auto&  indexBuffer = GetVulkanBuffer(drawCall.indexBuffer.GetID());
+        vkCmdBindIndexBuffer(cmd,
+                             indexBuffer.m_buffer,
+                             0,
+                             indexBuffer.m_descriptor.elementSize == 16 ? VK_INDEX_TYPE_UINT16 :
+                                                                          VK_INDEX_TYPE_UINT32);
+
+        const u32 indexCount = indexBuffer.m_descriptor.size / indexBuffer.m_descriptor.elementSize;
+        vkCmdDrawIndexed(cmd, indexCount, 1, 0, 0, 0);
+    }
+    else
+    {
+        const u32 vertexCount = buffer.m_descriptor.size / buffer.m_descriptor.elementSize;
+        vkCmdDraw(cmd, vertexCount, 1, 0, 0);
+    }
 }
 
 VkCommandBuffer VulkanDevice::BeginImmediateCommandBuffer(VkCommandPool commandPool)

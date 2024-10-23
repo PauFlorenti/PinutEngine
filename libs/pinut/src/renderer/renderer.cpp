@@ -105,8 +105,15 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
     vertexBufferDescriptor.size        = sizeof(glm::vec3) * 3;
     vertexBufferDescriptor.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-    dc.vertexCount  = 3;
-    dc.vertexBuffer = m_device->CreateBuffer(vertexBufferDescriptor, vertices.data());
+    dc.vertexBuffer = m_device->CreateBuffer(std::move(vertexBufferDescriptor), vertices.data());
+
+    std::array<u32, 3>    indices{0, 1, 2};
+    RED::BufferDescriptor indexBufferDescriptor{};
+    indexBufferDescriptor.elementSize = sizeof(u32);
+    indexBufferDescriptor.size        = sizeof(u32) * indices.size();
+    indexBufferDescriptor.usage       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+    dc.indexBuffer = m_device->CreateBuffer(std::move(indexBufferDescriptor), indices.data());
 
     RED::BufferDescriptor uniformBufferDescriptor{};
     uniformBufferDescriptor.elementSize = 128;
