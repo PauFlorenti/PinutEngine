@@ -129,8 +129,7 @@ Renderer::~Renderer()
 {
     m_device->WaitIdle();
     uniformBuffer.Destroy();
-
-    m_device->OnDestroy();
+    m_device.reset();
 }
 
 void Renderer::Update(Scene* scene, Camera* camera)

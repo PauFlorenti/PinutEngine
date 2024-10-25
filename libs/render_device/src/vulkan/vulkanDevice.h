@@ -1,6 +1,7 @@
 #pragma once
 
 #include "render_device/device.h"
+#include "render_device/drawCall.h"
 #include "render_device/states.h"
 #include "src/resourceGenerator.h"
 #include "src/vulkan/descriptorSetManager.h"
@@ -9,7 +10,6 @@
 
 namespace RED
 {
-struct DrawCall;
 struct RenderPipeline;
 namespace vulkan
 {
@@ -67,9 +67,7 @@ class VulkanDevice final : public Device
 
   public:
     VulkanDevice(void* deviceInfo, void* queues, void* callbacks);
-    ~VulkanDevice() override = default;
-
-    void OnDestroy() override;
+    ~VulkanDevice() override;
 
     void BeginFrame() override;
     void EndFrame() override;
@@ -100,6 +98,9 @@ class VulkanDevice final : public Device
     void WaitIdle() const override;
 
   private:
+    UniformDescriptorSetInfos GetUniformDescriptorSetInfos(
+      const std::vector<UniformDescriptor>& uniformDescriptors);
+
     void            BeginCommandRecording(QueueType type);
     void            EndCommandRecording(bool waitForImage = true, bool signalFence = false);
     VkCommandBuffer BeginImmediateCommandBuffer(VkCommandPool commandPool);

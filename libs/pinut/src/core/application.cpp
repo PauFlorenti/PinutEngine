@@ -206,6 +206,7 @@ Application::~Application()
     if (m_currentScene)
         m_currentScene->Clear();
 
+    m_assetManager.Shutdown();
     DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
     m_renderer.reset();
     ShutdownVulkan();

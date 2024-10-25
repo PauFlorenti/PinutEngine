@@ -5,11 +5,11 @@
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
 #include "render_device/bufferDescriptor.h"
-#include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
 #include "src/vulkan/utils.h"
 #include "src/vulkan/vulkanDevice.h"
 #include "src/vulkan/vulkanPipeline.h"
+#include "vulkanDevice.h"
 
 namespace RED
 {
@@ -78,10 +78,10 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
     std::vector<VkDescriptorPoolSize> poolSizes = {
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
     };
-    m_descriptorSetManager.OnCreate(m_device, MAX_FRAMES_IN_FLIGHT, 2, std::move(poolSizes));
+    //m_descriptorSetManager.OnCreate(m_device, MAX_FRAMES_IN_FLIGHT, 2, std::move(poolSizes));
 }
 
-void VulkanDevice::OnDestroy()
+VulkanDevice::~VulkanDevice()
 {
     vkDeviceWaitIdle(m_device);
 
@@ -95,7 +95,7 @@ void VulkanDevice::OnDestroy()
 
     m_buffers.clear();
 
-    m_descriptorSetManager.OnDestroy();
+    m_descriptorSetManager.OnDestroy(m_device);
 
     for (auto& uniformBuffers : m_globalUniformBuffers)
         vmaDestroyBuffer(m_allocator, uniformBuffers.m_buffer, uniformBuffers.m_allocation);
@@ -111,6 +111,7 @@ void VulkanDevice::OnDestroy()
             {
                 vkDestroySemaphore(m_device, cmd->signalSemaphore, nullptr);
             }
+            commandBuffers.clear();
         }
     }
 
@@ -123,12 +124,16 @@ void VulkanDevice::OnDestroy()
     }
 
     vmaDestroyAllocator(m_allocator);
+    m_allocator = nullptr;
 
     if (m_device != VK_NULL_HANDLE)
     {
         vkDestroyDevice(m_device, nullptr);
         m_device = VK_NULL_HANDLE;
     }
+
+    m_physicalDevice  = VK_NULL_HANDLE;
+    m_rendererContext = nullptr;
 }
 
 void VulkanDevice::BeginFrame()
@@ -361,6 +366,36 @@ void VulkanDevice::DestroyBuffer(BufferResource resource)
 
 void VulkanDevice::WaitIdle() const { vkDeviceWaitIdle(m_device); }
 
+UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
+  const std::vector<UniformDescriptor>& uniformDescriptors)
+{
+    UniformDescriptorSetInfos uniformDescriptorSetInfos;
+    for (auto& uniformDescriptor : uniformDescriptorSetInfos)
+    {
+        uniformDescriptor.resources.reserve(MAX_UNIFORM_SLOTS);
+    }
+
+    for (const auto& uniform : uniformDescriptors)
+    {
+        if (const auto& bufferId = uniform.bufferView.GetID();
+            bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
+        {
+            const auto             buffer = GetVulkanBuffer(bufferId);
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = buffer.m_buffer;
+            bufferInfo.offset = 0;
+            bufferInfo.range  = buffer.m_descriptor.size;
+
+            uniformDescriptorSetInfos.at(uniform.set)
+              .resources.emplace_back(std::move(bufferInfo),
+                                      uniform.binding,
+                                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        }
+    }
+
+    return uniformDescriptorSetInfos;
+}
+
 void VulkanDevice::BeginCommandRecording(QueueType type)
 {
     if (!m_currentCommandBuffer || m_currentCommandBuffer->queueType != type)
@@ -557,55 +592,9 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
         const std::array<Shader, 2> shaders{m_currentRenderPipeline->vertexShader,
                                             m_currentRenderPipeline->fragmentShader};
 
-        std::array<std::vector<VkDescriptorBufferInfo>, MAX_DESCRIPTOR_SETS> descriptorSetInfos;
-        for (const auto& uniform : drawCall.uniforms)
-        {
-            if (const auto& bufferId = uniform.bufferView.GetID();
-                bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
-            {
-                const auto             buffer = GetVulkanBuffer(bufferId);
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = buffer.m_buffer;
-                bufferInfo.offset = 0;
-                bufferInfo.range  = buffer.m_descriptor.size;
-
-                descriptorSetInfos.at(uniform.set).emplace_back(std::move(bufferInfo));
-            }
-        }
-
-        std::vector<VkWriteDescriptorSet> writes;
-        writes.reserve(MAX_DESCRIPTOR_SETS * MAX_UNIFORM_SLOTS);
-        std::vector<VkDescriptorSet> sets;
-        sets.reserve(MAX_DESCRIPTOR_SETS);
-        u32 descriptorSetIndex{0};
-        for (const auto& descriptorSetLayout : pipeline->GetDescriptorSetLayouts())
-        {
-            if (descriptorSetLayout.descriptorSetLayout == VK_NULL_HANDLE)
-                continue;
-
-            auto set = m_descriptorSetManager.Allocate(descriptorSetLayout.descriptorSetLayout);
-            sets.emplace_back(set);
-
-            const auto& bindings = descriptorSetInfos.at(descriptorSetIndex);
-
-            u32 bindingIndex{0};
-            for (const auto& binding : bindings)
-            {
-                VkWriteDescriptorSet write{
-                  .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                  .dstSet          = set,
-                  .dstBinding      = bindingIndex,
-                  .descriptorCount = 1,
-                  .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                  .pBufferInfo     = &binding,
-                };
-
-                writes.emplace_back(write);
-
-                ++bindingIndex;
-            }
-            ++descriptorSetIndex;
-        }
+        const auto& uniformDescriptorSetInfos = GetUniformDescriptorSetInfos(drawCall.uniforms);
+        const auto& sets =
+          m_descriptorSetManager.GetDescriptorSet(m_device, uniformDescriptorSetInfos, pipeline);
 
         vkCmdBindDescriptorSets(cmd,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -615,12 +604,6 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
                                 sets.data(),
                                 0,
                                 nullptr);
-
-        vkUpdateDescriptorSets(m_device,
-                               static_cast<u32>(writes.size()),
-                               writes.data(),
-                               0,
-                               nullptr);
     }
 
     // Bind vertex buffers
@@ -642,12 +625,14 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
                              indexBuffer.m_descriptor.elementSize == 16 ? VK_INDEX_TYPE_UINT16 :
                                                                           VK_INDEX_TYPE_UINT32);
 
-        const u32 indexCount = indexBuffer.m_descriptor.size / indexBuffer.m_descriptor.elementSize;
+        const u32 indexCount =
+          static_cast<u32>(indexBuffer.m_descriptor.size / indexBuffer.m_descriptor.elementSize);
         vkCmdDrawIndexed(cmd, indexCount, 1, 0, 0, 0);
     }
     else
     {
-        const u32 vertexCount = buffer.m_descriptor.size / buffer.m_descriptor.elementSize;
+        const u32 vertexCount =
+          static_cast<u32>(buffer.m_descriptor.size / buffer.m_descriptor.elementSize);
         vkCmdDraw(cmd, vertexCount, 1, 0, 0);
     }
 }

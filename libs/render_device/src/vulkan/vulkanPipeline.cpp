@@ -84,8 +84,8 @@ void VulkanPipeline::Destroy(VkDevice device)
 
     for (auto& descriptorSetLayout : m_descriptorSetLayouts)
     {
-      vkDestroyDescriptorSetLayout(device, descriptorSetLayout.descriptorSetLayout, nullptr);
-      descriptorSetLayout.bindings.clear();
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout.descriptorSetLayout, nullptr);
+        descriptorSetLayout.bindings.clear();
     }
 }
 
@@ -94,6 +94,10 @@ VkPipelineLayout VulkanPipeline::GetPipelineLayout() const { return m_pipelineLa
 VulkanPipeline::DescriptorSetLayouts VulkanPipeline::GetDescriptorSetLayouts() const
 {
     return m_descriptorSetLayouts;
+}
+const std::vector<VkDescriptorPoolSize>& VulkanPipeline::GetDescriptorPoolSizes() const
+{
+    return m_descriptorPoolSizes;
 }
 
 VkShaderModule VulkanPipeline::CreateShaderModule(VkDevice device, const char* filename)

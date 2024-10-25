@@ -34,9 +34,10 @@ class VulkanPipeline
 
     void Destroy(VkDevice device);
 
-    VkPipeline           GetPipeline() const;
-    VkPipelineLayout     GetPipelineLayout() const;
-    DescriptorSetLayouts GetDescriptorSetLayouts() const;
+    VkPipeline                               GetPipeline() const;
+    VkPipelineLayout                         GetPipelineLayout() const;
+    DescriptorSetLayouts                     GetDescriptorSetLayouts() const;
+    const std::vector<VkDescriptorPoolSize>& GetDescriptorPoolSizes() const;
 
   protected:
     static VkShaderModule CreateShaderModule(VkDevice device, const char* filename);
@@ -47,9 +48,10 @@ class VulkanPipeline
                                                            const RenderPipeline& pipeline);
 
   private:
-    VkPipeline           m_pipeline{VK_NULL_HANDLE};
-    VkPipelineLayout     m_pipelineLayout{VK_NULL_HANDLE};
-    DescriptorSetLayouts m_descriptorSetLayouts;
+    VkPipeline                        m_pipeline{VK_NULL_HANDLE};
+    VkPipelineLayout                  m_pipelineLayout{VK_NULL_HANDLE};
+    DescriptorSetLayouts              m_descriptorSetLayouts;
+    std::vector<VkDescriptorPoolSize> m_descriptorPoolSizes;
 };
 } // namespace vulkan
 } // namespace RED

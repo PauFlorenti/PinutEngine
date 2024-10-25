@@ -1,27 +1,70 @@
 #pragma once
 
+bool operator==(const VkDescriptorBufferInfo& lhs, const VkDescriptorBufferInfo& rhs);
+bool operator!=(const VkDescriptorBufferInfo& lhs, const VkDescriptorBufferInfo& rhs);
+
+namespace RED::vulkan
+{
+struct UniformDescriptorInfo;
+}
+namespace std
+{
+template <>
+struct hash<RED::vulkan::UniformDescriptorInfo>
+{
+    size_t operator()(const RED::vulkan::UniformDescriptorInfo& info) const noexcept;
+};
+} // namespace std
+
 namespace RED
 {
 namespace vulkan
 {
+class VulkanPipeline;
+struct UniformDescriptorInfo
+{
+    struct UniformResource
+    {
+        VkDescriptorBufferInfo descriptorBufferInfo;
+        i32                    binding{-1};
+        VkDescriptorType       type;
+    };
+
+    std::vector<UniformResource> resources;
+
+    bool operator==(const UniformDescriptorInfo&) const;
+};
+
+using UniformDescriptorSetInfos =
+  std::array<UniformDescriptorInfo, 2>; // TODO Should I use MAX_DESCRIPTOR_SETS ??
+
 class DescriptorSetManager
 {
   public:
-    void OnCreate(VkDevice                          device,
-                  u32                               numberBackBuffers,
-                  u32                               initialSets,
-                  std::vector<VkDescriptorPoolSize> sizes);
-    void OnDestroy();
+    void OnDestroy(VkDevice device);
 
-    VkDescriptorSet Allocate(VkDescriptorSetLayout);
-    void            Clear();
+    std::vector<VkDescriptorSet> GetDescriptorSet(
+      VkDevice                         device,
+      const UniformDescriptorSetInfos& uniformDescriptorSetInfo,
+      const VulkanPipeline*            pipeline);
+    void Clear();
 
   private:
-    VkDevice                                                   m_device{VK_NULL_HANDLE};
-    VkDescriptorPool*                                          m_descriptorPool{nullptr};
-    u32                                                        m_frameIndex{0};
-    u32                                                        m_numberBackBuffers{0};
-    std::unordered_map<VkDescriptorSetLayout, VkDescriptorSet> m_sets;
+    VkDescriptorSet Allocate(VkDevice device, const VulkanPipeline* pipeline, u32 set);
+
+    std::unordered_map<const VulkanPipeline*, VkDescriptorPool> m_pools;
+    std::unordered_map<UniformDescriptorInfo, VkDescriptorSet>  m_sets;
 };
 } // namespace vulkan
 } // namespace RED
+
+namespace std
+{
+using namespace RED::vulkan;
+
+template <>
+struct hash<VkDescriptorBufferInfo>
+{
+    size_t operator()(const VkDescriptorBufferInfo& bufferInfo) const;
+};
+} // namespace std
