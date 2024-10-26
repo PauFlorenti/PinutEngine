@@ -58,6 +58,23 @@ bool UniformDescriptorInfo::operator==(const UniformDescriptorInfo& other) const
 
     return true;
 }
+void DescriptorSetManager::Update()
+{
+    for (auto it = m_sets.begin(); it != m_sets.end();)
+    {
+        if (it->second.liveFrames > 600)
+        {
+            m_sets.erase(it++);
+        }
+        else
+        {
+            ++it->second.liveFrames;
+        }
+
+        ++it;
+    }
+}
+
 void DescriptorSetManager::OnDestroy(VkDevice device)
 {
     for (auto& pool : m_pools)
@@ -92,13 +109,14 @@ std::vector<VkDescriptorSet> DescriptorSetManager::GetDescriptorSet(
         const auto it = m_sets.find(uniformDescriptorSetInfo.at(setIndex));
         if (it != m_sets.end())
         {
-            sets.emplace_back(it->second);
+            it->second.liveFrames = 0;
+            sets.emplace_back(it->second.set);
             ++setIndex;
             continue;
         }
 
         sets.emplace_back(Allocate(device, pipeline, setIndex));
-        m_sets.insert({uniformDescriptorSetInfo.at(setIndex), sets.back()});
+        m_sets.insert({uniformDescriptorSetInfo.at(setIndex), {sets.back(), 0}});
 
         std::vector<VkWriteDescriptorSet> writes;
         writes.reserve(MAX_UNIFORM_SLOTS);

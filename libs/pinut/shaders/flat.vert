@@ -10,6 +10,11 @@ layout(set = 0, binding = 0) uniform perFrame
     vec3 cameraPosition;
 } perFrameData;
 
+layout (set = 1, binding = 0) uniform color
+{
+    vec4 color;
+} colorData;
+
 void main()
 {
     mat4 view = perFrameData.view;
@@ -17,6 +22,6 @@ void main()
 
     vec4 world_position = mat4(1) * vec4(inPosition, 1.0);
 
-    outColor = vec3(0, 1, 0);
+    outColor = colorData.color.xyz; //vec3(0, 1, 0);
     gl_Position = projection * view * world_position;
 }

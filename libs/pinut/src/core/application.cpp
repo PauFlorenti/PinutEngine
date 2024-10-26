@@ -262,7 +262,9 @@ void Application::Run()
 
 void Application::RecreateSwapchain(bool bSync)
 {
-    // TODO Recreate swapchain ...
+    DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
+    m_swapchainInfo =
+      CreateSwapchain(m_vkbDevice, m_deviceQueues.at(0), m_swapchainInfo.vsyncEnabled);
 }
 
 void Application::Update()
@@ -274,7 +276,7 @@ void Application::Update()
     m_lastFrameTime  = currentTime;
 }
 
-void Application::Render() { m_renderer->Update(m_currentScene, m_currentCamera); }
+void Application::Render() { m_renderer->Render(m_currentScene, m_currentCamera); }
 
 Camera* Application::GetCamera()
 {

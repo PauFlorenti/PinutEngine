@@ -10,6 +10,8 @@
 #include "render_device/shader.h"
 #include "render_device/states.h"
 #include "src/core/camera.h"
+#include "src/core/node.h"
+#include "src/core/renderable.h"
 #include "src/core/scene.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
@@ -21,6 +23,7 @@ namespace Pinut
 {
 RED::DrawCall  dc;
 RED::GPUBuffer uniformBuffer;
+RED::GPUBuffer uniformColorBuffer;
 PerFrameData   uniformData{};
 
 RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType type)
@@ -116,23 +119,30 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
     dc.indexBuffer = m_device->CreateBuffer(std::move(indexBufferDescriptor), indices.data());
 
     RED::BufferDescriptor uniformBufferDescriptor{};
-    uniformBufferDescriptor.elementSize = 128;
-    uniformBufferDescriptor.size        = 128;
+    uniformBufferDescriptor.elementSize = 140;
+    uniformBufferDescriptor.size        = 140;
     uniformBufferDescriptor.usage       = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
     uniformBuffer = m_device->CreateBuffer(std::move(uniformBufferDescriptor));
 
     dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
+
+    glm::vec4 color = glm::vec4(1, 0, 0, 0);
+    uniformColorBuffer =
+      m_device->CreateBuffer({16, 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT}, &color);
+
+    dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
 }
 
 Renderer::~Renderer()
 {
     m_device->WaitIdle();
     uniformBuffer.Destroy();
+    uniformColorBuffer.Destroy();
     m_device.reset();
 }
 
-void Renderer::Update(Scene* scene, Camera* camera)
+void Renderer::Render(Scene* scene, Camera* camera)
 {
     m_device->BeginFrame();
 
@@ -150,7 +160,7 @@ void Renderer::Update(Scene* scene, Camera* camera)
     attachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     attachment.loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
-    attachment.clearValue  = {1.0f, 0.f, 0.f, 0.f};
+    attachment.clearValue  = {0.0f, 0.f, 0.f, 0.f};
 
     m_device->EnableRendering({0, 0, static_cast<u32>(m_width), static_cast<u32>(m_height)},
                               {attachment});
@@ -171,6 +181,14 @@ void Renderer::Update(Scene* scene, Camera* camera)
     uniformData.projection     = camera->Projection();
     uniformData.cameraPosition = camera->Position();
     m_device->UpdateBuffer(uniformBuffer.GetID(), &uniformData);
+
+    // for (const auto& r : scene->Renderables())
+    // {
+    //     for (const auto& n : r->GetAllNodes())
+    //     {
+    //         n->GetMesh();
+    //     }
+    // }
 
     m_device->SubmitDrawCalls({dc});
 
@@ -209,8 +227,5 @@ void Renderer::OnWindowResized(GLFWwindow* window, i32 width, i32 height)
 
     renderer->m_width  = width;
     renderer->m_height = height;
-
-    // renderer->m_swapchain->OnDestroyWindowDependantResources();
-    // renderer->m_swapchain->OnCreateWindowDependantResources(width, height);
 }
 } // namespace Pinut

@@ -74,11 +74,6 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
         m_globalUniformBuffers.at(i) =
           CreateInternalBuffer(UNIFORM_BUFFER_SIZE, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     }
-
-    std::vector<VkDescriptorPoolSize> poolSizes = {
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
-    };
-    //m_descriptorSetManager.OnCreate(m_device, MAX_FRAMES_IN_FLIGHT, 2, std::move(poolSizes));
 }
 
 VulkanDevice::~VulkanDevice()
@@ -184,6 +179,8 @@ void VulkanDevice::EndFrame()
     {
         m_endFrame_fn(m_rendererContext, m_lastCommandBuffer->signalSemaphore);
     }
+
+    m_descriptorSetManager.Update();
 
     m_currentCommandBuffer          = nullptr;
     m_lastCommandBuffer             = nullptr;

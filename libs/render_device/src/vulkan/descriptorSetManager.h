@@ -35,12 +35,19 @@ struct UniformDescriptorInfo
     bool operator==(const UniformDescriptorInfo&) const;
 };
 
+struct DescriptorSet
+{
+    VkDescriptorSet set{VK_NULL_HANDLE};
+    u32             liveFrames{0};
+};
+
 using UniformDescriptorSetInfos =
   std::array<UniformDescriptorInfo, 2>; // TODO Should I use MAX_DESCRIPTOR_SETS ??
 
 class DescriptorSetManager
 {
   public:
+    void Update();
     void OnDestroy(VkDevice device);
 
     std::vector<VkDescriptorSet> GetDescriptorSet(
@@ -53,7 +60,7 @@ class DescriptorSetManager
     VkDescriptorSet Allocate(VkDevice device, const VulkanPipeline* pipeline, u32 set);
 
     std::unordered_map<const VulkanPipeline*, VkDescriptorPool> m_pools;
-    std::unordered_map<UniformDescriptorInfo, VkDescriptorSet>  m_sets;
+    std::unordered_map<UniformDescriptorInfo, DescriptorSet>    m_sets;
 };
 } // namespace vulkan
 } // namespace RED

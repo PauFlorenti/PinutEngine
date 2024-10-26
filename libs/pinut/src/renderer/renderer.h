@@ -24,7 +24,8 @@ class Renderer final
                       i32                          width  = 720,
                       i32                          height = 1080);
     ~Renderer();
-    void Update(Scene* scene, Camera* camera);
+
+    void Render(Scene* scene, Camera* camera);
 
   private:
     static void OnWindowResized(GLFWwindow* window, i32 width, i32 height);
