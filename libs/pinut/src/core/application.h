@@ -66,6 +66,12 @@ class Application
     void Run();
     void RecreateSwapchain(bool bVsync);
 
+    template <typename T>
+    std::shared_ptr<T> LoadAsset(const std::string& filename)
+    {
+        return m_assetManager.GetAsset<T>(filename);
+    }
+
     const std::string GetName() const { return m_name; }
     const i32         GetWidth() const { return m_width; }
     const i32         GetHeight() const { return m_height; }
@@ -79,8 +85,8 @@ class Application
     u32         m_height;
 
     // TODO Shared_ptr
-    Camera*     m_currentCamera = nullptr;
-    Scene*      m_currentScene  = nullptr;
+    Camera*     m_currentCamera{nullptr};
+    Scene*      m_currentScene{nullptr};
     GLFWwindow* m_window{nullptr}; // For glfw input
 
     Mouse m_mouse;

@@ -12,8 +12,8 @@ class GPUBuffer final
     GPUBuffer(BufferResource id, u64 size, Device* device);
     GPUBuffer(GPUBuffer&& other) noexcept;
     GPUBuffer& operator=(GPUBuffer&& other) noexcept;
-    GPUBuffer(const GPUBuffer&)            = delete;
-    GPUBuffer& operator=(const GPUBuffer&) = delete;
+    GPUBuffer(const GPUBuffer&)            = default;
+    GPUBuffer& operator=(const GPUBuffer&) = default;
     ~GPUBuffer();
 
     void Destroy();

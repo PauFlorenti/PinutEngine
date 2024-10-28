@@ -9,6 +9,7 @@
 #include "render_device/drawCall.h"
 #include "render_device/shader.h"
 #include "render_device/states.h"
+#include "src/assets/mesh.h"
 #include "src/core/camera.h"
 #include "src/core/node.h"
 #include "src/core/renderable.h"
@@ -21,7 +22,6 @@
 
 namespace Pinut
 {
-RED::DrawCall  dc;
 RED::GPUBuffer uniformBuffer;
 RED::GPUBuffer uniformColorBuffer;
 PerFrameData   uniformData{};
@@ -99,39 +99,11 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
                              jdata.value("input_vertex", "Pos")}});
     }
 
-    std::array<glm::vec3, 3> vertices = {glm::vec3{-0.5f, -0.5f, 0.0f},
-                                         {0.5f, -0.5f, 0.0f},
-                                         {0.0f, 0.5f, 0.0f}};
-
-    RED::BufferDescriptor vertexBufferDescriptor{};
-    vertexBufferDescriptor.elementSize = sizeof(glm::vec3);
-    vertexBufferDescriptor.size        = sizeof(glm::vec3) * 3;
-    vertexBufferDescriptor.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
-    dc.vertexBuffer = m_device->CreateBuffer(std::move(vertexBufferDescriptor), vertices.data());
-
-    std::array<u32, 3>    indices{0, 1, 2};
-    RED::BufferDescriptor indexBufferDescriptor{};
-    indexBufferDescriptor.elementSize = sizeof(u32);
-    indexBufferDescriptor.size        = sizeof(u32) * indices.size();
-    indexBufferDescriptor.usage       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-
-    dc.indexBuffer = m_device->CreateBuffer(std::move(indexBufferDescriptor), indices.data());
-
-    RED::BufferDescriptor uniformBufferDescriptor{};
-    uniformBufferDescriptor.elementSize = 140;
-    uniformBufferDescriptor.size        = 140;
-    uniformBufferDescriptor.usage       = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-
-    uniformBuffer = m_device->CreateBuffer(std::move(uniformBufferDescriptor));
-
-    dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
+    uniformBuffer = m_device->CreateBuffer({140, 140, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
 
     glm::vec4 color = glm::vec4(1, 0, 0, 0);
     uniformColorBuffer =
-      m_device->CreateBuffer({16, 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT}, &color);
-
-    dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
+      m_device->CreateBuffer({64, 64, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT}, &color);
 }
 
 Renderer::~Renderer()
@@ -182,15 +154,30 @@ void Renderer::Render(Scene* scene, Camera* camera)
     uniformData.cameraPosition = camera->Position();
     m_device->UpdateBuffer(uniformBuffer.GetID(), &uniformData);
 
-    // for (const auto& r : scene->Renderables())
-    // {
-    //     for (const auto& n : r->GetAllNodes())
-    //     {
-    //         n->GetMesh();
-    //     }
-    // }
+    std::vector<RED::DrawCall> drawCalls;
+    drawCalls.reserve(1000);
 
-    m_device->SubmitDrawCalls({dc});
+    for (const auto& r : scene->Renderables())
+    {
+        for (const auto& n : r->GetAllNodes())
+        {
+            const auto& mesh = n->GetMesh();
+
+            auto model = n->GetTransform();
+            m_device->UpdateBuffer(uniformColorBuffer.GetID(), &model);
+
+            RED::DrawCall dc;
+            dc.vertexBuffer = mesh->m_vertexBuffer;
+            dc.indexBuffer  = mesh->m_indexBuffer;
+
+            dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
+            dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
+
+            drawCalls.push_back(dc);
+        }
+    }
+
+    m_device->SubmitDrawCalls({drawCalls});
 
     m_device->DisableRendering();
 

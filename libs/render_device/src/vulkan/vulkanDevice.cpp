@@ -619,8 +619,8 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
         vkCmdBindIndexBuffer(cmd,
                              indexBuffer.m_buffer,
                              0,
-                             indexBuffer.m_descriptor.elementSize == 16 ? VK_INDEX_TYPE_UINT16 :
-                                                                          VK_INDEX_TYPE_UINT32);
+                             indexBuffer.m_descriptor.elementSize == 2 ? VK_INDEX_TYPE_UINT16 :
+                                                                         VK_INDEX_TYPE_UINT32);
 
         const u32 indexCount =
           static_cast<u32>(indexBuffer.m_descriptor.size / indexBuffer.m_descriptor.elementSize);

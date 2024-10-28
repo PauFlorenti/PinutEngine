@@ -10,16 +10,16 @@
 					"size": 140
 				},
 				{
-					"name": "Color",
+					"name": "Model",
 					"binding": 0,
 					"set": 1,
-					"size": 16
+					"size": 64
 				}
 			]
 		},
 		"fs": {
 			"name": "flat.frag"
 		},
-		"input_vertex": "Pos"
+		"input_vertex": "PosColorUvN"
 	}
 }

@@ -82,11 +82,13 @@ void Sandbox::OnCreate()
     //glassPlane->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 15.0f)),
     //                                glm::vec3(10.0f, 10.0f, 1.0f)));
 
-    //auto monkey = GetRenderable("suzanne.obj", "Suzanne");
-    //monkey->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
+    auto monkey = std::make_shared<Pinut::Renderable>(
+      std::make_shared<Pinut::Node>(LoadAsset<Pinut::Mesh>("suzanne.obj")));
+    monkey->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
 
-    //auto vikingRoom = GetRenderable("viking_room.obj", "VikingRoom");
-    //vikingRoom->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
+    auto vikingRoom = std::make_shared<Pinut::Renderable>(
+      std::make_shared<Pinut::Node>(LoadAsset<Pinut::Mesh>("viking_room.obj")));
+    vikingRoom->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
     //auto cornellBox = GetRenderable("cornell_box.obj", "CornellBox");
     //cornellBox->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)) *
@@ -116,14 +118,14 @@ void Sandbox::OnCreate()
     // Creating scene
     // ------------------
 
-    // m_currentScene = new Pinut::Scene();
+    m_currentScene = new Pinut::Scene();
     /*m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(damagedHelmet));
     m_currentScene->AddRenderable(std::move(flightHelmet));*/
     // m_currentScene->AddRenderable(std::move(glassPlane));
-    // m_currentScene->AddRenderable(std::move(monkey));
-    // m_currentScene->AddRenderable(std::move(vikingRoom));
+    m_currentScene->AddRenderable(std::move(monkey));
+    m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
     // m_currentScene->AddLight(std::move(l));
     // m_currentScene->AddLight(std::move(l2));
