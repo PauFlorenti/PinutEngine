@@ -32,6 +32,8 @@ class Node : public Entity
     //void Draw(VkCommandBuffer cmd, VkPipelineLayout layout);
     void DrawDebug(Camera* camera) override;
 
+    entt::entity m_renderId;
+
   private:
     std::shared_ptr<Mesh>              m_mesh{nullptr};
     std::shared_ptr<Node>              m_parent{nullptr};

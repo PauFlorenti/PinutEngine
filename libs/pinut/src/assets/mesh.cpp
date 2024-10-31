@@ -6,25 +6,18 @@
 
 namespace Pinut
 {
-std::shared_ptr<Mesh> Mesh::Create(Device*             device,
-                                   std::vector<Vertex> vertices,
-                                   std::vector<u16>    indices)
+bool Mesh::operator==(const Mesh& other) const
 {
-    auto m        = std::make_shared<Mesh>();
-    m->m_vertices = std::move(vertices);
-    m->m_indices  = std::move(indices);
-
-    Primitive prim;
-    prim.m_vertexCount = static_cast<u32>(m->m_vertices.size());
-    prim.m_indexCount  = static_cast<u32>(m->m_indices.size());
-    prim.m_firstVertex = 0;
-    prim.m_firstIndex  = 0;
-    prim.m_material    = nullptr; // TODO
-
-    m->m_primitives.push_back(prim);
-
-    return m;
+    // TODO Should we compare primitives? Probably if they hold the material ...
+    return this->m_vertices == other.m_vertices && this->m_indices == other.m_indices;
 }
 
-void Mesh::Destroy() { m_primitives.clear(); }
+bool Mesh::operator!=(const Mesh& other) const { return !(*this == other); }
+
+void Mesh::Destroy()
+{
+    m_vertices.clear();
+    m_indices.clear();
+    m_primitives.clear();
+}
 } // namespace Pinut

@@ -14,6 +14,7 @@
 #include "src/core/node.h"
 #include "src/core/renderable.h"
 #include "src/core/scene.h"
+#include "src/renderer/meshData.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
 
@@ -111,11 +112,48 @@ Renderer::~Renderer()
     m_device->WaitIdle();
     uniformBuffer.Destroy();
     uniformColorBuffer.Destroy();
+    m_rendererRegistry.clear();
     m_device.reset();
+}
+
+void Renderer::Update(Scene* scene)
+{
+    assert(scene);
+
+    for (const auto& r : scene->Renderables())
+    {
+        for (const auto& n : r->GetAllNodes())
+        {
+            if (m_rendererRegistry.try_get<MeshData>(n->m_renderId))
+                continue;
+
+            auto mesh     = *n->GetMesh();
+            n->m_renderId = m_rendererRegistry.create();
+
+            auto vertices = mesh.m_vertices;
+
+            auto& data = m_rendererRegistry.emplace<MeshData>(n->m_renderId);
+
+            data.m_vertexBuffer = m_device->CreateBuffer(
+              {vertices.size() * sizeof(Vertex), sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+              vertices.data());
+
+            if (!mesh.m_indices.empty())
+            {
+                auto indices       = mesh.m_indices;
+                data.m_indexBuffer = m_device->CreateBuffer(
+                  {indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+                  indices.data());
+            }
+        }
+    }
 }
 
 void Renderer::Render(Scene* scene, Camera* camera)
 {
+    assert(scene);
+    assert(camera);
+
     m_device->BeginFrame();
 
     m_device->TransitionImageLayout(m_swapchain->images.at(m_swapchain->imageIndex),
@@ -161,14 +199,16 @@ void Renderer::Render(Scene* scene, Camera* camera)
     {
         for (const auto& n : r->GetAllNodes())
         {
-            const auto& mesh = n->GetMesh();
+            const auto meshData = m_rendererRegistry.try_get<MeshData>(n->m_renderId);
+            if (!meshData)
+                continue;
 
             auto model = n->GetTransform();
             m_device->UpdateBuffer(uniformColorBuffer.GetID(), &model);
 
             RED::DrawCall dc;
-            dc.vertexBuffer = mesh->m_vertexBuffer;
-            dc.indexBuffer  = mesh->m_indexBuffer;
+            dc.vertexBuffer = meshData->m_vertexBuffer;
+            dc.indexBuffer  = meshData->m_indexBuffer;
 
             dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
             dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);

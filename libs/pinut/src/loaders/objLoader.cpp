@@ -122,14 +122,6 @@ std::shared_ptr<Mesh> OBJLoader::LoadMeshFromFile(const std::filesystem::path& f
         mesh->m_primitives.push_back(prim);
     }
 
-    mesh->m_vertexBuffer = device->CreateBuffer(
-      {mesh->m_vertices.size() * sizeof(Vertex), sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-      mesh->m_vertices.data());
-
-    mesh->m_indexBuffer = device->CreateBuffer(
-      {mesh->m_indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-      mesh->m_indices.data());
-
     assetManager.RegisterAsset(filepath.filename().string(), mesh);
     return mesh;
 }

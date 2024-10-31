@@ -274,6 +274,8 @@ void Application::Update()
     auto currentTime = glfwGetTime();
     m_deltaTime      = currentTime - m_lastFrameTime;
     m_lastFrameTime  = currentTime;
+
+    m_renderer->Update(m_currentScene);
 }
 
 void Application::Render() { m_renderer->Render(m_currentScene, m_currentCamera); }

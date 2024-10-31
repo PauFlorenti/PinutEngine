@@ -34,32 +34,50 @@ struct Primitive
     u32                       m_firstVertex{0};
     u32                       m_indexCount{0};
     u32                       m_vertexCount{0};
-    std::shared_ptr<Material> m_material{nullptr};
+    std::shared_ptr<Material> m_material{nullptr}; // TODO
 };
 
 class Mesh final : public Asset
 {
   public:
-    static std::shared_ptr<Mesh> Create(Device*             device,
-                                        std::vector<Vertex> vertices,
-                                        std::vector<u16>    indices);
-
     Mesh()  = default;
     ~Mesh() = default;
 
+    Mesh(const Mesh&)            = default;
+    Mesh& operator=(const Mesh&) = default;
+    Mesh(Mesh&&)                 = default;
+    Mesh& operator=(Mesh&&)      = default;
+
+    bool operator==(const Mesh& other) const;
+    bool operator!=(const Mesh& other) const;
+
     void Destroy() override;
+    void Clear();
 
     std::vector<Vertex>    m_vertices;
     std::vector<u16>       m_indices;
     std::vector<Primitive> m_primitives;
-    RED::GPUBuffer         m_vertexBuffer;
-    RED::GPUBuffer         m_indexBuffer;
 };
 } // namespace Pinut
 
 namespace std
 {
 using namespace Pinut;
+
+template <typename T>
+struct hash<std::vector<T>>
+{
+    size_t operator()(const std::vector<T>& vec) const
+    {
+        size_t seed = vec.size();
+        for (const auto& elem : vec)
+        {
+            seed ^= std::hash<T>{}(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
+
 template <>
 struct hash<Vertex>
 {
@@ -70,6 +88,19 @@ struct hash<Vertex>
                  (hash<glm::vec3>()(vertex.color) << 1)) >>
                 1) ^
                (hash<glm::vec2>()(vertex.uv) << 1);
+    }
+};
+
+template <>
+struct hash<Mesh>
+{
+    size_t operator()(const Mesh& mesh) const
+    {
+        size_t h1 = std::hash<vector<Vertex>>()(mesh.m_vertices);
+        size_t h2 = std::hash<std::vector<u16>>()(mesh.m_indices);
+        // TODO ?? size_t h3 = std::hash<std::vector<Primitive>>()(mesh.m_primitives);
+
+        return h1 ^ (h2 << 1); // ^ (h3 << 2);
     }
 };
 } // namespace std

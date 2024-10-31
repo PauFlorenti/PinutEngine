@@ -33,6 +33,11 @@ target_include_directories(imgui INTERFACE
     ${IMGUI_DIR}/backends
 )
 
+# Entt
+add_library(entt INTERFACE)
+set(ENTT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/entt/single_include)
+target_sources(entt INTERFACE ${ENTT_DIR}/entt/entt.hpp)
+
 # ImGuizmo
 add_library(imguizmo INTERFACE)
 set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/ImGuizmo)
@@ -64,6 +69,6 @@ target_sources(VKBOOTSTRAP INTERFACE ${vkbootstrap_sources})
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
 
-target_link_libraries(Pinut PUBLIC RenderDevice PRIVATE glfw imgui imguizmo tinygltf tinyobj VKBOOTSTRAP)
-target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${GLFW_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR})
+target_link_libraries(Pinut PUBLIC RenderDevice PRIVATE entt glfw imgui imguizmo tinygltf tinyobj VKBOOTSTRAP)
+target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${GLFW_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR} ${ENTT_DIR})
 target_compile_features(Pinut PRIVATE cxx_std_20)

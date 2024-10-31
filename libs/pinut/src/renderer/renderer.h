@@ -1,5 +1,6 @@
 #pragma once
 
+#include <entt/entt.hpp>
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 
 #include "render_device/device.h"
@@ -25,6 +26,7 @@ class Renderer final
                       i32                          height = 1080);
     ~Renderer();
 
+    void Update(Scene* scene);
     void Render(Scene* scene, Camera* camera);
 
   private:
@@ -35,6 +37,7 @@ class Renderer final
     SwapchainInfo*               m_swapchain{nullptr};
 
     std::unordered_map<std::string, RED::RenderPipeline> m_pipelines;
+    entt::registry m_rendererRegistry;
 
     i32  m_width{0};
     i32  m_height{0};
