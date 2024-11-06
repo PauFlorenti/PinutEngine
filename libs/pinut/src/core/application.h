@@ -105,6 +105,8 @@ class Application
     static void BeginFrameCallback(void* context, VkSemaphore imageAvailableSemaphore);
     static void EndFrameCallback(void* context, VkSemaphore renderFinishedSemaphore);
 
+    static void OnWindowResized(GLFWwindow* window, i32 width, i32 height);
+
     bool SetupGlfw();
     bool SetupVulkan();
     void ShutdownGlfw();

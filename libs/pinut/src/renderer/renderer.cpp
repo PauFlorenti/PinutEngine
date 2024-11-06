@@ -10,10 +10,7 @@
 #include "render_device/shader.h"
 #include "render_device/states.h"
 #include "src/assets/mesh.h"
-#include "src/core/camera.h"
-#include "src/core/node.h"
-#include "src/core/renderable.h"
-#include "src/core/scene.h"
+#include "src/components/meshComponent.h"
 #include "src/renderer/meshData.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
@@ -54,20 +51,10 @@ RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType type
     return shader;
 }
 
-Renderer::Renderer(std::shared_ptr<RED::Device> device,
-                   SwapchainInfo*               swapchain,
-                   GLFWwindow*                  window,
-                   i32                          width,
-                   i32                          height)
+Renderer::Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain)
 : m_device(device),
-  m_swapchain(swapchain),
-  m_window(window),
-  m_width(width),
-  m_height(height)
+  m_swapchain(swapchain)
 {
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetWindowSizeCallback(m_window, &Renderer::OnWindowResized);
-
     // Init pipelines
     std::ifstream pipelineFile(std::filesystem::path("../libs/pinut/pipelines/pipelines.json"));
 
@@ -116,44 +103,36 @@ Renderer::~Renderer()
     m_device.reset();
 }
 
-void Renderer::Update(Scene* scene)
+void Renderer::Update(entt::registry& registry)
 {
-    assert(scene);
+    registry.view<Component::RenderComponent, Component::MeshComponent>().each(
+      [this](entt::entity entity, auto& renderComponent, auto& meshComponent)
+      {
+          if (m_rendererRegistry.try_get<MeshData>(renderComponent.id))
+              return;
 
-    for (const auto& r : scene->Renderables())
-    {
-        for (const auto& n : r->GetAllNodes())
-        {
-            if (m_rendererRegistry.try_get<MeshData>(n->m_renderId))
-                continue;
+          renderComponent.id = m_rendererRegistry.create();
+          const auto& mesh   = meshComponent.mesh;
 
-            auto mesh     = *n->GetMesh();
-            n->m_renderId = m_rendererRegistry.create();
+          auto& data = m_rendererRegistry.emplace<MeshData>(renderComponent.id);
 
-            auto vertices = mesh.m_vertices;
+          auto vertices       = mesh.m_vertices;
+          data.m_vertexBuffer = m_device->CreateBuffer(
+            {vertices.size() * sizeof(Vertex), sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+            vertices.data());
 
-            auto& data = m_rendererRegistry.emplace<MeshData>(n->m_renderId);
-
-            data.m_vertexBuffer = m_device->CreateBuffer(
-              {vertices.size() * sizeof(Vertex), sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-              vertices.data());
-
-            if (!mesh.m_indices.empty())
-            {
-                auto indices       = mesh.m_indices;
-                data.m_indexBuffer = m_device->CreateBuffer(
-                  {indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-                  indices.data());
-            }
-        }
-    }
+          if (!mesh.m_indices.empty())
+          {
+              auto indices       = mesh.m_indices;
+              data.m_indexBuffer = m_device->CreateBuffer(
+                {indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+                indices.data());
+          }
+      });
 }
 
-void Renderer::Render(Scene* scene, Camera* camera)
+void Renderer::Render(entt::registry& registry, const ViewportData& viewportData)
 {
-    assert(scene);
-    assert(camera);
-
     m_device->BeginFrame();
 
     m_device->TransitionImageLayout(m_swapchain->images.at(m_swapchain->imageIndex),
@@ -172,14 +151,17 @@ void Renderer::Render(Scene* scene, Camera* camera)
     attachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
     attachment.clearValue  = {0.0f, 0.f, 0.f, 0.f};
 
-    m_device->EnableRendering({0, 0, static_cast<u32>(m_width), static_cast<u32>(m_height)},
+    m_device->EnableRendering({viewportData.x,
+                               viewportData.y,
+                               static_cast<u32>(viewportData.width),
+                               static_cast<u32>(viewportData.height)},
                               {attachment});
 
     RED::ViewportState viewport{};
-    viewport.x      = 0;
-    viewport.y      = 0;
-    viewport.width  = m_width;
-    viewport.height = m_height;
+    viewport.x      = viewportData.x;
+    viewport.y      = viewportData.y;
+    viewport.width  = viewportData.width;
+    viewport.height = viewportData.height;
 
     RED::GraphicsState graphicsState{};
     graphicsState.viewport = std::move(viewport);
@@ -187,35 +169,32 @@ void Renderer::Render(Scene* scene, Camera* camera)
     m_device->SetGraphicsState(&graphicsState);
     m_device->SetRenderPipeline(&m_pipelines.at("flat"));
 
-    uniformData.view           = camera->View();
-    uniformData.projection     = camera->Projection();
-    uniformData.cameraPosition = camera->Position();
+    uniformData.view           = viewportData.view;
+    uniformData.projection     = viewportData.projection;
+    uniformData.cameraPosition = viewportData.cameraPosition;
     m_device->UpdateBuffer(uniformBuffer.GetID(), &uniformData);
 
     std::vector<RED::DrawCall> drawCalls;
     drawCalls.reserve(1000);
 
-    for (const auto& r : scene->Renderables())
-    {
-        for (const auto& n : r->GetAllNodes())
-        {
-            const auto meshData = m_rendererRegistry.try_get<MeshData>(n->m_renderId);
-            if (!meshData)
-                continue;
+    registry.view<Component::TransformComponent, Component::RenderComponent>().each(
+      [&drawCalls, this](auto entity, auto& transformComponent, auto& renderComponent)
+      {
+          const auto meshData = m_rendererRegistry.try_get<MeshData>(renderComponent.id);
+          if (!meshData)
+              return;
 
-            auto model = n->GetTransform();
-            m_device->UpdateBuffer(uniformColorBuffer.GetID(), &model);
+          m_device->UpdateBuffer(uniformColorBuffer.GetID(), &transformComponent.model);
 
-            RED::DrawCall dc;
-            dc.vertexBuffer = meshData->m_vertexBuffer;
-            dc.indexBuffer  = meshData->m_indexBuffer;
+          RED::DrawCall dc;
+          dc.vertexBuffer = meshData->m_vertexBuffer;
+          dc.indexBuffer  = meshData->m_indexBuffer;
 
-            dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
-            dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
+          dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
+          dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
 
-            drawCalls.push_back(dc);
-        }
-    }
+          drawCalls.push_back(dc);
+      });
 
     m_device->SubmitDrawCalls({drawCalls});
 
@@ -232,27 +211,5 @@ void Renderer::Render(Scene* scene, Camera* camera)
 
     m_device->EndFrame();
     m_device->Present();
-}
-
-void Renderer::OnWindowResized(GLFWwindow* window, i32 width, i32 height)
-{
-    printf("Window resized [%d, %d]\n", width, height);
-
-    auto renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
-    assert(renderer != nullptr);
-
-    if (renderer->m_width == width && renderer->m_height == height)
-        return;
-
-    if (width == 0 || height == 0)
-    {
-        renderer->bMinimized = true;
-        return;
-    }
-
-    renderer->bMinimized = false;
-
-    renderer->m_width  = width;
-    renderer->m_height = height;
 }
 } // namespace Pinut

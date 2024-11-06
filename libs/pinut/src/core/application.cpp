@@ -3,8 +3,12 @@
 #include <GLFW/glfw3.h>
 #include <external/imgui/imgui.h>
 
+#include "application.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
+#include "src/components/meshComponent.h"
+#include "src/components/renderComponent.h"
+#include "src/components/transformComponent.h"
 #include "src/core/application.h"
 #include "src/core/camera.h"
 #include "src/core/light.h"
@@ -23,6 +27,7 @@ static constexpr bool ENABLE_GPU_VALIDATION_DEFAULT = false;
 #endif
 
 static bool bMinimized{false};
+static bool bResized{false};
 
 i32 Run(std::unique_ptr<Pinut::Application> application)
 {
@@ -188,13 +193,15 @@ Application::Application(const std::string& name, i32 width, i32 height)
     if (!SetupGlfw())
         return;
 
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetWindowSizeCallback(m_window, &Application::OnWindowResized);
+
     if (!SetupVulkan())
         return;
 
     auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
     m_assetManager.Init(device);
-    m_renderer =
-      std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, m_window, m_width, m_height);
+    m_renderer = std::make_unique<Renderer>(std::move(device), &m_swapchainInfo);
 
 #ifdef _DEBUG
     //m_imgui.Init(&m_device, &m_swapchain, window);
@@ -204,7 +211,7 @@ Application::Application(const std::string& name, i32 width, i32 height)
 Application::~Application()
 {
     if (m_currentScene)
-        m_currentScene->Clear();
+        m_currentScene->ClearScene();
 
     m_assetManager.Shutdown();
     DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
@@ -262,6 +269,7 @@ void Application::Run()
 
 void Application::RecreateSwapchain(bool bSync)
 {
+    vkDeviceWaitIdle(m_deviceInfo.device);
     DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
     m_swapchainInfo =
       CreateSwapchain(m_vkbDevice, m_deviceQueues.at(0), m_swapchainInfo.vsyncEnabled);
@@ -275,10 +283,19 @@ void Application::Update()
     m_deltaTime      = currentTime - m_lastFrameTime;
     m_lastFrameTime  = currentTime;
 
-    m_renderer->Update(m_currentScene);
+    m_renderer->Update(m_currentScene->Registry());
 }
 
-void Application::Render() { m_renderer->Render(m_currentScene, m_currentCamera); }
+void Application::Render()
+{
+    ViewportData viewport{};
+    viewport.width          = m_width;
+    viewport.height         = m_height;
+    viewport.view           = m_currentCamera->View();
+    viewport.projection     = m_currentCamera->Projection();
+    viewport.cameraPosition = m_currentCamera->Position();
+    m_renderer->Render(m_currentScene->Registry(), viewport);
+}
 
 Camera* Application::GetCamera()
 {
@@ -286,6 +303,29 @@ Camera* Application::GetCamera()
         m_currentCamera = new Camera();
 
     return m_currentCamera;
+}
+
+void Application::OnWindowResized(GLFWwindow* window, i32 width, i32 height)
+{
+    printf("Window resized [%d, %d]\n", width, height);
+
+    auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    assert(app != nullptr);
+
+    if (app->m_width == width && app->m_height == height)
+        return;
+
+    if (width == 0 || height == 0)
+    {
+        bMinimized = true;
+        return;
+    }
+
+    bResized   = true;
+    bMinimized = false;
+
+    app->m_width  = width;
+    app->m_height = height;
 }
 
 bool Application::SetupGlfw()
@@ -390,10 +430,11 @@ bool Application::SetupVulkan()
 
         auto ok = vkQueuePresentKHR(m_deviceQueues.at(1).queue, &presentInfo);
 
-        if (ok == VK_ERROR_OUT_OF_DATE_KHR || ok == VK_SUBOPTIMAL_KHR)
+        if (ok == VK_ERROR_OUT_OF_DATE_KHR || ok == VK_SUBOPTIMAL_KHR || bResized)
         {
             // TODO Vsync should be given by the application.
             RecreateSwapchain(true);
+            bResized = false;
         }
     };
 
