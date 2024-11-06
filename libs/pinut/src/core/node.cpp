@@ -43,11 +43,5 @@ glm::mat4 Node::GetGlobalMatrix(bool fast)
 
 const std::vector<std::shared_ptr<Node>>& Node::GetChildren() { return m_children; }
 
-//void Node::Draw(VkCommandBuffer cmd, VkPipelineLayout layout)
-//{
-//    if (m_mesh)
-//        m_mesh->Draw(cmd, layout, m_instanceIndex);
-//}
-
 void Node::DrawDebug(Camera* camera) { Entity::DrawDebug(std::move(camera)); }
 } // namespace Pinut

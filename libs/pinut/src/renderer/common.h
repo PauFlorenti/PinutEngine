@@ -2,7 +2,6 @@
 
 namespace Pinut
 {
-constexpr i32 MAX_ENTITIES = 1000;
 constexpr i32 MAX_LIGHTS = 10;
 struct PerFrameData
 {

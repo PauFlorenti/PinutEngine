@@ -361,7 +361,7 @@ void VulkanDevice::DestroyBuffer(BufferResource resource)
     }
 }
 
-void VulkanDevice::WaitIdle() const { vkDeviceWaitIdle(m_device); }
+void VulkanDevice::WaitIdle() const { assert(vkDeviceWaitIdle(m_device) == VK_SUCCESS); }
 
 UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
   const std::vector<UniformDescriptor>& uniformDescriptors)

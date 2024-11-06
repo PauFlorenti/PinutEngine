@@ -3,6 +3,9 @@
 #include "sandbox.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
+#include "src/components/meshComponent.h"
+#include "src/components/renderComponent.h"
+#include "src/components/transformComponent.h"
 #include "src/core/camera.h"
 #include "src/core/node.h"
 #include "src/core/renderable.h"
@@ -82,13 +85,13 @@ void Sandbox::OnCreate()
     //glassPlane->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 15.0f)),
     //                                glm::vec3(10.0f, 10.0f, 1.0f)));
 
-    auto monkey = std::make_shared<Pinut::Renderable>(
-      std::make_shared<Pinut::Node>(LoadAsset<Pinut::Mesh>("suzanne.obj")));
-    monkey->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
+    // auto monkey = std::make_shared<Pinut::Renderable>(
+    //   std::make_shared<Pinut::Node>(LoadAsset<Pinut::Mesh>("suzanne.obj")));
+    // monkey->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f)));
 
-    auto vikingRoom = std::make_shared<Pinut::Renderable>(
-      std::make_shared<Pinut::Node>(LoadAsset<Pinut::Mesh>("viking_room.obj")));
-    vikingRoom->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
+    // auto vikingRoom = std::make_shared<Pinut::Renderable>(
+    //   std::make_shared<Pinut::Node>(LoadAsset<Pinut::Mesh>("viking_room.obj")));
+    // vikingRoom->SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
     //auto cornellBox = GetRenderable("cornell_box.obj", "CornellBox");
     //cornellBox->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f)) *
@@ -97,35 +100,55 @@ void Sandbox::OnCreate()
     // ------------------
     // Creating lights
     // ------------------
-    Pinut::DirectionalLight directionalLight;
-    directionalLight.SetTransform(
-      glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-    directionalLight.m_intensity = 0.5f;
+    // Pinut::DirectionalLight directionalLight;
+    // directionalLight.SetTransform(
+    //   glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+    // directionalLight.m_intensity = 0.5f;
 
-    auto l = std::make_shared<Pinut::SpotLight>();
-    l->SetPosition(glm::vec3(0.0f, 8.0f, 20.0f));
-    l->m_color     = glm::vec3(0.8f, 0.5f, 0.2f);
-    l->m_radius    = 50.0f;
-    l->m_intensity = 50.0f;
+    // auto l = std::make_shared<Pinut::SpotLight>();
+    // l->SetPosition(glm::vec3(0.0f, 8.0f, 20.0f));
+    // l->m_color     = glm::vec3(0.8f, 0.5f, 0.2f);
+    // l->m_radius    = 50.0f;
+    // l->m_intensity = 50.0f;
 
-    auto l2 = std::make_shared<Pinut::PointLight>();
-    l2->SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
-    l2->m_color     = glm::vec3(0.9f, 0.1f, 0.05f);
-    l2->m_intensity = 30.0f;
-    l2->m_radius    = 50.0f;
+    // auto l2 = std::make_shared<Pinut::PointLight>();
+    // l2->SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+    // l2->m_color     = glm::vec3(0.9f, 0.1f, 0.05f);
+    // l2->m_intensity = 30.0f;
+    // l2->m_radius    = 50.0f;
 
     // ------------------
     // Creating scene
     // ------------------
 
     m_currentScene = new Pinut::Scene();
+    auto& registry = m_currentScene->Registry();
+
+    const auto monkey = m_currentScene->CreateEntity();
+    registry.emplace<Pinut::Component::MeshComponent>(monkey,
+                                                      *LoadAsset<Pinut::Mesh>("suzanne.obj"));
+    registry.emplace<Pinut::Component::RenderComponent>(monkey);
+
+    auto& monkeyTransformComponent = registry.get<Pinut::Component::TransformComponent>(monkey);
+    monkeyTransformComponent.model = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f));
+
+    const auto vikingRoom = m_currentScene->CreateEntity();
+    registry.emplace<Pinut::Component::MeshComponent>(vikingRoom,
+                                                      *LoadAsset<Pinut::Mesh>("viking_room.obj"));
+    registry.emplace<Pinut::Component::RenderComponent>(vikingRoom);
+
+    auto& vikingRoomTransformComponent =
+      registry.get<Pinut::Component::TransformComponent>(vikingRoom);
+    vikingRoomTransformComponent.model =
+      glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
+
     /*m_currentScene->SetDirectionalLight(std::move(directionalLight));
     m_currentScene->AddRenderable(std::move(floor));
     m_currentScene->AddRenderable(std::move(damagedHelmet));
     m_currentScene->AddRenderable(std::move(flightHelmet));*/
     // m_currentScene->AddRenderable(std::move(glassPlane));
-    m_currentScene->AddRenderable(std::move(monkey));
-    m_currentScene->AddRenderable(std::move(vikingRoom));
+    // m_currentScene->AddRenderable(std::move(monkey));
+    // m_currentScene->AddRenderable(std::move(vikingRoom));
     // m_currentScene->AddRenderable(std::move(cornellBox));
     // m_currentScene->AddLight(std::move(l));
     // m_currentScene->AddLight(std::move(l2));

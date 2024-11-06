@@ -169,7 +169,7 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
     {
         const tinygltf::Mesh mesh = tmodel.meshes[tnode.mesh];
 
-        if (false/*const auto foundMesh = assetManager.GetAsset<Mesh>(mesh.name)*/)
+        if (false /*const auto foundMesh = assetManager.GetAsset<Mesh>(mesh.name)*/)
         {
             //node->SetMesh(std::move(foundMesh));
         }
@@ -309,15 +309,6 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
 
                 m->m_primitives.push_back(prim);
             }
-
-            m->m_vertexBuffer = device->CreateBuffer({m->m_vertices.size() * sizeof(Vertex),
-                                                      sizeof(Vertex),
-                                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-                                                     m->m_vertices.data());
-
-            m->m_indexBuffer = device->CreateBuffer(
-              {m->m_indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-              m->m_indices.data());
 
             assetManager.RegisterAsset(mesh.name, m);
             node->SetMesh(std::move(m));

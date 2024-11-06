@@ -64,20 +64,6 @@ namespace std
 {
 using namespace Pinut;
 
-template <typename T>
-struct hash<std::vector<T>>
-{
-    size_t operator()(const std::vector<T>& vec) const
-    {
-        size_t seed = vec.size();
-        for (const auto& elem : vec)
-        {
-            seed ^= std::hash<T>{}(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-        return seed;
-    }
-};
-
 template <>
 struct hash<Vertex>
 {
@@ -88,19 +74,6 @@ struct hash<Vertex>
                  (hash<glm::vec3>()(vertex.color) << 1)) >>
                 1) ^
                (hash<glm::vec2>()(vertex.uv) << 1);
-    }
-};
-
-template <>
-struct hash<Mesh>
-{
-    size_t operator()(const Mesh& mesh) const
-    {
-        size_t h1 = std::hash<vector<Vertex>>()(mesh.m_vertices);
-        size_t h2 = std::hash<std::vector<u16>>()(mesh.m_indices);
-        // TODO ?? size_t h3 = std::hash<std::vector<Primitive>>()(mesh.m_primitives);
-
-        return h1 ^ (h2 << 1); // ^ (h3 << 2);
     }
 };
 } // namespace std

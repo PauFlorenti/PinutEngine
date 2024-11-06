@@ -1,46 +1,22 @@
 #pragma once
 
-#include <array>
-
-#include "src/assets/mesh.h"
-#include "src/core/light.h"
-#include "src/renderer/common.h" //TODO TEMP ??
+#include "entt/entt.hpp"
 
 namespace Pinut
 {
-class Node;
-class Renderable;
+  constexpr i32 MAX_ENTITIES = 1000;
 class Scene
 {
-    using LightArray = std::array<std::shared_ptr<Light>, MAX_LIGHTS>;
-
   public:
-    void LoadScene();
-    void SetDirectionalLight(DirectionalLight l);
-    void AddRenderable(std::shared_ptr<Renderable> r);
-    void AddLight(std::shared_ptr<Light> l);
-    void Clear();
-
-    const std::vector<std::shared_ptr<Renderable>>& Renderables() const { return m_renderables; }
-    const std::vector<std::shared_ptr<Node>>&       OpaqueRenderables() const
-    {
-        return m_opaqueRenderables;
-    }
-    const std::vector<std::shared_ptr<Node>>& TransparentRenderables() const
-    {
-        return m_transparentRenderables;
-    }
-
-    DirectionalLight& GetDirectionalLight() { return m_directionalLight; }
-    const u32         LightsCount() const { return m_lightCount; }
-    LightArray&       Lights() { return m_lights; }
+    Scene();
+    ~Scene();
+    entt::entity    CreateEntity();
+    entt::registry& Registry() { return m_sceneRegistry; }
+    void            LoadScene();
+    void            ClearScene();
 
   private:
-    std::vector<std::shared_ptr<Node>>       m_opaqueRenderables;
-    std::vector<std::shared_ptr<Node>>       m_transparentRenderables;
-    std::vector<std::shared_ptr<Renderable>> m_renderables;
-    DirectionalLight                         m_directionalLight;
-    LightArray                               m_lights;
-    u32                                      m_lightCount{0};
+    entt::registry            m_sceneRegistry;
+    std::vector<entt::entity> m_entities;
 };
 } // namespace Pinut

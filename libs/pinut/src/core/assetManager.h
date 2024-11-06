@@ -62,10 +62,6 @@ class AssetManager
         return nullptr;
     }
 
-    // std::shared_ptr<Material> CreateMaterial(const std::string&    name,
-    //                                          VkDescriptorSetLayout layout,
-    //                                          MaterialData          data);
-
     static const std::filesystem::path m_assetsPath;
 
   private:
