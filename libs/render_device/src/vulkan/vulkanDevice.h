@@ -7,6 +7,7 @@
 #include "src/vulkan/descriptorSetManager.h"
 #include "src/vulkan/vulkanBuffer.h"
 #include "src/vulkan/vulkanPipeline.h"
+#include "src/vulkan/vulkanTexture.h"
 
 namespace RED
 {
@@ -86,6 +87,9 @@ class VulkanDevice final : public Device
     void      UpdateBuffer(BufferResource bufferId, void* data) override;
     void      DestroyBuffer(BufferResource) override;
 
+    GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) override;
+    void       DestroyTexture(TextureResource) override;
+
     void TransitionImageLayout(VkImage                 image,
                                VkAccessFlags           srcAccessFlags,
                                VkAccessFlags           dstAccessFlags,
@@ -149,9 +153,10 @@ class VulkanDevice final : public Device
 #endif
 
     // Resources
-    DescriptorSetManager                             m_descriptorSetManager;
-    ResourceGenerator                                m_resourceGenerator;
-    std::unordered_map<BufferResource, VulkanBuffer> m_buffers;
+    DescriptorSetManager                               m_descriptorSetManager;
+    ResourceGenerator                                  m_resourceGenerator;
+    std::unordered_map<BufferResource, VulkanBuffer>   m_buffers;
+    std::unordered_map<TextureResource, VulkanTexture> m_textures;
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;

@@ -361,6 +361,59 @@ void VulkanDevice::DestroyBuffer(BufferResource resource)
     }
 }
 
+GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void* data)
+{
+    const auto id = m_resourceGenerator.GenerateTextureResource();
+
+    VulkanTexture texture;
+    texture.descriptor = descriptor;
+
+    VkImageCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    info.pNext     = nullptr;
+    info.imageType = VK_IMAGE_TYPE_2D;
+    info.format    = descriptor.format;
+    info.extent    = descriptor.extent;
+    info.tiling    = VK_IMAGE_TILING_OPTIMAL;
+    info.usage =
+      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | descriptor.usage;
+    info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    auto ok =
+      vmaCreateImage(m_allocator, &info, &allocInfo, &texture.image, &texture.allocation, nullptr);
+
+    assert(ok == VK_SUCCESS);
+
+    VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    viewInfo.pNext                           = nullptr;
+    viewInfo.image                           = texture.image;
+    viewInfo.format                          = descriptor.format;
+    viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.subresourceRange.baseMipLevel   = 0;
+    viewInfo.subresourceRange.levelCount     = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount     = 1;
+    viewInfo.subresourceRange.aspectMask =
+      info.format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+    m_textures.insert({id, texture});
+
+    return {id, this};
+}
+
+void VulkanDevice::DestroyTexture(TextureResource resource)
+{
+    if (auto texture = m_textures.find(resource); texture != m_textures.end())
+    {
+        auto t = texture->second;
+        vmaDestroyImage(m_allocator, t.image, t.allocation);
+
+        m_textures.erase(texture);
+    }
+}
+
 void VulkanDevice::WaitIdle() const { assert(vkDeviceWaitIdle(m_device) == VK_SUCCESS); }
 
 UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(

@@ -2,6 +2,7 @@
 
 #include "render_device/buffer.h"
 #include "render_device/gpuresource.h"
+#include "render_device/texture.h"
 
 // RED = Rendering Engine Device
 namespace RED
@@ -10,6 +11,7 @@ struct BufferDescriptor;
 struct DrawCall;
 struct GraphicsState;
 struct RenderPipeline;
+struct TextureDescriptor;
 class Device
 {
   public:
@@ -39,6 +41,9 @@ class Device
     virtual GPUBuffer CreateBuffer(const BufferDescriptor&, void* data = nullptr) = 0;
     virtual void      UpdateBuffer(BufferResource bufferId, void* data)           = 0;
     virtual void      DestroyBuffer(BufferResource)                               = 0;
+
+    virtual GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) = 0;
+    virtual void       DestroyTexture(TextureResource)                                          = 0;
 
     virtual void TransitionImageLayout(VkImage                 image,
                                        VkAccessFlags           srcAccessFlags,
