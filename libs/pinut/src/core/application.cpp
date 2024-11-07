@@ -390,7 +390,14 @@ bool Application::SetupVulkan()
     auto BeginFrameCallback = [](void* context, VkSemaphore imageAvailableSemaphore)
     {
         auto app = reinterpret_cast<Application*>(context);
-        auto ok  = vkAcquireNextImageKHR(app->m_deviceInfo.device,
+
+        if (bResized)
+        {
+            app->RecreateSwapchain(app->m_swapchainInfo.vsyncEnabled);
+            bResized = false;
+        }
+
+        auto ok = vkAcquireNextImageKHR(app->m_deviceInfo.device,
                                         app->m_swapchainInfo.swapchain,
                                         UINT64_MAX,
                                         imageAvailableSemaphore,
