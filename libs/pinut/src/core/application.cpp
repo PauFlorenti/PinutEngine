@@ -27,7 +27,7 @@ static constexpr bool ENABLE_GPU_VALIDATION_DEFAULT = false;
 #endif
 
 static bool bMinimized{false};
-static bool bResized{false};
+static bool bResized{true};
 
 i32 Run(std::unique_ptr<Pinut::Application> application)
 {
@@ -283,7 +283,14 @@ void Application::Update()
     m_deltaTime      = currentTime - m_lastFrameTime;
     m_lastFrameTime  = currentTime;
 
-    m_renderer->Update(m_currentScene->Registry());
+    ViewportData viewport{};
+    viewport.width          = m_width;
+    viewport.height         = m_height;
+    viewport.view           = m_currentCamera->View();
+    viewport.projection     = m_currentCamera->Projection();
+    viewport.cameraPosition = m_currentCamera->Position();
+
+    m_renderer->Update(m_currentScene->Registry(), viewport, bResized);
 }
 
 void Application::Render()

@@ -9,6 +9,7 @@
 #include "render_device/drawCall.h"
 #include "render_device/shader.h"
 #include "render_device/states.h"
+#include "render_device/textureDescriptor.h"
 #include "src/assets/mesh.h"
 #include "src/components/meshComponent.h"
 #include "src/renderer/meshData.h"
@@ -100,11 +101,23 @@ Renderer::~Renderer()
     uniformBuffer.Destroy();
     uniformColorBuffer.Destroy();
     m_rendererRegistry.clear();
+    m_offscreenState.Clear();
     m_device.reset();
 }
 
-void Renderer::Update(entt::registry& registry)
+void Renderer::Update(entt::registry& registry, const ViewportData& viewportData, bool resized)
 {
+    if (resized)
+    {
+        m_offscreenState.Clear();
+        m_offscreenState.Create(*m_device,
+                                viewportData.width,
+                                viewportData.height,
+                                {VK_FORMAT_R32G32B32A32_SFLOAT},
+                                true,
+                                VK_FORMAT_D32_SFLOAT);
+    }
+
     registry.view<Component::RenderComponent, Component::MeshComponent>().each(
       [this](entt::entity entity, auto& renderComponent, auto& meshComponent)
       {
@@ -155,7 +168,8 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
                                viewportData.y,
                                static_cast<u32>(viewportData.width),
                                static_cast<u32>(viewportData.height)},
-                              {attachment});
+                              {attachment},
+                              m_offscreenState.depthTexture);
 
     RED::ViewportState viewport{};
     viewport.x      = viewportData.x;
@@ -165,6 +179,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     RED::GraphicsState graphicsState{};
     graphicsState.viewport = std::move(viewport);
+    graphicsState.depth    = {VK_FORMAT_D32_SFLOAT};
 
     m_device->SetGraphicsState(&graphicsState);
     m_device->SetRenderPipeline(&m_pipelines.at("flat"));

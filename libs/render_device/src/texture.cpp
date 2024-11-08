@@ -27,16 +27,17 @@ GPUTexture::~GPUTexture() { Destroy(); }
 
 void GPUTexture::Destroy()
 {
-    m_id = {};
-
     if (!m_device)
         return;
 
-    m_device->DestroyBuffer(m_id);
+    m_device->DestroyTexture(m_id);
+    m_id     = {};
     m_device = nullptr;
 }
 
 TextureResource GPUTexture::GetID() const { return m_id; }
+
+bool GPUTexture::IsEmpty() const { return m_id.id == GPU_RESOURCE_INVALID; }
 
 GPUTextureView::GPUTextureView() = default;
 

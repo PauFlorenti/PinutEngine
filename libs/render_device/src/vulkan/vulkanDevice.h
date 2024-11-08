@@ -75,7 +75,8 @@ class VulkanDevice final : public Device
     void Present() override;
 
     void EnableRendering(const VkRect2D&                               renderArea,
-                         const std::vector<VkRenderingAttachmentInfo>& attachments) override;
+                         const std::vector<VkRenderingAttachmentInfo>& attachments,
+                         GPUTextureView                                depthTextureView) override;
     void DisableRendering() override;
 
     void SetGraphicsState(GraphicsState* state) override;
@@ -122,6 +123,7 @@ class VulkanDevice final : public Device
     VulkanPipeline* GetRenderPipeline(const RenderPipeline* pipeline,
                                       const GraphicsState&  graphicsState);
     VulkanBuffer    GetVulkanBuffer(const BufferResource& bufferResource);
+    VulkanTexture   GetVulkanTexture(const TextureResource& textureResource);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 

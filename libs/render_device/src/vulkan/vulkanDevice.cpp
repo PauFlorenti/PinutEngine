@@ -90,6 +90,11 @@ VulkanDevice::~VulkanDevice()
 
     m_buffers.clear();
 
+    for (auto& texture : m_textures)
+        vmaDestroyImage(m_allocator, texture.second.image, texture.second.allocation);
+
+    m_textures.clear();
+
     m_descriptorSetManager.OnDestroy(m_device);
 
     for (auto& uniformBuffers : m_globalUniformBuffers)
@@ -191,13 +196,33 @@ void VulkanDevice::EndFrame()
 void VulkanDevice::Present() { m_present_fn(); }
 
 void VulkanDevice::EnableRendering(const VkRect2D&                               renderArea,
-                                   const std::vector<VkRenderingAttachmentInfo>& attachments)
+                                   const std::vector<VkRenderingAttachmentInfo>& attachments,
+                                   GPUTextureView                                depthTextureView)
 {
+    const auto depthTexture = GetVulkanTexture(depthTextureView.GetID());
+
+    TransitionImageLayout(depthTexture.image,
+                          0,
+                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
+
     BeginCommandRecording(QueueType::GRAPHICS);
+
+    VkRenderingAttachmentInfo depthAttachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+    depthAttachment.imageView   = depthTexture.imageView;
+    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    depthAttachment.loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
+    depthAttachment.clearValue  = {1.0f, .0f};
 
     VkRenderingInfo info{VK_STRUCTURE_TYPE_RENDERING_INFO};
     info.colorAttachmentCount = static_cast<u32>(attachments.size());
     info.pColorAttachments    = attachments.data();
+    info.pDepthAttachment     = &depthAttachment;
     info.renderArea           = renderArea;
     info.layerCount           = 1;
 
@@ -368,22 +393,31 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
     VulkanTexture texture;
     texture.descriptor = descriptor;
 
-    VkImageCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-    info.pNext     = nullptr;
-    info.imageType = VK_IMAGE_TYPE_2D;
-    info.format    = descriptor.format;
-    info.extent    = descriptor.extent;
-    info.tiling    = VK_IMAGE_TILING_OPTIMAL;
-    info.usage =
-      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | descriptor.usage;
-    info.samples = VK_SAMPLE_COUNT_1_BIT;
+    VkImageCreateInfo info{};
+    info.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    info.pNext         = nullptr;
+    info.imageType     = VK_IMAGE_TYPE_2D;
+    info.format        = descriptor.format;
+    info.extent        = descriptor.extent;
+    info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+    info.usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | descriptor.usage;
+    info.samples       = VK_SAMPLE_COUNT_1_BIT;
+    info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    info.mipLevels     = 1;
+    info.arrayLayers   = 1;
 
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    VmaAllocationCreateInfo allocCreateInfo{};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-    auto ok =
-      vmaCreateImage(m_allocator, &info, &allocInfo, &texture.image, &texture.allocation, nullptr);
+    VmaAllocationInfo allocInfo{};
 
+    auto ok = vmaCreateImage(m_allocator,
+                             &info,
+                             &allocCreateInfo,
+                             &texture.image,
+                             &texture.allocation,
+                             &allocInfo);
     assert(ok == VK_SUCCESS);
 
     VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -398,7 +432,58 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
     viewInfo.subresourceRange.aspectMask =
       info.format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
+    ok = vkCreateImageView(m_device, &viewInfo, nullptr, &texture.imageView);
+    assert(ok == VK_SUCCESS);
+
     m_textures.insert({id, texture});
+
+    if (data != nullptr)
+    {
+        VulkanBuffer staging;
+
+        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        stagingBufferInfo.size        = info.extent.height * info.extent.width * 4;
+        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo stagingAllocInfo{};
+        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+        ok = vmaCreateBuffer(m_allocator,
+                             &stagingBufferInfo,
+                             &stagingAllocInfo,
+                             &staging.m_buffer,
+                             &staging.m_allocation,
+                             nullptr);
+        assert(ok == VK_SUCCESS);
+
+        vmaCopyMemoryToAllocation(m_allocator,
+                                  data,
+                                  staging.m_allocation,
+                                  0,
+                                  stagingBufferInfo.size);
+
+        VkBufferImageCopy region{};
+        region.imageExtent                     = descriptor.extent;
+        region.bufferOffset                    = 0;
+        region.imageOffset                     = {0, 0, 0};
+        region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount     = 1;
+        region.imageSubresource.mipLevel       = 0;
+
+        const auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+        vkCmdCopyBufferToImage(cmd,
+                               staging.m_buffer,
+                               texture.image,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               1,
+                               &region);
+        FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
+
+        vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
+    }
 
     return {id, this};
 }
@@ -409,6 +494,7 @@ void VulkanDevice::DestroyTexture(TextureResource resource)
     {
         auto t = texture->second;
         vmaDestroyImage(m_allocator, t.image, t.allocation);
+        vkDestroyImageView(m_device, t.imageView, nullptr);
 
         m_textures.erase(texture);
     }
@@ -621,6 +707,15 @@ VulkanBuffer VulkanDevice::GetVulkanBuffer(const BufferResource& bufferResource)
     auto buffer = m_buffers.find(bufferResource);
     if (buffer != m_buffers.end())
         return buffer->second;
+
+    return {};
+}
+
+VulkanTexture VulkanDevice::GetVulkanTexture(const TextureResource& textureResource)
+{
+    auto texture = m_textures.find(textureResource);
+    if (texture != m_textures.end())
+        return texture->second;
 
     return {};
 }

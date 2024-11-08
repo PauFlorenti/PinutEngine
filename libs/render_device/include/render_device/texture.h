@@ -19,6 +19,7 @@ class GPUTexture final
     void Destroy();
 
     TextureResource GetID() const;
+    bool IsEmpty() const;
 
   private:
     TextureResource m_id{GPU_RESOURCE_INVALID, ResourceType::BUFFER};

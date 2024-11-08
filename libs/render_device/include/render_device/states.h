@@ -27,6 +27,13 @@ struct BlendState
     bool operator==(const BlendState&) const noexcept = default;
 };
 
+struct DepthState
+{
+    VkFormat depthFormat{VK_FORMAT_UNDEFINED};
+
+    bool operator==(const DepthState&) const noexcept = default;
+};
+
 struct ViewportState
 {
     i32 x;
@@ -41,6 +48,7 @@ struct GraphicsState
 {
     RasterState         raster{};
     BlendState          blend{};
+    DepthState          depth{};
     VkPrimitiveTopology topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
     ViewportState       viewport{};
 
@@ -90,6 +98,15 @@ struct hash<BlendState>
 };
 
 template <>
+struct hash<DepthState>
+{
+    inline size_t operator()(const DepthState& state) const noexcept
+    {
+        return std::hash<VkFormat>()(state.depthFormat);
+    }
+};
+
+template <>
 struct hash<ViewportState>
 {
     inline size_t operator()(const ViewportState& state) const noexcept
@@ -110,10 +127,11 @@ struct hash<GraphicsState>
     {
         size_t h1 = std::hash<RasterState>{}(state.raster);
         size_t h2 = std::hash<BlendState>{}(state.blend);
-        size_t h3 = std::hash<VkPrimitiveTopology>{}(state.topology);
-        size_t h4 = std::hash<ViewportState>{}(state.viewport);
+        size_t h3 = std::hash<DepthState>{}(state.depth);
+        size_t h4 = std::hash<VkPrimitiveTopology>{}(state.topology);
+        size_t h5 = std::hash<ViewportState>{}(state.viewport);
 
-        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
+        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);
     }
 };
 

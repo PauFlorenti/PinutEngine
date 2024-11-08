@@ -4,7 +4,9 @@
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 
 #include "render_device/device.h"
+#include "render_device/offscreenState.h"
 #include "render_device/renderPipeline.h"
+#include "render_device/texture.h"
 
 #include "src/components/renderComponent.h"
 #include "src/components/transformComponent.h"
@@ -33,12 +35,14 @@ class Renderer final
     explicit Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain);
     ~Renderer();
 
-    void Update(entt::registry& registry);
+    void Update(entt::registry& registry, const ViewportData& viewportData, bool resized);
     void Render(entt::registry& registry, const ViewportData& viewportData);
 
   private:
     std::shared_ptr<RED::Device> m_device{nullptr};
     SwapchainInfo*               m_swapchain{nullptr};
+
+    RED::OffscreenState m_offscreenState;
 
     std::unordered_map<std::string, RED::RenderPipeline> m_pipelines;
     entt::registry                                       m_rendererRegistry;

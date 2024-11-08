@@ -64,8 +64,10 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     // builder.setBlendingState(graphicsState.blend);
     builder.set_input_attribute(vertexDeclaration->layout, vertexDeclaration->stride);
     builder.set_multisampling_none();
-    builder.enable_depth_test(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
-    // builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
+    graphicsState.depth.depthFormat != VK_FORMAT_UNDEFINED ?
+      builder.enable_depth_test(true, true, VK_COMPARE_OP_LESS_OR_EQUAL) :
+      builder.enable_depth_test(false, false, VK_COMPARE_OP_MAX_ENUM);
+    builder.set_depth_format(graphicsState.depth.depthFormat);
     // builder.set_stencil_format(VK_FORMAT_UNDEFINED);
     builder.set_color_attachment_format(VK_FORMAT_B8G8R8A8_UNORM);
 

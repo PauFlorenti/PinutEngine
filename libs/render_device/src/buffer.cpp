@@ -10,7 +10,7 @@ GPUBuffer::GPUBuffer() = default;
 GPUBuffer::GPUBuffer(BufferResource id, u64 size, Device* device)
 : m_id(id),
   m_size(size),
-  m_device(device){};
+  m_device(device) {};
 
 GPUBuffer::GPUBuffer(GPUBuffer&& other) noexcept { *this = std::move(other); }
 
@@ -32,14 +32,13 @@ GPUBuffer::~GPUBuffer() { Destroy(); }
 
 void GPUBuffer::Destroy()
 {
-    m_id   = {};
-    m_size = 0;
-
     if (!m_device)
         return;
 
     m_device->DestroyBuffer(m_id);
     m_device = nullptr;
+    m_id     = {};
+    m_size   = 0;
 }
 
 BufferResource GPUBuffer::GetID() const { return m_id; }

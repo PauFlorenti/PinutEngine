@@ -30,8 +30,9 @@ class Device
     virtual void Present()    = 0;
 
     virtual void EnableRendering(const VkRect2D&                               renderArea,
-                                 const std::vector<VkRenderingAttachmentInfo>& attachments) = 0;
-    virtual void DisableRendering()                                                         = 0;
+                                 const std::vector<VkRenderingAttachmentInfo>& attachments,
+                                 GPUTextureView depthTextureView) = 0;
+    virtual void DisableRendering()                               = 0;
 
     virtual void SetGraphicsState(GraphicsState* state)      = 0;
     virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
