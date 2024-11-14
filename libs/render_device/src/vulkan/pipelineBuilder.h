@@ -2,10 +2,10 @@
 
 #include <vulkan/vulkan.h>
 
-struct BlendState;
-struct RasterState;
 namespace RED
 {
+struct BlendState;
+struct RasterState;
 namespace vulkan
 {
 struct PipelineBuilder
@@ -34,7 +34,7 @@ struct PipelineBuilder
     void       disable_blending();
     void       enable_blending();
     void       setBlendingState(const BlendState& state);
-    void       set_color_attachment_format(VkFormat format);
+    void       SetColorAttachmentFormats(const std::vector<VkFormat>& formats);
     void       set_depth_format(VkFormat format);
     void       set_stencil_format(VkFormat format);
     void       enable_depth_test(bool        depth_test_enable,

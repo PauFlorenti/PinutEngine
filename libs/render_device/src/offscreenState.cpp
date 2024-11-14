@@ -19,14 +19,16 @@ void OffscreenState::Create(Device&                      device,
     if (depth)
     {
         descriptor.format = depthFormat;
+        descriptor.layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         descriptor.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         depthTexture      = device.CreateTexture(descriptor);
     }
 
     for (size_t attachmentIndex = 0; attachmentIndex < attachmentFormats.size(); ++attachmentIndex)
     {
-        descriptor.format                 = attachmentFormats.at(attachmentIndex);
-        descriptor.usage                  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        descriptor.format = attachmentFormats.at(attachmentIndex);
+        descriptor.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        descriptor.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorTextures.at(attachmentIndex) = device.CreateTexture(descriptor);
     }
 }

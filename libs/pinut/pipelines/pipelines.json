@@ -7,19 +7,42 @@
 					"name": "Camera",
 					"binding": 0,
 					"set": 0,
-					"size": 140
+					"size": 140,
+					"type": "Buffer"
 				},
 				{
 					"name": "Model",
 					"binding": 0,
 					"set": 1,
-					"size": 64
+					"size": 64,
+					"type": "Buffer"
 				}
 			]
 		},
 		"fs": {
 			"name": "flat.frag"
 		},
-		"input_vertex": "PosColorUvN"
+		"input_vertex": "PosColorUvN",
+		"attachments": [
+			"r32g32b32a32"
+		],
+		"depth": "d32"
+	},
+	"present": {
+		"vs": {
+			"name": "quad.vert"
+		},
+		"fs": {
+			"name": "draw_texture.frag",
+			"uniforms": [
+				{
+					"name": "Texture",
+					"binding": 0,
+					"set": 0,
+					"type": "Texture"
+				}
+			]
+		},
+		"input_vertex": "PosUv"
 	}
 }

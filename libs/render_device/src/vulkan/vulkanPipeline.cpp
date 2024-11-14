@@ -69,7 +69,7 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
       builder.enable_depth_test(false, false, VK_COMPARE_OP_MAX_ENUM);
     builder.set_depth_format(graphicsState.depth.depthFormat);
     // builder.set_stencil_format(VK_FORMAT_UNDEFINED);
-    builder.set_color_attachment_format(VK_FORMAT_B8G8R8A8_UNORM);
+    builder.SetColorAttachmentFormats(renderPipeline.attachmentFormats);
 
     pipeline.m_pipeline = builder.build(device);
 
@@ -141,13 +141,19 @@ void VulkanPipeline::AddDescriptorSetLayoutBindings(
 {
     for (const auto& uniform : shader.uniformDataSlots)
     {
+        assert(uniform.m_uniformType != UniformType::COUNT);
+
         VkShaderStageFlags shaderStage = shader.shaderType == ShaderType::VERTEX ?
                                            VK_SHADER_STAGE_VERTEX_BIT :
                                            VK_SHADER_STAGE_FRAGMENT_BIT;
 
+        auto descriptorType = uniform.m_uniformType == UniformType::BUFFER ?
+                                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
         VkDescriptorSetLayoutBinding binding{
           .binding            = static_cast<u32>(uniform.m_binding),
-          .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+          .descriptorType     = descriptorType,
           .descriptorCount    = 1,
           .stageFlags         = shaderStage,
           .pImmutableSamplers = nullptr,

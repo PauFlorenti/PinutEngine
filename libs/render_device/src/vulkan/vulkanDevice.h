@@ -27,16 +27,24 @@ struct QueueInfo
     u32     index;
 };
 
-using BeginFrameCallback_fn = std::function<void(void*, VkSemaphore)>;
-using EndFrameCallback_fn   = std::function<void(void*, VkSemaphore)>;
-using PresentCallback_fn    = std::function<void()>;
+struct SwapchainState
+{
+    VkSwapchainKHR swapchain;
+    VkImage        swapchainImage;
+    u32            swapchainImageIndex;
+    VkSemaphore    endFrameSemaphore;
+};
+
+using BeginFrameCallback_fn        = std::function<void(void*, VkSemaphore)>;
+using EndFrameCallback_fn          = std::function<void(void*, VkSemaphore)>;
+using GetSwapchainStateCallback_fn = std::function<SwapchainState()>;
 
 struct DeviceCallbacks
 {
-    void*                 context;
-    BeginFrameCallback_fn BeginFrame_fn;
-    EndFrameCallback_fn   EndFrame_fn;
-    PresentCallback_fn    Present_fn;
+    void*                        context;
+    BeginFrameCallback_fn        BeginFrame_fn;
+    EndFrameCallback_fn          EndFrame_fn;
+    GetSwapchainStateCallback_fn GetSwapchainState_fn;
 };
 
 enum class QueueType
@@ -72,11 +80,10 @@ class VulkanDevice final : public Device
 
     void BeginFrame() override;
     void EndFrame() override;
-    void Present() override;
 
     void EnableRendering(const VkRect2D&                               renderArea,
-                         const std::vector<VkRenderingAttachmentInfo>& attachments,
-                         GPUTextureView                                depthTextureView) override;
+                         const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
+                         VkRenderingAttachmentInfo* depthAttachment = nullptr) override;
     void DisableRendering() override;
 
     void SetGraphicsState(GraphicsState* state) override;
@@ -90,6 +97,12 @@ class VulkanDevice final : public Device
 
     GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) override;
     void       DestroyTexture(TextureResource) override;
+
+    VkRenderingAttachmentInfo GetAttachment(const GPUTextureView& textureView,
+                                            VkImageLayout         layout,
+                                            VkAttachmentLoadOp    loadOp,
+                                            VkAttachmentStoreOp   storeOp,
+                                            VkClearValue          clearValue) override;
 
     void TransitionImageLayout(VkImage                 image,
                                VkAccessFlags           srcAccessFlags,
@@ -136,10 +149,10 @@ class VulkanDevice final : public Device
     CommandBuffer* m_currentCommandBuffer{nullptr};
     CommandBuffer* m_lastCommandBuffer{nullptr};
 
-    void*                 m_rendererContext{nullptr};
-    BeginFrameCallback_fn m_beginFrame_fn;
-    EndFrameCallback_fn   m_endFrame_fn;
-    PresentCallback_fn    m_present_fn;
+    void*                        m_rendererContext{nullptr};
+    BeginFrameCallback_fn        m_beginFrame_fn;
+    EndFrameCallback_fn          m_endFrame_fn;
+    GetSwapchainStateCallback_fn m_getSwapchainState_fn;
 
     // 1 Graphics, 2 Compute
     std::array<CommandBufferSetData, 2> m_commandBufferSets;
@@ -159,6 +172,7 @@ class VulkanDevice final : public Device
     ResourceGenerator                                  m_resourceGenerator;
     std::unordered_map<BufferResource, VulkanBuffer>   m_buffers;
     std::unordered_map<TextureResource, VulkanTexture> m_textures;
+    VkSampler m_sampler; // TODO Temporal
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;

@@ -49,6 +49,14 @@ class Application
         std::function<void()>                   Present_fn;
     };
 
+    struct SwapchainState
+    {
+        VkSwapchainKHR swapchain;
+        VkImage        swapchainImage;
+        u32            swapchainImageIndex;
+        VkSemaphore    endFrameSemaphore;
+    };
+
   public:
     Application(const std::string& name, i32 width = 1280, i32 height = 720);
     ~Application();
@@ -114,6 +122,7 @@ class Application
 
     void Update();
     void Render();
+    void Present();
 
     f64 m_deltaTime{0};
     f64 m_lastFrameTime{0};

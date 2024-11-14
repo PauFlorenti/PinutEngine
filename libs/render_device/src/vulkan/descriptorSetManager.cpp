@@ -15,6 +15,17 @@ bool operator!=(const VkDescriptorBufferInfo& lhs, const VkDescriptorBufferInfo&
     return !(lhs == rhs);
 }
 
+bool operator==(const VkDescriptorImageInfo& lhs, const VkDescriptorImageInfo& rhs)
+{
+    return lhs.imageLayout == rhs.imageLayout && lhs.imageView == rhs.imageView &&
+           lhs.sampler == rhs.sampler;
+}
+
+bool operator!=(const VkDescriptorImageInfo& lhs, const VkDescriptorImageInfo& rhs)
+{
+    return !(lhs == rhs);
+}
+
 namespace std
 {
 using namespace RED::vulkan;
@@ -51,7 +62,7 @@ bool UniformDescriptorInfo::operator==(const UniformDescriptorInfo& other) const
         const auto& otherResource = other.resources.at(i);
 
         if (resource.binding != otherResource.binding ||
-            resource.descriptorBufferInfo != otherResource.descriptorBufferInfo ||
+            resource.descriptorInfo != otherResource.descriptorInfo ||
             resource.type != otherResource.type)
             return false;
     }
@@ -129,7 +140,14 @@ std::vector<VkDescriptorSet> DescriptorSetManager::GetDescriptorSet(
             write.descriptorCount = 1;
             write.descriptorType  = resource.type;
             write.dstBinding      = resource.binding;
-            write.pBufferInfo     = &resource.descriptorBufferInfo;
+            write.pBufferInfo =
+              std::holds_alternative<VkDescriptorBufferInfo>(resource.descriptorInfo) ?
+                &std::get<VkDescriptorBufferInfo>(resource.descriptorInfo) :
+                VK_NULL_HANDLE;
+            write.pImageInfo =
+              std::holds_alternative<VkDescriptorImageInfo>(resource.descriptorInfo) ?
+                &std::get<VkDescriptorImageInfo>(resource.descriptorInfo) :
+                VK_NULL_HANDLE;
 
             writes.emplace_back(write);
         }

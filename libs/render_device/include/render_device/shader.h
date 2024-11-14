@@ -14,15 +14,31 @@ enum class ShaderType
     COUNT
 };
 
+enum class UniformType
+{
+    BUFFER,
+    TEXTURE,
+    COUNT
+};
+
 struct UniformData
 {
     UniformData() = delete;
-    UniformData(ShaderType shaderType, std::string name, i32 binding, u32 set);
+    UniformData(ShaderType  shaderType,
+                UniformType uniformType,
+                std::string name,
+                i32         binding,
+                u32         set);
 
     //! TODO Check if size is necessary here.
-    static UniformData Create(ShaderType shaderType, std::string name, i32 binding, u32 set = 0);
+    static UniformData Create(ShaderType  shaderType,
+                              UniformType uniformType,
+                              std::string name,
+                              i32         binding,
+                              u32         set = 0);
 
     ShaderType  m_shaderType{ShaderType::COUNT};
+    UniformType m_uniformType{UniformType::COUNT};
     std::string m_name;
     i32         m_binding{-1};
     u32         m_set{0};

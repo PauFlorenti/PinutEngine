@@ -4,13 +4,22 @@
 
 namespace RED
 {
-UniformData UniformData::Create(ShaderType shaderType, std::string name, i32 binding, u32 set)
+UniformData UniformData::Create(ShaderType  shaderType,
+                                UniformType uniformType,
+                                std::string name,
+                                i32         binding,
+                                u32         set)
 {
-    return {shaderType, name, binding, set};
+    return {shaderType, uniformType, name, binding, set};
 }
 
-UniformData::UniformData(ShaderType shaderType, std::string name, i32 binding, u32 set)
+UniformData::UniformData(ShaderType  shaderType,
+                         UniformType uniformType,
+                         std::string name,
+                         i32         binding,
+                         u32         set)
 : m_shaderType(shaderType),
+  m_uniformType(uniformType),
   m_name(name),
   m_binding(binding),
   m_set(set)

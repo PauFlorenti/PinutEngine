@@ -27,12 +27,11 @@ class Device
 
     virtual void BeginFrame() = 0;
     virtual void EndFrame()   = 0;
-    virtual void Present()    = 0;
 
     virtual void EnableRendering(const VkRect2D&                               renderArea,
-                                 const std::vector<VkRenderingAttachmentInfo>& attachments,
-                                 GPUTextureView depthTextureView) = 0;
-    virtual void DisableRendering()                               = 0;
+                                 const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
+                                 VkRenderingAttachmentInfo* depthAttachment = nullptr) = 0;
+    virtual void DisableRendering()                                                    = 0;
 
     virtual void SetGraphicsState(GraphicsState* state)      = 0;
     virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
@@ -45,6 +44,12 @@ class Device
 
     virtual GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) = 0;
     virtual void       DestroyTexture(TextureResource)                                          = 0;
+
+    virtual VkRenderingAttachmentInfo GetAttachment(const GPUTextureView& textureView,
+                                                    VkImageLayout         layout,
+                                                    VkAttachmentLoadOp    loadOp,
+                                                    VkAttachmentStoreOp   storeOp,
+                                                    VkClearValue          clearValue) = 0;
 
     virtual void TransitionImageLayout(VkImage                 image,
                                        VkAccessFlags           srcAccessFlags,

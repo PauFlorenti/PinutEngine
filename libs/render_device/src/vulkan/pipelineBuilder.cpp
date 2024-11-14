@@ -1,5 +1,6 @@
 #include "pch.hpp"
 
+#include "pipelineBuilder.h"
 #include "render_device/states.h"
 #include "src/vulkan/pipelineBuilder.h"
 namespace RED
@@ -93,11 +94,10 @@ void PipelineBuilder::setBlendingState(const BlendState& state)
     color_blend_attachment.dstAlphaBlendFactor = state.dstAlpha;
 }
 
-void PipelineBuilder::set_color_attachment_format(VkFormat format)
+void PipelineBuilder::SetColorAttachmentFormats(const std::vector<VkFormat>& formats)
 {
-    color_attachment_format             = format;
-    render_info.colorAttachmentCount    = 1;
-    render_info.pColorAttachmentFormats = &color_attachment_format;
+    render_info.colorAttachmentCount    = static_cast<u32>(formats.size());
+    render_info.pColorAttachmentFormats = formats.data();
 }
 
 void PipelineBuilder::set_depth_format(VkFormat format)

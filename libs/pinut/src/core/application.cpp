@@ -263,6 +263,7 @@ void Application::Run()
             OnUpdate();
             OnRender();
             Render();
+            Present();
         }
     }
 }
@@ -302,6 +303,28 @@ void Application::Render()
     viewport.projection     = m_currentCamera->Projection();
     viewport.cameraPosition = m_currentCamera->Position();
     m_renderer->Render(m_currentScene->Registry(), viewport);
+}
+
+void Application::Present()
+{
+    if (m_endFrameSemaphore == VK_NULL_HANDLE)
+        return;
+
+    VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+    presentInfo.swapchainCount     = 1;
+    presentInfo.pSwapchains        = &m_swapchainInfo.swapchain;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores    = &m_endFrameSemaphore;
+    presentInfo.pImageIndices      = &m_swapchainInfo.imageIndex;
+
+    auto ok = vkQueuePresentKHR(m_deviceQueues.at(1).queue, &presentInfo);
+
+    if (ok == VK_ERROR_OUT_OF_DATE_KHR || ok == VK_SUBOPTIMAL_KHR || bResized)
+    {
+        // TODO Vsync should be given by the application.
+        RecreateSwapchain(true);
+        bResized = false;
+    }
 }
 
 Camera* Application::GetCamera()
@@ -428,6 +451,16 @@ bool Application::SetupVulkan()
     {
         auto app                 = reinterpret_cast<Application*>(context);
         app->m_endFrameSemaphore = renderFinishedSemaphore;
+    };
+
+    auto GetSwapchainStateCallback = [&]()
+    {
+        SwapchainState state{};
+        state.endFrameSemaphore   = m_endFrameSemaphore;
+        state.swapchain           = m_swapchainInfo.swapchain;
+        state.swapchainImage      = m_swapchainInfo.images.at(m_swapchainInfo.imageIndex);
+        state.swapchainImageIndex = m_swapchainInfo.imageIndex;
+        return state;
     };
 
     auto PresentCallbackFunc = [&]()

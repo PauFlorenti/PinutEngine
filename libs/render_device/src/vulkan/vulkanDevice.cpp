@@ -30,7 +30,6 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
     m_rendererContext = vulkanCallbacks->context;
     m_beginFrame_fn   = vulkanCallbacks->BeginFrame_fn;
     m_endFrame_fn     = vulkanCallbacks->EndFrame_fn;
-    m_present_fn      = vulkanCallbacks->Present_fn;
 
     /*
       Queues
@@ -74,6 +73,23 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
         m_globalUniformBuffers.at(i) =
           CreateInternalBuffer(UNIFORM_BUFFER_SIZE, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     }
+
+    // TODO Temporal
+    VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    samplerInfo.magFilter               = VK_FILTER_LINEAR;
+    samplerInfo.minFilter               = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable           = VK_FALSE;
+    samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias              = 0.0f;
+    samplerInfo.minLod                  = 0.0f;
+    samplerInfo.maxLod                  = 0.0f;
+    assert(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_sampler) == VK_SUCCESS);
 }
 
 VulkanDevice::~VulkanDevice()
@@ -94,6 +110,8 @@ VulkanDevice::~VulkanDevice()
         vmaDestroyImage(m_allocator, texture.second.image, texture.second.allocation);
 
     m_textures.clear();
+
+    vkDestroySampler(m_device, m_sampler, nullptr);
 
     m_descriptorSetManager.OnDestroy(m_device);
 
@@ -193,36 +211,16 @@ void VulkanDevice::EndFrame()
     m_currentRenderPipelineInternal = nullptr;
 }
 
-void VulkanDevice::Present() { m_present_fn(); }
-
 void VulkanDevice::EnableRendering(const VkRect2D&                               renderArea,
-                                   const std::vector<VkRenderingAttachmentInfo>& attachments,
-                                   GPUTextureView                                depthTextureView)
+                                   const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
+                                   VkRenderingAttachmentInfo*                    depthAttachment)
 {
-    const auto depthTexture = GetVulkanTexture(depthTextureView.GetID());
-
-    TransitionImageLayout(depthTexture.image,
-                          0,
-                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                          VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
-
     BeginCommandRecording(QueueType::GRAPHICS);
 
-    VkRenderingAttachmentInfo depthAttachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-    depthAttachment.imageView   = depthTexture.imageView;
-    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    depthAttachment.loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
-    depthAttachment.clearValue  = {1.0f, .0f};
-
     VkRenderingInfo info{VK_STRUCTURE_TYPE_RENDERING_INFO};
-    info.colorAttachmentCount = static_cast<u32>(attachments.size());
-    info.pColorAttachments    = attachments.data();
-    info.pDepthAttachment     = &depthAttachment;
+    info.colorAttachmentCount = static_cast<u32>(colorAttachments.size());
+    info.pColorAttachments    = colorAttachments.data();
+    info.pDepthAttachment     = depthAttachment ? depthAttachment : nullptr;
     info.renderArea           = renderArea;
     info.layerCount           = 1;
 
@@ -439,6 +437,15 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
 
     if (data != nullptr)
     {
+        TransitionImageLayout(texture.image,
+                              VK_ACCESS_2_MEMORY_WRITE_BIT,
+                              VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                              viewInfo.subresourceRange);
+
         VulkanBuffer staging;
 
         VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -483,6 +490,15 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
         FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
 
         vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
+
+        TransitionImageLayout(texture.image,
+                              VK_ACCESS_2_MEMORY_WRITE_BIT,
+                              VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              descriptor.layout,
+                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                              viewInfo.subresourceRange);
     }
 
     return {id, this};
@@ -498,6 +514,26 @@ void VulkanDevice::DestroyTexture(TextureResource resource)
 
         m_textures.erase(texture);
     }
+}
+
+VkRenderingAttachmentInfo VulkanDevice::GetAttachment(const GPUTextureView& textureView,
+                                                      VkImageLayout         layout,
+                                                      VkAttachmentLoadOp    loadOp,
+                                                      VkAttachmentStoreOp   storeOp,
+                                                      VkClearValue          clearValue)
+{
+    assert(!textureView.IsEmpty());
+
+    const auto& texture = GetVulkanTexture(textureView.GetID());
+
+    return VkRenderingAttachmentInfo{
+      .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+      .imageView   = texture.imageView,
+      .imageLayout = layout,
+      .loadOp      = loadOp,
+      .storeOp     = storeOp,
+      .clearValue  = clearValue,
+    };
 }
 
 void VulkanDevice::WaitIdle() const { assert(vkDeviceWaitIdle(m_device) == VK_SUCCESS); }
@@ -526,6 +562,20 @@ UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
               .resources.emplace_back(std::move(bufferInfo),
                                       uniform.binding,
                                       VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        }
+        else if (const auto& textureId = uniform.textureView.GetID();
+                 textureId.id != GPU_RESOURCE_INVALID && textureId.type == ResourceType::TEXTURE)
+        {
+            const auto            texture = GetVulkanTexture(textureId);
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo.imageView   = texture.imageView;
+            imageInfo.sampler     = m_sampler;
+
+            uniformDescriptorSetInfos.at(uniform.set)
+              .resources.emplace_back(std::move(imageInfo),
+                                      uniform.binding,
+                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         }
     }
 

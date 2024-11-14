@@ -7,6 +7,7 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
