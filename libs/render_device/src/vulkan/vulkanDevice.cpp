@@ -27,9 +27,10 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
     m_device         = vulkanDeviceInfo->device;
     m_physicalDevice = vulkanDeviceInfo->physicalDevice;
 
-    m_rendererContext = vulkanCallbacks->context;
-    m_beginFrame_fn   = vulkanCallbacks->BeginFrame_fn;
-    m_endFrame_fn     = vulkanCallbacks->EndFrame_fn;
+    m_rendererContext      = vulkanCallbacks->context;
+    m_beginFrame_fn        = vulkanCallbacks->BeginFrame_fn;
+    m_endFrame_fn          = vulkanCallbacks->EndFrame_fn;
+    m_getSwapchainState_fn = vulkanCallbacks->GetSwapchainState_fn;
 
     /*
       Queues
@@ -191,11 +192,33 @@ void VulkanDevice::BeginFrame()
                          .commandPools.at(m_currentIndexFrame),
                        0x0);
 
+    const auto swapchainState = m_getSwapchainState_fn();
+
+    TransitionImageLayout(swapchainState.swapchainImage,
+                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                          VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
     BeginCommandRecording(QueueType::GRAPHICS);
 }
 
 void VulkanDevice::EndFrame()
 {
+    const auto swapchainState = m_getSwapchainState_fn();
+
+    TransitionImageLayout(swapchainState.swapchainImage,
+                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                          VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
     EndCommandRecording(true, true);
 
     if (m_lastCommandBuffer && m_lastCommandBuffer->queueType != QueueType::COUNT)
@@ -864,6 +887,27 @@ void VulkanDevice::FlushImmediateCommandBuffer(VkCommandBuffer cmd,
     auto ok = vkQueueSubmit(queue, 1, &info, fence);
     assert(ok == VK_SUCCESS);
     vkQueueWaitIdle(queue);
+}
+
+void VulkanDevice::TransitionImageLayout(TextureResource         image,
+                                         VkAccessFlags           srcAccessFlags,
+                                         VkAccessFlags           dstAccessFlags,
+                                         VkImageLayout           currentLayout,
+                                         VkImageLayout           targetLayout,
+                                         VkPipelineStageFlags    srcStageFlags,
+                                         VkPipelineStageFlags    dstStageFlags,
+                                         VkImageSubresourceRange subresourceRange)
+{
+    const auto vulkanTexture = GetVulkanTexture(image);
+
+    TransitionImageLayout(vulkanTexture.image,
+                          srcAccessFlags,
+                          dstAccessFlags,
+                          currentLayout,
+                          targetLayout,
+                          srcStageFlags,
+                          dstStageFlags,
+                          subresourceRange);
 }
 
 void VulkanDevice::TransitionImageLayout(VkImage                 image,

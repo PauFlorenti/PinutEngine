@@ -51,7 +51,7 @@ class Device
                                                     VkAttachmentStoreOp   storeOp,
                                                     VkClearValue          clearValue) = 0;
 
-    virtual void TransitionImageLayout(VkImage                 image,
+    virtual void TransitionImageLayout(TextureResource         image,
                                        VkAccessFlags           srcAccessFlags,
                                        VkAccessFlags           dstAccessFlags,
                                        VkImageLayout           currentLayout,

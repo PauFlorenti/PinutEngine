@@ -266,11 +266,11 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     m_device->DisableRendering();
 
-    m_device->TransitionImageLayout(m_swapchain->images.at(m_swapchain->imageIndex),
+    m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
                                     VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                     VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
                                     VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    VK_IMAGE_LAYOUT_GENERAL,
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
@@ -302,14 +302,5 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     m_device->DisableRendering();
 
     m_device->EndFrame();
-
-    m_device->TransitionImageLayout(m_swapchain->images.at(m_swapchain->imageIndex),
-                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 }
 } // namespace Pinut

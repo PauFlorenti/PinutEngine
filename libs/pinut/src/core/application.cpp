@@ -463,32 +463,10 @@ bool Application::SetupVulkan()
         return state;
     };
 
-    auto PresentCallbackFunc = [&]()
-    {
-        if (m_endFrameSemaphore == VK_NULL_HANDLE)
-            return;
-
-        VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
-        presentInfo.swapchainCount     = 1;
-        presentInfo.pSwapchains        = &m_swapchainInfo.swapchain;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores    = &m_endFrameSemaphore;
-        presentInfo.pImageIndices      = &m_swapchainInfo.imageIndex;
-
-        auto ok = vkQueuePresentKHR(m_deviceQueues.at(1).queue, &presentInfo);
-
-        if (ok == VK_ERROR_OUT_OF_DATE_KHR || ok == VK_SUBOPTIMAL_KHR || bResized)
-        {
-            // TODO Vsync should be given by the application.
-            RecreateSwapchain(true);
-            bResized = false;
-        }
-    };
-
     m_callbacks = {this,
                    std::move(BeginFrameCallback),
                    std::move(EndFrameCallback),
-                   std::move(PresentCallbackFunc)};
+                   std::move(GetSwapchainStateCallback)};
 
     return true;
 }

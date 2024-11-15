@@ -104,7 +104,7 @@ class VulkanDevice final : public Device
                                             VkAttachmentStoreOp   storeOp,
                                             VkClearValue          clearValue) override;
 
-    void TransitionImageLayout(VkImage                 image,
+    void TransitionImageLayout(TextureResource         image,
                                VkAccessFlags           srcAccessFlags,
                                VkAccessFlags           dstAccessFlags,
                                VkImageLayout           currentLayout,
@@ -137,6 +137,15 @@ class VulkanDevice final : public Device
                                       const GraphicsState&  graphicsState);
     VulkanBuffer    GetVulkanBuffer(const BufferResource& bufferResource);
     VulkanTexture   GetVulkanTexture(const TextureResource& textureResource);
+
+    void TransitionImageLayout(VkImage                 image,
+                               VkAccessFlags           srcAccessFlags,
+                               VkAccessFlags           dstAccessFlags,
+                               VkImageLayout           currentLayout,
+                               VkImageLayout           targetLayout,
+                               VkPipelineStageFlags    srcStageFlags,
+                               VkPipelineStageFlags    dstStageFlags,
+                               VkImageSubresourceRange subresourceRange);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 
@@ -172,7 +181,7 @@ class VulkanDevice final : public Device
     ResourceGenerator                                  m_resourceGenerator;
     std::unordered_map<BufferResource, VulkanBuffer>   m_buffers;
     std::unordered_map<TextureResource, VulkanTexture> m_textures;
-    VkSampler m_sampler; // TODO Temporal
+    VkSampler                                          m_sampler; // TODO Temporal
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;

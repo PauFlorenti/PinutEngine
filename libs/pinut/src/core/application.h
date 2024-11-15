@@ -39,6 +39,14 @@ class Application
         u32     index;
     };
 
+    struct SwapchainState
+    {
+        VkSwapchainKHR swapchain;
+        VkImage        swapchainImage;
+        u32            swapchainImageIndex;
+        VkSemaphore    endFrameSemaphore;
+    };
+
     using DeviceQueues = std::array<QueueInfo, 3>;
 
     struct DeviceCallbacks
@@ -46,15 +54,7 @@ class Application
         void*                                   context;
         std::function<void(void*, VkSemaphore)> BeginFrame_fn;
         std::function<void(void*, VkSemaphore)> EndFrame_fn;
-        std::function<void()>                   Present_fn;
-    };
-
-    struct SwapchainState
-    {
-        VkSwapchainKHR swapchain;
-        VkImage        swapchainImage;
-        u32            swapchainImageIndex;
-        VkSemaphore    endFrameSemaphore;
+        std::function<SwapchainState()>         GetSwapchainState_fn;
     };
 
   public:
