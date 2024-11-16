@@ -195,8 +195,8 @@ void VulkanDevice::BeginFrame()
     const auto swapchainState = m_getSwapchainState_fn();
 
     TransitionImageLayout(swapchainState.swapchainImage,
+                          0,
                           VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                          VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
                           VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                           VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -210,15 +210,6 @@ void VulkanDevice::EndFrame()
 {
     const auto swapchainState = m_getSwapchainState_fn();
 
-    TransitionImageLayout(swapchainState.swapchainImage,
-                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                          VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-                          VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
-
     EndCommandRecording(true, true);
 
     if (m_lastCommandBuffer && m_lastCommandBuffer->queueType != QueueType::COUNT)
@@ -227,6 +218,15 @@ void VulkanDevice::EndFrame()
     }
 
     m_descriptorSetManager.Update();
+
+    TransitionImageLayout(swapchainState.swapchainImage,
+                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                          0,
+                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                          VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
     m_currentCommandBuffer          = nullptr;
     m_lastCommandBuffer             = nullptr;
@@ -591,7 +591,7 @@ UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
         {
             const auto            texture = GetVulkanTexture(textureId);
             VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView   = texture.imageView;
             imageInfo.sampler     = m_sampler;
 

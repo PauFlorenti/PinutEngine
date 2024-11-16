@@ -195,6 +195,15 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     std::vector<VkRenderingAttachmentInfo> colorAttachments;
     colorAttachments.reserve(m_offscreenState.colorTextures.size());
 
+    m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
+                                    0,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
     for (const auto& t : m_offscreenState.colorTextures)
     {
         if (t.IsEmpty())
@@ -267,10 +276,10 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     m_device->DisableRendering();
 
     m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
-                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                    0,
                                     VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_GENERAL,
+                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
@@ -278,7 +287,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
     attachment.imageView   = m_swapchain->imageViews.at(m_swapchain->imageIndex);
     attachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    attachment.loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachment.loadOp      = VK_ATTACHMENT_LOAD_OP_LOAD;
     attachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
     attachment.clearValue  = {0.0f, 0.f, 0.f, 0.f};
 

@@ -25,7 +25,7 @@ Sandbox::Sandbox(const std::string& name) : Pinut::Application(name) {};
 void Sandbox::OnCreate()
 {
     m_currentCamera = new Pinut::Camera();
-    m_currentCamera->LookAt(glm::vec3(4.0f, 5.0f, 7.0f), glm::vec3(0.0f));
+    m_currentCamera->LookAt(glm::vec3(6.0f, 18.0f, 30.0f), glm::vec3(0.0f));
     m_currentCamera->SetProjection(glm::radians(45.0f), (f32)m_width / m_height, 0.01f, 1000.0f);
 
     // ------------------
