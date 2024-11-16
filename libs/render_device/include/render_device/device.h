@@ -12,6 +12,13 @@ struct DrawCall;
 struct GraphicsState;
 struct RenderPipeline;
 struct TextureDescriptor;
+
+enum class QueueType
+{
+    GRAPHICS,
+    COMPUTE,
+    COUNT
+};
 class Device
 {
   public:
@@ -61,6 +68,9 @@ class Device
                                        VkImageSubresourceRange subresourceRange) = 0;
 
     virtual void WaitIdle() const = 0;
+
+    virtual void BeginCommandRecording(QueueType type)                                   = 0;
+    virtual void EndCommandRecording(bool waitForImage = true, bool signalFence = false) = 0;
 };
 
 } // namespace RED

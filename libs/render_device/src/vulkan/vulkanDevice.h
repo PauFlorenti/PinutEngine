@@ -47,13 +47,6 @@ struct DeviceCallbacks
     GetSwapchainStateCallback_fn GetSwapchainState_fn;
 };
 
-enum class QueueType
-{
-    GRAPHICS,
-    COMPUTE,
-    COUNT
-};
-
 static constexpr u32 MAX_FRAMES_IN_FLIGHT = 3;
 constexpr u32        UNIFORM_BUFFER_SIZE  = 1024; // Currently just 1MB
 
@@ -115,12 +108,13 @@ class VulkanDevice final : public Device
 
     void WaitIdle() const override;
 
+    void BeginCommandRecording(QueueType type) override;
+    void EndCommandRecording(bool waitForImage = true, bool signalFence = false) override;
+
   private:
     UniformDescriptorSetInfos GetUniformDescriptorSetInfos(
       const std::vector<UniformDescriptor>& uniformDescriptors);
 
-    void            BeginCommandRecording(QueueType type);
-    void            EndCommandRecording(bool waitForImage = true, bool signalFence = false);
     VkCommandBuffer BeginImmediateCommandBuffer(VkCommandPool commandPool);
     void            FlushImmediateCommandBuffer(VkCommandBuffer cmd,
                                                 VkQueue         queue,
