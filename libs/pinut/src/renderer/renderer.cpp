@@ -192,6 +192,8 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 {
     m_device->BeginFrame();
 
+    // PASS
+
     std::vector<VkRenderingAttachmentInfo> colorAttachments;
     colorAttachments.reserve(m_offscreenState.colorTextures.size());
 
@@ -224,13 +226,6 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
                                                    VK_ATTACHMENT_STORE_OP_STORE,
                                                    {1.0f, 0.0f});
 
-    m_device->EnableRendering({viewportData.x,
-                               viewportData.y,
-                               static_cast<u32>(viewportData.width),
-                               static_cast<u32>(viewportData.height)},
-                              std::move(colorAttachments),
-                              &depthAttachment);
-
     RED::ViewportState viewport{};
     viewport.x      = viewportData.x;
     viewport.y      = viewportData.y;
@@ -243,6 +238,9 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     m_device->SetGraphicsState(&graphicsState);
     m_device->SetRenderPipeline(&m_pipelines.at("flat"));
+
+    // Start updating/uploading data to gpu resources.
+    // Cannot be done inside a render pass.
 
     uniformData.view           = viewportData.view;
     uniformData.projection     = viewportData.projection;
@@ -270,6 +268,16 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
           drawCalls.push_back(dc);
       });
+
+    // Finish updating data to resources.
+    // Start render pass.
+
+    m_device->EnableRendering({viewportData.x,
+                               viewportData.y,
+                               static_cast<u32>(viewportData.width),
+                               static_cast<u32>(viewportData.height)},
+                              std::move(colorAttachments),
+                              &depthAttachment);
 
     m_device->SubmitDrawCalls({drawCalls});
 

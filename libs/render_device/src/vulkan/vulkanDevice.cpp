@@ -119,6 +119,11 @@ VulkanDevice::~VulkanDevice()
     for (auto& uniformBuffers : m_globalUniformBuffers)
         vmaDestroyBuffer(m_allocator, uniformBuffers.m_buffer, uniformBuffers.m_allocation);
 
+    for (auto& stagingBuffer : m_stagingBuffers)
+        vmaDestroyBuffer(m_allocator,
+                         stagingBuffer.second.m_buffer,
+                         stagingBuffer.second.m_allocation);
+
     for (auto& commandBufferSet : m_commandBufferSets)
     {
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -357,41 +362,58 @@ void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
     if (!data)
         return;
 
-    auto vulkanBuffer = GetVulkanBuffer(bufferId);
+    auto       vulkanBuffer = GetVulkanBuffer(bufferId);
+    const auto size         = vulkanBuffer.m_descriptor.size;
 
     VulkanBuffer staging;
+    if (auto stagingBufferIt = m_stagingBuffers.find(size);
+        stagingBufferIt == m_stagingBuffers.end())
+    {
+        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        stagingBufferInfo.size        = size;
+        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    stagingBufferInfo.size        = vulkanBuffer.m_descriptor.size;
-    stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        VmaAllocationCreateInfo stagingAllocInfo{};
+        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
-    VmaAllocationCreateInfo stagingAllocInfo{};
-    stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-    stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+        auto ok = vmaCreateBuffer(m_allocator,
+                                  &stagingBufferInfo,
+                                  &stagingAllocInfo,
+                                  &staging.m_buffer,
+                                  &staging.m_allocation,
+                                  nullptr);
+        assert(ok == VK_SUCCESS);
 
-    auto ok = vmaCreateBuffer(m_allocator,
-                              &stagingBufferInfo,
-                              &stagingAllocInfo,
-                              &staging.m_buffer,
-                              &staging.m_allocation,
-                              nullptr);
-    assert(ok == VK_SUCCESS);
+        m_stagingBuffers.insert({size, staging});
+    }
+    else
+    {
+        staging = m_stagingBuffers.at(size);
+    }
 
-    vmaCopyMemoryToAllocation(m_allocator,
-                              data,
-                              staging.m_allocation,
-                              0,
-                              vulkanBuffer.m_descriptor.size);
+    vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, size);
 
-    VkBufferCopy region{};
-    region.size = vulkanBuffer.m_descriptor.size;
+    VkBufferCopy region{0, 0, size};
 
-    const auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+    const auto cmd = m_currentCommandBuffer->commandBuffer;
+
     vkCmdCopyBuffer(cmd, staging.m_buffer, vulkanBuffer.m_buffer, 1, &region);
-    FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
 
-    vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
+    VkBufferMemoryBarrier2 barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2};
+    barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+    barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    barrier.dstStageMask  = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+    barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+    barrier.buffer        = vulkanBuffer.m_buffer;
+    barrier.size          = size;
+
+    VkDependencyInfo dependency{VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
+    dependency.bufferMemoryBarrierCount = 1;
+    dependency.pBufferMemoryBarriers    = &barrier;
+
+    vkCmdPipelineBarrier2(cmd, &dependency);
 }
 
 void VulkanDevice::DestroyBuffer(BufferResource resource)

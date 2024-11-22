@@ -178,6 +178,7 @@ class VulkanDevice final : public Device
     std::unordered_map<BufferResource, VulkanBuffer>   m_buffers;
     std::unordered_map<TextureResource, VulkanTexture> m_textures;
     VkSampler                                          m_sampler; // TODO Temporal
+    std::unordered_map<u64, VulkanBuffer>              m_stagingBuffers;
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;
