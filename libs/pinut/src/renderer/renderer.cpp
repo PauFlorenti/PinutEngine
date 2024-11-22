@@ -275,7 +275,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     m_device->DisableRendering();
 
-    m_device->EndCommandRecording(); // This is probably unnecessary
+    // End render pass.
 
     m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
                                     0,
@@ -285,8 +285,6 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                     {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
-
-    m_device->BeginCommandRecording(RED::QueueType::GRAPHICS);
 
     VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
     attachment.imageView   = m_swapchain->imageViews.at(m_swapchain->imageIndex);

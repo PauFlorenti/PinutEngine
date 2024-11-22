@@ -65,7 +65,8 @@ class Device
                                        VkImageLayout           targetLayout,
                                        VkPipelineStageFlags    srcStageFlags,
                                        VkPipelineStageFlags    dstStageFlags,
-                                       VkImageSubresourceRange subresourceRange) = 0;
+                                       VkImageSubresourceRange subresourceRange,
+                                       bool                    immediate = false) = 0;
 
     virtual void WaitIdle() const = 0;
 

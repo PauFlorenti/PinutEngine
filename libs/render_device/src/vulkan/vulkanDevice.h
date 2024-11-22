@@ -104,7 +104,8 @@ class VulkanDevice final : public Device
                                VkImageLayout           targetLayout,
                                VkPipelineStageFlags    srcStageFlags,
                                VkPipelineStageFlags    dstStageFlags,
-                               VkImageSubresourceRange subresourceRange) override;
+                               VkImageSubresourceRange subresourceRange,
+                               bool                    immediate = false) override;
 
     void WaitIdle() const override;
 
@@ -139,7 +140,8 @@ class VulkanDevice final : public Device
                                VkImageLayout           targetLayout,
                                VkPipelineStageFlags    srcStageFlags,
                                VkPipelineStageFlags    dstStageFlags,
-                               VkImageSubresourceRange subresourceRange);
+                               VkImageSubresourceRange subresourceRange,
+                               bool                    immediate = false);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 

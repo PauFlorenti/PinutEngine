@@ -194,6 +194,8 @@ void VulkanDevice::BeginFrame()
 
     const auto swapchainState = m_getSwapchainState_fn();
 
+    BeginCommandRecording(QueueType::GRAPHICS);
+
     TransitionImageLayout(swapchainState.swapchainImage,
                           0,
                           VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -202,22 +204,11 @@ void VulkanDevice::BeginFrame()
                           VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                           VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                           {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
-
-    BeginCommandRecording(QueueType::GRAPHICS);
 }
 
 void VulkanDevice::EndFrame()
 {
     const auto swapchainState = m_getSwapchainState_fn();
-
-    EndCommandRecording(true, true);
-
-    if (m_lastCommandBuffer && m_lastCommandBuffer->queueType != QueueType::COUNT)
-    {
-        m_endFrame_fn(m_rendererContext, m_lastCommandBuffer->signalSemaphore);
-    }
-
-    m_descriptorSetManager.Update();
 
     TransitionImageLayout(swapchainState.swapchainImage,
                           VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -227,6 +218,15 @@ void VulkanDevice::EndFrame()
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                           {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+    EndCommandRecording(true, true);
+
+    if (m_lastCommandBuffer && m_lastCommandBuffer->queueType != QueueType::COUNT)
+    {
+        m_endFrame_fn(m_rendererContext, m_lastCommandBuffer->signalSemaphore);
+    }
+
+    m_descriptorSetManager.Update();
 
     m_currentCommandBuffer          = nullptr;
     m_lastCommandBuffer             = nullptr;
@@ -238,8 +238,6 @@ void VulkanDevice::EnableRendering(const VkRect2D&                              
                                    const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
                                    VkRenderingAttachmentInfo*                    depthAttachment)
 {
-    BeginCommandRecording(QueueType::GRAPHICS);
-
     VkRenderingInfo info{VK_STRUCTURE_TYPE_RENDERING_INFO};
     info.colorAttachmentCount = static_cast<u32>(colorAttachments.size());
     info.pColorAttachments    = colorAttachments.data();
@@ -521,7 +519,8 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
                               descriptor.layout,
                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              viewInfo.subresourceRange);
+                              viewInfo.subresourceRange,
+                              true);
     }
     else
     {
@@ -532,7 +531,8 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
                               descriptor.layout,
                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              viewInfo.subresourceRange);
+                              viewInfo.subresourceRange,
+                              true);
     }
 
     return {id, this};
@@ -907,7 +907,8 @@ void VulkanDevice::TransitionImageLayout(TextureResource         image,
                                          VkImageLayout           targetLayout,
                                          VkPipelineStageFlags    srcStageFlags,
                                          VkPipelineStageFlags    dstStageFlags,
-                                         VkImageSubresourceRange subresourceRange)
+                                         VkImageSubresourceRange subresourceRange,
+                                         bool                    immediate)
 {
     const auto vulkanTexture = GetVulkanTexture(image);
 
@@ -918,7 +919,8 @@ void VulkanDevice::TransitionImageLayout(TextureResource         image,
                           targetLayout,
                           srcStageFlags,
                           dstStageFlags,
-                          subresourceRange);
+                          subresourceRange,
+                          immediate);
 }
 
 void VulkanDevice::TransitionImageLayout(VkImage                 image,
@@ -928,9 +930,11 @@ void VulkanDevice::TransitionImageLayout(VkImage                 image,
                                          VkImageLayout           targetLayout,
                                          VkPipelineStageFlags    srcStageFlags,
                                          VkPipelineStageFlags    dstStageFlags,
-                                         VkImageSubresourceRange subresourceRange)
+                                         VkImageSubresourceRange subresourceRange,
+                                         bool                    immediate)
 {
-    auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+    auto cmd = immediate ? BeginImmediateCommandBuffer(m_immediateCommandPool) :
+                           m_currentCommandBuffer->commandBuffer;
 
     VkImageMemoryBarrier2 barrier{
       .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -952,7 +956,8 @@ void VulkanDevice::TransitionImageLayout(VkImage                 image,
 
     vkCmdPipelineBarrier2(cmd, &dependency);
 
-    FlushImmediateCommandBuffer(cmd, m_queues[static_cast<u32>(QueueType::GRAPHICS)].queue);
+    if (immediate)
+        FlushImmediateCommandBuffer(cmd, m_queues[static_cast<u32>(QueueType::GRAPHICS)].queue);
 }
 } // namespace vulkan
 } // namespace RED
