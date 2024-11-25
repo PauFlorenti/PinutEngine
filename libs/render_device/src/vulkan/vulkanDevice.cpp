@@ -365,33 +365,7 @@ void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
     auto       vulkanBuffer = GetVulkanBuffer(bufferId);
     const auto size         = vulkanBuffer.m_descriptor.size;
 
-    VulkanBuffer staging;
-    if (auto stagingBufferIt = m_stagingBuffers.find(size);
-        stagingBufferIt == m_stagingBuffers.end())
-    {
-        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        stagingBufferInfo.size        = size;
-        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VmaAllocationCreateInfo stagingAllocInfo{};
-        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-
-        auto ok = vmaCreateBuffer(m_allocator,
-                                  &stagingBufferInfo,
-                                  &stagingAllocInfo,
-                                  &staging.m_buffer,
-                                  &staging.m_allocation,
-                                  nullptr);
-        assert(ok == VK_SUCCESS);
-
-        m_stagingBuffers.insert({size, staging});
-    }
-    else
-    {
-        staging = m_stagingBuffers.at(size);
-    }
+    VulkanBuffer staging = GetStagingBuffer(size);
 
     vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, size);
 
@@ -427,7 +401,7 @@ void VulkanDevice::DestroyBuffer(BufferResource resource)
     }
 }
 
-GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void* data)
+GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, const void* data)
 {
     const auto id = m_resourceGenerator.GenerateTextureResource();
 
@@ -480,40 +454,23 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
 
     if (data != nullptr)
     {
+        // Get staging buffer and copy data to it.
+        const auto   stagingBufferSize = info.extent.height * info.extent.width * 4;
+        VulkanBuffer staging           = GetStagingBuffer(stagingBufferSize);
+
+        vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, stagingBufferSize);
+
+        // Transition the image from undefined to transfer_dst
         TransitionImageLayout(texture.image,
+                              0,
                               VK_ACCESS_2_MEMORY_WRITE_BIT,
-                              VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
                               VK_IMAGE_LAYOUT_UNDEFINED,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                              VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                               viewInfo.subresourceRange);
 
-        VulkanBuffer staging;
-
-        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        stagingBufferInfo.size        = info.extent.height * info.extent.width * 4;
-        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VmaAllocationCreateInfo stagingAllocInfo{};
-        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-
-        ok = vmaCreateBuffer(m_allocator,
-                             &stagingBufferInfo,
-                             &stagingAllocInfo,
-                             &staging.m_buffer,
-                             &staging.m_allocation,
-                             nullptr);
-        assert(ok == VK_SUCCESS);
-
-        vmaCopyMemoryToAllocation(m_allocator,
-                                  data,
-                                  staging.m_allocation,
-                                  0,
-                                  stagingBufferInfo.size);
-
+        // Copy buffer to image
         VkBufferImageCopy region{};
         region.imageExtent                     = descriptor.extent;
         region.bufferOffset                    = 0;
@@ -523,26 +480,23 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
         region.imageSubresource.layerCount     = 1;
         region.imageSubresource.mipLevel       = 0;
 
-        const auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
+        const auto cmd = m_currentCommandBuffer->commandBuffer;
         vkCmdCopyBufferToImage(cmd,
                                staging.m_buffer,
                                texture.image,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                1,
                                &region);
-        FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
 
-        vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
-
+        // Transition image again from transfer_dst to desired (generally shader_read_only)
         TransitionImageLayout(texture.image,
-                              VK_ACCESS_2_MEMORY_WRITE_BIT,
-                              VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+                              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                              VK_ACCESS_2_SHADER_READ_BIT,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               descriptor.layout,
-                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              viewInfo.subresourceRange,
-                              true);
+                              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                              viewInfo.subresourceRange);
     }
     else
     {
@@ -553,8 +507,7 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
                               descriptor.layout,
                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              viewInfo.subresourceRange,
-                              true);
+                              viewInfo.subresourceRange);
     }
 
     return {id, this};
@@ -943,6 +896,39 @@ void VulkanDevice::TransitionImageLayout(TextureResource         image,
                           dstStageFlags,
                           subresourceRange,
                           immediate);
+}
+
+VulkanBuffer VulkanDevice::GetStagingBuffer(u64 size)
+{
+    VulkanBuffer staging;
+    if (auto stagingBufferIt = m_stagingBuffers.find(size);
+        stagingBufferIt == m_stagingBuffers.end())
+    {
+        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        stagingBufferInfo.size        = size;
+        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo stagingAllocInfo{};
+        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+        auto ok = vmaCreateBuffer(m_allocator,
+                                  &stagingBufferInfo,
+                                  &stagingAllocInfo,
+                                  &staging.m_buffer,
+                                  &staging.m_allocation,
+                                  nullptr);
+        assert(ok == VK_SUCCESS);
+
+        m_stagingBuffers.insert({size, staging});
+    }
+    else
+    {
+        staging = m_stagingBuffers.at(size);
+    }
+
+    return staging;
 }
 
 void VulkanDevice::TransitionImageLayout(VkImage                 image,

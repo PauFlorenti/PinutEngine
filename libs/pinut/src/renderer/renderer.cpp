@@ -13,6 +13,7 @@
 
 #include "src/assets/mesh.h"
 #include "src/components/meshComponent.h"
+#include "src/renderer/materialData.h"
 #include "src/renderer/meshData.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
@@ -185,12 +186,27 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
                 {indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
                 indices.data());
           }
+
+          if (!m_rendererRegistry.try_get<MaterialData>(renderComponent.id))
+          {
+              auto& materialData = m_rendererRegistry.emplace<MaterialData>(renderComponent.id);
+
+              RED::TextureDescriptor textureDescriptor{
+                {renderComponent.difuse.GetWidth(), renderComponent.difuse.GetHeight(), 1},
+                renderComponent.difuse.GetFormat(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_USAGE_SAMPLED_BIT};
+              materialData.difuseTexture =
+                m_device->CreateTexture(textureDescriptor, renderComponent.difuse.GetData());
+          }
       });
 }
 
-void Renderer::Render(entt::registry& registry, const ViewportData& viewportData)
+void Renderer::Render(entt::registry& registry, const ViewportData& viewportData, bool resized)
 {
     m_device->BeginFrame();
+
+    Update(registry, viewportData, resized);
 
     // PASS
 
@@ -253,8 +269,10 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     registry.view<Component::TransformComponent, Component::RenderComponent>().each(
       [&drawCalls, this](auto entity, auto& transformComponent, auto& renderComponent)
       {
-          const auto meshData = m_rendererRegistry.try_get<MeshData>(renderComponent.id);
-          if (!meshData)
+          const auto meshData     = m_rendererRegistry.try_get<MeshData>(renderComponent.id);
+          const auto materialData = m_rendererRegistry.try_get<MaterialData>(renderComponent.id);
+
+          if (!meshData || !materialData)
               return;
 
           m_device->UpdateBuffer(uniformColorBuffer.GetID(), &transformComponent.model);
@@ -265,6 +283,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
           dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
           dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
+          dc.SetUniformTexture(materialData->difuseTexture, RED::ShaderType::FRAGMENT, 1, 1);
 
           drawCalls.push_back(dc);
       });

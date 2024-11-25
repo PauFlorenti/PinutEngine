@@ -88,7 +88,8 @@ class VulkanDevice final : public Device
     void      UpdateBuffer(BufferResource bufferId, void* data) override;
     void      DestroyBuffer(BufferResource) override;
 
-    GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) override;
+    GPUTexture CreateTexture(const TextureDescriptor& descriptor,
+                             const void*              data = nullptr) override;
     void       DestroyTexture(TextureResource) override;
 
     VkRenderingAttachmentInfo GetAttachment(const GPUTextureView& textureView,
@@ -133,15 +134,16 @@ class VulkanDevice final : public Device
     VulkanBuffer    GetVulkanBuffer(const BufferResource& bufferResource);
     VulkanTexture   GetVulkanTexture(const TextureResource& textureResource);
 
-    void TransitionImageLayout(VkImage                 image,
-                               VkAccessFlags           srcAccessFlags,
-                               VkAccessFlags           dstAccessFlags,
-                               VkImageLayout           currentLayout,
-                               VkImageLayout           targetLayout,
-                               VkPipelineStageFlags    srcStageFlags,
-                               VkPipelineStageFlags    dstStageFlags,
-                               VkImageSubresourceRange subresourceRange,
-                               bool                    immediate = false);
+    VulkanBuffer GetStagingBuffer(u64 size);
+    void         TransitionImageLayout(VkImage                 image,
+                                       VkAccessFlags           srcAccessFlags,
+                                       VkAccessFlags           dstAccessFlags,
+                                       VkImageLayout           currentLayout,
+                                       VkImageLayout           targetLayout,
+                                       VkPipelineStageFlags    srcStageFlags,
+                                       VkPipelineStageFlags    dstStageFlags,
+                                       VkImageSubresourceRange subresourceRange,
+                                       bool                    immediate = false);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 

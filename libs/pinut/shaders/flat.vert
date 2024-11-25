@@ -7,6 +7,7 @@ layout (location = 3) in vec3 inNormal;
 
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec3 outNormal;
+layout (location = 2) out vec2 outUv;
 
 layout(set = 0, binding = 0) uniform perFrame
 {
@@ -31,5 +32,7 @@ void main()
 
     outColor  = inColor.xyz;
     outNormal = N;
+    outUv     = inUv;
+
     gl_Position = projection * view * world_position;
 }

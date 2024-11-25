@@ -290,8 +290,6 @@ void Application::Update()
     viewport.view           = m_currentCamera->View();
     viewport.projection     = m_currentCamera->Projection();
     viewport.cameraPosition = m_currentCamera->Position();
-
-    m_renderer->Update(m_currentScene->Registry(), viewport, bResized);
 }
 
 void Application::Render()
@@ -302,7 +300,7 @@ void Application::Render()
     viewport.view           = m_currentCamera->View();
     viewport.projection     = m_currentCamera->Projection();
     viewport.cameraPosition = m_currentCamera->Position();
-    m_renderer->Render(m_currentScene->Registry(), viewport);
+    m_renderer->Render(m_currentScene->Registry(), viewport, bResized);
 }
 
 void Application::Present()

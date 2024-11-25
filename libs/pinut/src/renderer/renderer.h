@@ -35,10 +35,11 @@ class Renderer final
     explicit Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain);
     ~Renderer();
 
-    void Update(entt::registry& registry, const ViewportData& viewportData, bool resized);
-    void Render(entt::registry& registry, const ViewportData& viewportData);
+    void Render(entt::registry& registry, const ViewportData& viewportData, bool resized);
 
   private:
+    void Update(entt::registry& registry, const ViewportData& viewportData, bool resized);
+
     std::shared_ptr<RED::Device> m_device{nullptr};
     SwapchainInfo*               m_swapchain{nullptr};
 

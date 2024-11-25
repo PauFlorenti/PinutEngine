@@ -49,8 +49,9 @@ class Device
     virtual void      UpdateBuffer(BufferResource bufferId, void* data)           = 0;
     virtual void      DestroyBuffer(BufferResource)                               = 0;
 
-    virtual GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) = 0;
-    virtual void       DestroyTexture(TextureResource)                                          = 0;
+    virtual GPUTexture CreateTexture(const TextureDescriptor& descriptor,
+                                     const void*              data = nullptr) = 0;
+    virtual void       DestroyTexture(TextureResource)           = 0;
 
     virtual VkRenderingAttachmentInfo GetAttachment(const GPUTextureView& textureView,
                                                     VkImageLayout         layout,

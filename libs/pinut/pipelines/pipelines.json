@@ -20,7 +20,15 @@
 			]
 		},
 		"fs": {
-			"name": "flat.frag"
+			"name": "flat.frag",
+			"uniforms": [
+				{
+					"name": "Difuse",
+					"binding": 1,
+					"set": 1,
+					"type": "Texture"
+				}
+			]
 		},
 		"input_vertex": "PosColorUvN",
 		"attachments": [

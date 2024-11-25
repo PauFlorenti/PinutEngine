@@ -40,11 +40,15 @@ void Sandbox::OnCreate()
     //const auto whiteMaterial =
     //  GetMaterialInstance("WhiteMAT", Pinut::MaterialType::OPAQUE, std::move(whiteMaterialData));
 
-    //Pinut::MaterialData redMaterialData;
-    //redMaterialData.diffuse        = 0xFFFFFFFF;
-    //redMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
-    //const auto redMaterial =
-    //  GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
+    // Pinut::MaterialData redMaterialData;
+    // redMaterialData.diffuse        = 0xFF0000FF;
+    // redMaterialData.diffuseTexture = GetAsset<Pinut::Texture>("DefaultRedTexture");
+    // const auto redMaterial =
+    //   GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
+
+    u32            data = 0xFF0000FF;
+    // Pinut::Texture t(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &data);
+    Pinut::Texture t("../assets/viking_room/viking_room_diffuse.png");
 
     //Pinut::MaterialData glassMaterialData;
     //glassMaterialData.diffuse        = 0x1FFFFFFF;
@@ -124,18 +128,18 @@ void Sandbox::OnCreate()
     m_currentScene = new Pinut::Scene();
     auto& registry = m_currentScene->Registry();
 
-    const auto monkey = m_currentScene->CreateEntity();
-    registry.emplace<Pinut::Component::MeshComponent>(monkey,
-                                                      *LoadAsset<Pinut::Mesh>("suzanne.obj"));
-    registry.emplace<Pinut::Component::RenderComponent>(monkey);
+    // auto monkey = m_currentScene->CreateEntity();
+    // registry.emplace<Pinut::Component::MeshComponent>(monkey,
+    //                                                   *LoadAsset<Pinut::Mesh>("suzanne.obj"));
+    // registry.emplace<Pinut::Component::RenderComponent>(monkey, t);
 
-    auto& monkeyTransformComponent = registry.get<Pinut::Component::TransformComponent>(monkey);
-    monkeyTransformComponent.model = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f));
+    // auto& monkeyTransformComponent = registry.get<Pinut::Component::TransformComponent>(monkey);
+    // monkeyTransformComponent.model = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f));
 
     const auto vikingRoom = m_currentScene->CreateEntity();
     registry.emplace<Pinut::Component::MeshComponent>(vikingRoom,
                                                       *LoadAsset<Pinut::Mesh>("viking_room.obj"));
-    registry.emplace<Pinut::Component::RenderComponent>(vikingRoom);
+    registry.emplace<Pinut::Component::RenderComponent>(vikingRoom, t);
 
     auto& vikingRoomTransformComponent =
       registry.get<Pinut::Component::TransformComponent>(vikingRoom);
