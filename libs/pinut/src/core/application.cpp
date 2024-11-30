@@ -195,6 +195,7 @@ Application::Application(const std::string& name, i32 width, i32 height)
 
     glfwSetWindowUserPointer(m_window, this);
     glfwSetWindowSizeCallback(m_window, &Application::OnWindowResized);
+    glfwSetCursorPosCallback(m_window, &Application::OnMouseMoved);
 
     if (!SetupVulkan())
         return;
