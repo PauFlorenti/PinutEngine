@@ -11,6 +11,12 @@ namespace RED
 {
 namespace vulkan
 {
+// TODO Temporal?
+std::vector<VkDescriptorPoolSize> globalPoolSizes = {
+  {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
+  {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
+};
+
 VulkanPipeline::VulkanPipeline()                      = default;
 VulkanPipeline::VulkanPipeline(const VulkanPipeline&) = default;
 VulkanPipeline::~VulkanPipeline()                     = default;
@@ -72,6 +78,9 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     builder.SetColorAttachmentFormats(renderPipeline.attachmentFormats);
 
     pipeline.m_pipeline = builder.build(device);
+
+    // TODO Temporal?
+    pipeline.m_descriptorPoolSizes = globalPoolSizes;
 
     vkDestroyShaderModule(device, vertexShaderModule, nullptr);
     vkDestroyShaderModule(device, fragmentShaderModule, nullptr);

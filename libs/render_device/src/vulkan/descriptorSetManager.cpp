@@ -174,15 +174,13 @@ VkDescriptorSet DescriptorSetManager::Allocate(VkDevice              device,
     if (auto it = m_pools.find(pipeline); it == m_pools.end())
     {
         const auto&                poolSizes = pipeline->GetDescriptorPoolSizes();
-        VkDescriptorPool           pool;
-        VkDescriptorPoolCreateInfo info{};
-        info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        info.pNext         = nullptr;
-        info.maxSets       = 2;
+        VkDescriptorPoolCreateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+        info.maxSets       = 1000;
         info.poolSizeCount = static_cast<u32>(poolSizes.size());
         info.pPoolSizes    = poolSizes.data();
 
-        auto ok = vkCreateDescriptorPool(device, &info, nullptr, &pool);
+        VkDescriptorPool pool;
+        auto             ok = vkCreateDescriptorPool(device, &info, nullptr, &pool);
         assert(ok == VK_SUCCESS);
 
         m_pools.insert({pipeline, pool});
