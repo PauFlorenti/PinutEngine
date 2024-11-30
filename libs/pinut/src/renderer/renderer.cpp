@@ -25,7 +25,6 @@
 namespace Pinut
 {
 RED::GPUBuffer uniformBuffer;
-RED::GPUBuffer uniformColorBuffer;
 RED::GPUBuffer quadBuffer;
 PerFrameData   uniformData{};
 
@@ -117,10 +116,6 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain
 
     uniformBuffer = m_device->CreateBuffer({140, 140, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
 
-    glm::vec4 color = glm::vec4(1, 0, 0, 0);
-    uniformColorBuffer =
-      m_device->CreateBuffer({64, 64, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT}, &color);
-
     struct QuadVertex
     {
         glm::vec3 position;
@@ -144,7 +139,6 @@ Renderer::~Renderer()
     m_device->WaitIdle();
     quadBuffer.Destroy();
     uniformBuffer.Destroy();
-    uniformColorBuffer.Destroy();
     m_rendererRegistry.clear();
     m_offscreenState.Clear();
     m_device.reset();
@@ -198,6 +192,9 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
                 VK_IMAGE_USAGE_SAMPLED_BIT};
               materialData.difuseTexture =
                 m_device->CreateTexture(textureDescriptor, renderComponent.difuse.GetData());
+
+              materialData.uniformBuffer =
+                m_device->CreateBuffer({64, 64, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
           }
       });
 }
@@ -275,14 +272,14 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
           if (!meshData || !materialData)
               return;
 
-          m_device->UpdateBuffer(uniformColorBuffer.GetID(), &transformComponent.model);
+          m_device->UpdateBuffer(materialData->uniformBuffer.GetID(), &transformComponent.model);
 
           RED::DrawCall dc;
           dc.vertexBuffer = meshData->m_vertexBuffer;
           dc.indexBuffer  = meshData->m_indexBuffer;
 
           dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
-          dc.SetUniformBuffer(uniformColorBuffer, RED::ShaderType::VERTEX, 0, 1);
+          dc.SetUniformBuffer(materialData->uniformBuffer, RED::ShaderType::VERTEX, 0, 1);
           dc.SetUniformTexture(materialData->difuseTexture, RED::ShaderType::FRAGMENT, 1, 1);
 
           drawCalls.push_back(dc);

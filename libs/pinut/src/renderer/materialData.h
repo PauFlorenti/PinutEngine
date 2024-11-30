@@ -7,5 +7,6 @@ namespace Pinut
 struct MaterialData
 {
     RED::GPUTexture difuseTexture;
+    RED::GPUBuffer  uniformBuffer;
 };
 } // namespace Pinut

@@ -3,6 +3,7 @@
 #include <array>
 #include <atomic>
 #include <cassert>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <unordered_map>

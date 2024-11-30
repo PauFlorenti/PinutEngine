@@ -119,10 +119,26 @@ VulkanDevice::~VulkanDevice()
     for (auto& uniformBuffers : m_globalUniformBuffers)
         vmaDestroyBuffer(m_allocator, uniformBuffers.m_buffer, uniformBuffers.m_allocation);
 
-    for (auto& stagingBuffer : m_stagingBuffers)
-        vmaDestroyBuffer(m_allocator,
-                         stagingBuffer.second.m_buffer,
-                         stagingBuffer.second.m_allocation);
+    for (auto& stagingBuffers : m_stagingBuffers)
+    {
+        for (auto& stagingBuffer : stagingBuffers.second)
+        {
+            vmaDestroyBuffer(m_allocator, stagingBuffer.m_buffer, stagingBuffer.m_allocation);
+        }
+    }
+    m_stagingBuffers.clear();
+
+    for (auto& buffer : m_stagingBufferUsed)
+    {
+        vmaDestroyBuffer(m_allocator, buffer.m_buffer, buffer.m_allocation);
+    }
+    m_stagingBufferUsed.clear();
+
+    for (auto& buffer : m_bufferToUpdate)
+    {
+        vmaDestroyBuffer(m_allocator, buffer.second.m_buffer, buffer.second.m_allocation);
+    }
+    m_bufferToUpdate.clear();
 
     for (auto& commandBufferSet : m_commandBufferSets)
     {
@@ -183,6 +199,13 @@ void VulkanDevice::BeginFrame()
         commandBufferSet.commandBufferIndex.at(m_currentIndexFrame) = -1;
     }
 
+    while (!m_stagingBufferUsed.empty())
+    {
+        auto stagingBuffer = m_stagingBufferUsed.front();
+        m_stagingBuffers[stagingBuffer.m_descriptor.size].push_back(std::move(stagingBuffer));
+        m_stagingBufferUsed.pop_front();
+    }
+
     m_beginFrame_fn(m_rendererContext, m_imagesAvailableSemaphores.at(m_currentIndexFrame));
 
     auto ok = vkResetFences(m_device, 1, &m_frameCompletedFences.at(m_currentIndexFrame));
@@ -200,6 +223,8 @@ void VulkanDevice::BeginFrame()
     const auto swapchainState = m_getSwapchainState_fn();
 
     BeginCommandRecording(QueueType::GRAPHICS);
+
+    UpdateBuffers();
 
     TransitionImageLayout(swapchainState.swapchainImage,
                           0,
@@ -310,49 +335,25 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
+    VmaAllocationInfo debugInfo{};
+    debugInfo.pUserData = (void*)"Buffer";
+    debugInfo.pName     = "Buffer";
+
     auto ok = vmaCreateBuffer(m_allocator,
                               &info,
                               &allocInfo,
                               &buffer.m_buffer,
                               &buffer.m_allocation,
-                              nullptr);
+                              &debugInfo);
+
+    buffer.m_allocation->SetName(m_allocator, "Buffer");
 
     assert(ok == VK_SUCCESS);
 
-    if (data != nullptr)
-    {
-        VulkanBuffer staging;
-
-        VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        stagingBufferInfo.size        = info.size;
-        stagingBufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VmaAllocationCreateInfo stagingAllocInfo{};
-        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-
-        ok = vmaCreateBuffer(m_allocator,
-                             &stagingBufferInfo,
-                             &stagingAllocInfo,
-                             &staging.m_buffer,
-                             &staging.m_allocation,
-                             nullptr);
-        assert(ok == VK_SUCCESS);
-
-        vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, descriptor.size);
-
-        VkBufferCopy region{};
-        region.size = info.size;
-
-        const auto cmd = BeginImmediateCommandBuffer(m_immediateCommandPool);
-        vkCmdCopyBuffer(cmd, staging.m_buffer, buffer.m_buffer, 1, &region);
-        FlushImmediateCommandBuffer(cmd, m_queues.at(static_cast<u32>(QueueType::GRAPHICS)).queue);
-
-        vmaDestroyBuffer(m_allocator, staging.m_buffer, staging.m_allocation);
-    }
-
     m_buffers.insert({id, buffer});
+
+    if (data != nullptr)
+        UpdateBuffer(id, data);
 
     return {id, info.size, this};
 }
@@ -369,25 +370,7 @@ void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
 
     vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, size);
 
-    VkBufferCopy region{0, 0, size};
-
-    const auto cmd = m_currentCommandBuffer->commandBuffer;
-
-    vkCmdCopyBuffer(cmd, staging.m_buffer, vulkanBuffer.m_buffer, 1, &region);
-
-    VkBufferMemoryBarrier2 barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2};
-    barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-    barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-    barrier.dstStageMask  = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
-    barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
-    barrier.buffer        = vulkanBuffer.m_buffer;
-    barrier.size          = size;
-
-    VkDependencyInfo dependency{VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
-    dependency.bufferMemoryBarrierCount = 1;
-    dependency.pBufferMemoryBarriers    = &barrier;
-
-    vkCmdPipelineBarrier2(cmd, &dependency);
+    m_bufferToUpdate.emplace_back(bufferId, staging);
 }
 
 void VulkanDevice::DestroyBuffer(BufferResource resource)
@@ -497,6 +480,8 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, cons
                               VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                               VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                               viewInfo.subresourceRange);
+
+        m_stagingBufferUsed.emplace_back(std::move(staging));
     }
     else
     {
@@ -841,6 +826,39 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
     }
 }
 
+void VulkanDevice::UpdateBuffers()
+{
+    for (auto [bufferId, stagingBuffer] : m_bufferToUpdate)
+    {
+        auto       vulkanBuffer = GetVulkanBuffer(bufferId);
+        const auto size         = vulkanBuffer.m_descriptor.size;
+
+        VkBufferCopy region{0, 0, size};
+
+        const auto cmd = m_currentCommandBuffer->commandBuffer;
+
+        vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, vulkanBuffer.m_buffer, 1, &region);
+
+        VkBufferMemoryBarrier2 barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2};
+        barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        barrier.dstStageMask  = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+        barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+        barrier.buffer        = vulkanBuffer.m_buffer;
+        barrier.size          = size;
+
+        VkDependencyInfo dependency{VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
+        dependency.bufferMemoryBarrierCount = 1;
+        dependency.pBufferMemoryBarriers    = &barrier;
+
+        vkCmdPipelineBarrier2(cmd, &dependency);
+
+        m_stagingBufferUsed.emplace_back(std::move(stagingBuffer));
+    }
+
+    m_bufferToUpdate.clear();
+}
+
 VkCommandBuffer VulkanDevice::BeginImmediateCommandBuffer(VkCommandPool commandPool)
 {
     VkCommandBuffer             cmd;
@@ -901,8 +919,17 @@ void VulkanDevice::TransitionImageLayout(TextureResource         image,
 VulkanBuffer VulkanDevice::GetStagingBuffer(u64 size)
 {
     VulkanBuffer staging;
-    if (auto stagingBufferIt = m_stagingBuffers.find(size);
-        stagingBufferIt == m_stagingBuffers.end())
+    staging.m_descriptor.elementSize = size;
+    staging.m_descriptor.size        = size;
+
+    auto it = m_stagingBuffers.find(size);
+
+    if (it != m_stagingBuffers.end() && !it->second.empty())
+    {
+        staging = it->second.front();
+        it->second.pop_front();
+    }
+    else
     {
         VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         stagingBufferInfo.size        = size;
@@ -920,12 +947,7 @@ VulkanBuffer VulkanDevice::GetStagingBuffer(u64 size)
                                   &staging.m_allocation,
                                   nullptr);
         assert(ok == VK_SUCCESS);
-
-        m_stagingBuffers.insert({size, staging});
-    }
-    else
-    {
-        staging = m_stagingBuffers.at(size);
+        staging.m_allocation->SetName(m_allocator, "StagingBuffer");
     }
 
     return staging;

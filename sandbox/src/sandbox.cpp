@@ -47,7 +47,7 @@ void Sandbox::OnCreate()
     //   GetMaterialInstance("RedMat", Pinut::MaterialType::OPAQUE, std::move(redMaterialData));
 
     u32            data = 0xFF0000FF;
-    // Pinut::Texture t(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &data);
+    Pinut::Texture redTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &data);
     Pinut::Texture t("../assets/viking_room/viking_room_diffuse.png");
 
     //Pinut::MaterialData glassMaterialData;
@@ -128,13 +128,13 @@ void Sandbox::OnCreate()
     m_currentScene = new Pinut::Scene();
     auto& registry = m_currentScene->Registry();
 
-    // auto monkey = m_currentScene->CreateEntity();
-    // registry.emplace<Pinut::Component::MeshComponent>(monkey,
-    //                                                   *LoadAsset<Pinut::Mesh>("suzanne.obj"));
-    // registry.emplace<Pinut::Component::RenderComponent>(monkey, t);
+    auto monkey = m_currentScene->CreateEntity();
+    registry.emplace<Pinut::Component::MeshComponent>(monkey,
+                                                      *LoadAsset<Pinut::Mesh>("suzanne.obj"));
+    registry.emplace<Pinut::Component::RenderComponent>(monkey, redTexture);
 
-    // auto& monkeyTransformComponent = registry.get<Pinut::Component::TransformComponent>(monkey);
-    // monkeyTransformComponent.model = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 10.0f));
+    auto& monkeyTransformComponent = registry.get<Pinut::Component::TransformComponent>(monkey);
+    monkeyTransformComponent.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 10.0f));
 
     const auto vikingRoom = m_currentScene->CreateEntity();
     registry.emplace<Pinut::Component::MeshComponent>(vikingRoom,
@@ -145,17 +145,6 @@ void Sandbox::OnCreate()
       registry.get<Pinut::Component::TransformComponent>(vikingRoom);
     vikingRoomTransformComponent.model =
       glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
-
-    /*m_currentScene->SetDirectionalLight(std::move(directionalLight));
-    m_currentScene->AddRenderable(std::move(floor));
-    m_currentScene->AddRenderable(std::move(damagedHelmet));
-    m_currentScene->AddRenderable(std::move(flightHelmet));*/
-    // m_currentScene->AddRenderable(std::move(glassPlane));
-    // m_currentScene->AddRenderable(std::move(monkey));
-    // m_currentScene->AddRenderable(std::move(vikingRoom));
-    // m_currentScene->AddRenderable(std::move(cornellBox));
-    // m_currentScene->AddLight(std::move(l));
-    // m_currentScene->AddLight(std::move(l2));
 }
 
 void Sandbox::OnUpdate()
