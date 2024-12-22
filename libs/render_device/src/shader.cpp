@@ -33,4 +33,18 @@ Shader::Shader(const std::string& name_, ShaderType type, const std::string& ent
 {
     descriptorSets.reserve(MAX_DESCRIPTOR_SETS * NUMBER_SHADER_STAGES); // 4 * 2
 }
+
+Shader::Shader(const std::string& name_,
+               ShaderType         type,
+               UniformDataSlots   uniforms,
+               DescriptorSets     descriptorSets_,
+               const std::string& entryPoint_)
+: name(name_),
+  shaderType(type),
+  uniformDataSlots(std::move(uniforms)),
+  descriptorSets(std::move(descriptorSets_)),
+  entryPoint(entryPoint_)
+{
+    assert(descriptorSets.size() < MAX_DESCRIPTOR_SETS * NUMBER_SHADER_STAGES);
+}
 } // namespace RED

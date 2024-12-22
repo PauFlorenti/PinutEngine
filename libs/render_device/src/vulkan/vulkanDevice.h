@@ -80,7 +80,7 @@ class VulkanDevice final : public Device
     void DisableRendering() override;
 
     void SetGraphicsState(GraphicsState* state) override;
-    void SetRenderPipeline(RenderPipeline* pipeline) override;
+    void SetRenderPipeline(const RenderPipeline* pipeline) override;
 
     void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) override;
 

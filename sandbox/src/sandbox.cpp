@@ -3,6 +3,7 @@
 #include "sandbox.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
+#include "src/components/lightComponent.h"
 #include "src/components/meshComponent.h"
 #include "src/components/renderComponent.h"
 #include "src/components/transformComponent.h"
@@ -145,6 +146,12 @@ void Sandbox::OnCreate()
       registry.get<Pinut::Component::TransformComponent>(vikingRoom);
     vikingRoomTransformComponent.model =
       glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
+
+    auto  directionalLight = m_currentScene->CreateEntity();
+    auto& light            = registry.emplace<Pinut::Component::LightComponent>(directionalLight);
+    light.m_color          = glm::vec3(1.0f, 0.0f, 0.0f);
+    registry.get<Pinut::Component::TransformComponent>(directionalLight).model =
+      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 5.0f));
 }
 
 void Sandbox::OnUpdate()

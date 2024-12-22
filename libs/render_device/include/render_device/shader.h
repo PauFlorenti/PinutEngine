@@ -51,6 +51,11 @@ using DescriptorSets   = std::vector<u32>;
 struct Shader
 {
     Shader(const std::string& name_, ShaderType type, const std::string& entryPoint_ = "main");
+    Shader(const std::string& name_,
+           ShaderType         type,
+           UniformDataSlots   uniforms,
+           DescriptorSets     descriptorSets_,
+           const std::string& entryPoint_ = "main");
 
     const std::string name;
     const std::string entryPoint = "main";

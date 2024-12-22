@@ -10,6 +10,7 @@
 
 #include "src/components/renderComponent.h"
 #include "src/components/transformComponent.h"
+#include "src/renderer/stages/presentStage.h"
 
 struct GLFWwindow;
 namespace RED
@@ -43,9 +44,10 @@ class Renderer final
     std::shared_ptr<RED::Device> m_device{nullptr};
     SwapchainInfo*               m_swapchain{nullptr};
 
-    RED::OffscreenState m_offscreenState;
-
     std::unordered_map<std::string, RED::RenderPipeline> m_pipelines;
     entt::registry                                       m_rendererRegistry;
+
+    RED::OffscreenState m_offscreenState;
+    PresentStage        m_presentStage;
 };
 } // namespace Pinut

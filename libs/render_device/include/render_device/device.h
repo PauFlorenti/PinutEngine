@@ -40,8 +40,8 @@ class Device
                                  VkRenderingAttachmentInfo* depthAttachment = nullptr) = 0;
     virtual void DisableRendering()                                                    = 0;
 
-    virtual void SetGraphicsState(GraphicsState* state)      = 0;
-    virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
+    virtual void SetGraphicsState(GraphicsState* state)            = 0;
+    virtual void SetRenderPipeline(const RenderPipeline* pipeline) = 0;
 
     virtual void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) = 0;
 

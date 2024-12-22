@@ -306,7 +306,7 @@ void VulkanDevice::SetGraphicsState(GraphicsState* state)
     vkCmdSetScissor(cmd, 0, 1, &scissors);
 }
 
-void VulkanDevice::SetRenderPipeline(RenderPipeline* pipeline)
+void VulkanDevice::SetRenderPipeline(const RenderPipeline* pipeline)
 {
     m_currentRenderPipeline = pipeline;
 }
