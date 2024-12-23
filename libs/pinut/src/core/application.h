@@ -43,6 +43,7 @@ class Application
     {
         VkSwapchainKHR swapchain;
         VkImage        swapchainImage;
+        VkImageView    swapchainImageView;
         u32            swapchainImageIndex;
         VkSemaphore    endFrameSemaphore;
     };

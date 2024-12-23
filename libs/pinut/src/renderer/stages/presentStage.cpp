@@ -27,13 +27,6 @@ void PresentStage::Execute(RED::Device*               device,
                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
-    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-    attachment.imageView   = parameters.swapchainImageView;
-    attachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    attachment.loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
-    attachment.clearValue  = {0.0f, 0.f, 0.f, 0.f};
-
     RED::ViewportState viewport{};
     viewport.x      = parameters.viewport.x;
     viewport.y      = parameters.viewport.y;
@@ -44,7 +37,7 @@ void PresentStage::Execute(RED::Device*               device,
                              parameters.viewport.y,
                              static_cast<u32>(parameters.viewport.width),
                              static_cast<u32>(parameters.viewport.height)},
-                            {attachment});
+                            {});
 
     RED::GraphicsState graphicsState{};
     graphicsState.viewport = std::move(viewport);
@@ -54,7 +47,7 @@ void PresentStage::Execute(RED::Device*               device,
     device->SetRenderPipeline(&cDrawTexturePipeline);
 
     RED::DrawCall dc;
-    dc.vertexBuffer = quadBuffer;
+    dc.vertexBuffer = parameters.quadBuffer;
     dc.SetUniformTexture(parameters.offscreenTexture, RED::ShaderType::FRAGMENT, 0);
 
     device->SubmitDrawCalls({dc});

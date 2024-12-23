@@ -264,14 +264,84 @@ void VulkanDevice::EndFrame()
     m_currentRenderPipelineInternal = nullptr;
 }
 
-void VulkanDevice::EnableRendering(const VkRect2D&                               renderArea,
-                                   const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
-                                   VkRenderingAttachmentInfo*                    depthAttachment)
+void VulkanDevice::EnableRendering(const VkRect2D&                 renderArea,
+                                   const std::vector<FrameBuffer>& colorAttachments,
+                                   FrameBuffer*                    depthAttachment)
 {
+    auto fillAttachmentInfo = [this](const FrameBuffer& frameBuffer, bool isDepth = false)
+    {
+        const auto vulkanTexture = this->GetVulkanTexture(frameBuffer.textureView.GetID());
+
+        const auto loadOp = frameBuffer.loadOperation == FrameBufferLoadOperation::CLEAR ?
+                              VK_ATTACHMENT_LOAD_OP_CLEAR :
+                            frameBuffer.loadOperation == FrameBufferLoadOperation::LOAD ?
+                              VK_ATTACHMENT_LOAD_OP_LOAD :
+                              VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+
+        const auto storeOp = frameBuffer.storeOperation == FrameBufferStoreOperation::STORE ?
+                               VK_ATTACHMENT_STORE_OP_STORE :
+                               VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+        auto clear = isDepth ? VkClearValue{frameBuffer.clearColor[0], frameBuffer.clearColor[1]} :
+                               VkClearValue{frameBuffer.clearColor[0],
+                                            frameBuffer.clearColor[1],
+                                            frameBuffer.clearColor[2],
+                                            frameBuffer.clearColor[3]};
+
+        VkRenderingAttachmentInfo info{
+          .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+          .pNext       = nullptr,
+          .imageView   = vulkanTexture.imageView,
+          .imageLayout = isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL :
+                                   VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+          .loadOp      = loadOp,
+          .storeOp     = storeOp,
+          .clearValue  = clear,
+        };
+
+        return info;
+    };
+
+    VkRenderingAttachmentInfo              vulkanDepthAttachment{};
+    std::vector<VkRenderingAttachmentInfo> attachments;
+    attachments.reserve(colorAttachments.size());
+
+    // Enable present to swapchain image.
+    if (colorAttachments.empty())
+    {
+        assert(depthAttachment == nullptr);
+
+        const auto& swapchainState = m_getSwapchainState_fn();
+
+        VkRenderingAttachmentInfo attachment{
+          .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+          .pNext       = nullptr,
+          .imageView   = swapchainState.swapchainImageView,
+          .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+          .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+          .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
+          .clearValue  = {.0f, .0f, .0f, .0f},
+        };
+
+        attachments.emplace_back(attachment);
+    }
+    else
+    {
+        for (const auto& attachment : colorAttachments)
+        {
+            attachments.push_back(fillAttachmentInfo(attachment));
+        }
+
+        if (depthAttachment)
+        {
+            vulkanDepthAttachment = fillAttachmentInfo(*depthAttachment, true);
+        }
+    }
+
     VkRenderingInfo info{VK_STRUCTURE_TYPE_RENDERING_INFO};
-    info.colorAttachmentCount = static_cast<u32>(colorAttachments.size());
-    info.pColorAttachments    = colorAttachments.data();
-    info.pDepthAttachment     = depthAttachment ? depthAttachment : nullptr;
+    info.colorAttachmentCount = static_cast<u32>(attachments.size());
+    info.pColorAttachments    = attachments.data();
+    info.pDepthAttachment     = depthAttachment ? &vulkanDepthAttachment : nullptr;
     info.renderArea           = renderArea;
     info.layerCount           = 1;
 
@@ -508,26 +578,6 @@ void VulkanDevice::DestroyTexture(TextureResource resource)
 
         m_textures.erase(texture);
     }
-}
-
-VkRenderingAttachmentInfo VulkanDevice::GetAttachment(const GPUTextureView& textureView,
-                                                      VkImageLayout         layout,
-                                                      VkAttachmentLoadOp    loadOp,
-                                                      VkAttachmentStoreOp   storeOp,
-                                                      VkClearValue          clearValue)
-{
-    assert(!textureView.IsEmpty());
-
-    const auto& texture = GetVulkanTexture(textureView.GetID());
-
-    return VkRenderingAttachmentInfo{
-      .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-      .imageView   = texture.imageView,
-      .imageLayout = layout,
-      .loadOp      = loadOp,
-      .storeOp     = storeOp,
-      .clearValue  = clearValue,
-    };
 }
 
 void VulkanDevice::WaitIdle() const { assert(vkDeviceWaitIdle(m_device) == VK_SUCCESS); }

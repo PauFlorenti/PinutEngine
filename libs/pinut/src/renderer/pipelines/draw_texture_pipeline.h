@@ -7,11 +7,7 @@
 
 namespace Pinut
 {
-static const RED::RenderPipeline cDrawTexturePipeline = {"DrawTexturePipeline",
-                                                         cQuadShader,
-                                                         cDrawTextureShader,
-                                                         "PosUv",
-                                                         {VK_FORMAT_R32G32B32A32_SFLOAT},
-                                                         {}};
+static const RED::RenderPipeline cDrawTexturePipeline =
+  {"DrawTexturePipeline", cQuadShader, cDrawTextureShader, "PosUv", {VK_FORMAT_B8G8R8A8_UNORM}, {}};
 
 } // namespace Pinut

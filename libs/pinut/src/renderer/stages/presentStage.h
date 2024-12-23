@@ -14,7 +14,7 @@ namespace Pinut
 {
 struct PresentInputParameters
 {
-    VkImageView          swapchainImageView;
+    RED::GPUBufferView   quadBuffer;
     RED::TextureResource offscreenTexture;
     RED::ViewportState   viewport;
 };

@@ -207,7 +207,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     // PASS
 
-    std::vector<VkRenderingAttachmentInfo> colorAttachments;
+    std::vector<RED::FrameBuffer> colorAttachments;
     colorAttachments.reserve(m_offscreenState.colorTextures.size());
 
     m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
@@ -224,20 +224,18 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
         if (t.IsEmpty())
             break;
 
-        VkRenderingAttachmentInfo attachmentInfo =
-          m_device->GetAttachment(t,
-                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                  VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                  VK_ATTACHMENT_STORE_OP_STORE,
-                                  {.0f, .0f, .0f, .0f});
-        colorAttachments.emplace_back(attachmentInfo);
+        RED::FrameBuffer attachment{.textureView    = t.GetID(),
+                                    .loadOperation  = RED::FrameBufferLoadOperation::CLEAR,
+                                    .storeOperation = RED::FrameBufferStoreOperation::STORE,
+                                    .clearColor     = {.0f, .0f, .0f, .0f}};
+
+        colorAttachments.emplace_back(attachment);
     }
 
-    auto depthAttachment = m_device->GetAttachment(m_offscreenState.depthTexture,
-                                                   VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                                                   VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                                   VK_ATTACHMENT_STORE_OP_STORE,
-                                                   {1.0f, 0.0f});
+    auto depthAttachment = RED::FrameBuffer{.textureView    = m_offscreenState.depthTexture,
+                                            .loadOperation  = RED::FrameBufferLoadOperation::CLEAR,
+                                            .storeOperation = RED::FrameBufferStoreOperation::STORE,
+                                            .clearColor     = {1.0f, .0f}};
 
     RED::ViewportState viewport{};
     viewport.x      = viewportData.x;
@@ -301,40 +299,13 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     // End render pass.
 
-    m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
-                                    0,
-                                    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+    PresentInputParameters presentParameters{};
+    presentParameters.quadBuffer       = quadBuffer;
+    presentParameters.offscreenTexture = m_offscreenState.colorTextures.at(0).GetID();
+    presentParameters.viewport         = viewport;
 
-    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-    attachment.imageView   = m_swapchain->imageViews.at(m_swapchain->imageIndex);
-    attachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    attachment.loadOp      = VK_ATTACHMENT_LOAD_OP_LOAD;
-    attachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
-    attachment.clearValue  = {0.0f, 0.f, 0.f, 0.f};
-
-    m_device->EnableRendering({viewportData.x,
-                               viewportData.y,
-                               static_cast<u32>(viewportData.width),
-                               static_cast<u32>(viewportData.height)},
-                              {attachment});
-
-    graphicsState.depth = {VK_FORMAT_UNDEFINED};
-
-    m_device->SetGraphicsState(&graphicsState);
-    m_device->SetRenderPipeline(&m_pipelines.at("present"));
-
-    RED::DrawCall dc;
-    dc.vertexBuffer = quadBuffer;
-    dc.SetUniformTexture(m_offscreenState.colorTextures.at(0), RED::ShaderType::FRAGMENT, 0);
-
-    m_device->SubmitDrawCalls({dc});
-
-    m_device->DisableRendering();
+    RED::GPUTextureView backbuffer;
+    m_presentStage.Execute(m_device.get(), presentParameters, backbuffer);
 
     m_device->EndFrame();
 }

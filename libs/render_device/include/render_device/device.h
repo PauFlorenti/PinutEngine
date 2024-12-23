@@ -19,6 +19,30 @@ enum class QueueType
     COMPUTE,
     COUNT
 };
+
+enum class FrameBufferLoadOperation
+{
+    CLEAR, // Only used on load operation
+    LOAD, // Only used on load operation
+    DONT_CARE,
+    COUNT
+};
+
+enum class FrameBufferStoreOperation
+{
+    STORE, // Only used on store operation
+    DONT_CARE,
+    COUNT
+};
+
+struct FrameBuffer
+{
+    GPUTextureView            textureView;
+    FrameBufferLoadOperation  loadOperation;
+    FrameBufferStoreOperation storeOperation;
+    f32                       clearColor[4];
+};
+
 class Device
 {
   public:
@@ -35,10 +59,10 @@ class Device
     virtual void BeginFrame() = 0;
     virtual void EndFrame()   = 0;
 
-    virtual void EnableRendering(const VkRect2D&                               renderArea,
-                                 const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
-                                 VkRenderingAttachmentInfo* depthAttachment = nullptr) = 0;
-    virtual void DisableRendering()                                                    = 0;
+    virtual void EnableRendering(const VkRect2D&                 renderArea,
+                                 const std::vector<FrameBuffer>& colorAttachments,
+                                 FrameBuffer*                    depthAttachment = nullptr) = 0;
+    virtual void DisableRendering()                                      = 0;
 
     virtual void SetGraphicsState(GraphicsState* state)            = 0;
     virtual void SetRenderPipeline(const RenderPipeline* pipeline) = 0;
@@ -52,12 +76,6 @@ class Device
     virtual GPUTexture CreateTexture(const TextureDescriptor& descriptor,
                                      const void*              data = nullptr) = 0;
     virtual void       DestroyTexture(TextureResource)           = 0;
-
-    virtual VkRenderingAttachmentInfo GetAttachment(const GPUTextureView& textureView,
-                                                    VkImageLayout         layout,
-                                                    VkAttachmentLoadOp    loadOp,
-                                                    VkAttachmentStoreOp   storeOp,
-                                                    VkClearValue          clearValue) = 0;
 
     virtual void TransitionImageLayout(TextureResource         image,
                                        VkAccessFlags           srcAccessFlags,

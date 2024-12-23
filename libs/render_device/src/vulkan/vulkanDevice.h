@@ -31,6 +31,7 @@ struct SwapchainState
 {
     VkSwapchainKHR swapchain;
     VkImage        swapchainImage;
+    VkImageView    swapchainImageView;
     u32            swapchainImageIndex;
     VkSemaphore    endFrameSemaphore;
 };
@@ -74,9 +75,9 @@ class VulkanDevice final : public Device
     void BeginFrame() override;
     void EndFrame() override;
 
-    void EnableRendering(const VkRect2D&                               renderArea,
-                         const std::vector<VkRenderingAttachmentInfo>& colorAttachments,
-                         VkRenderingAttachmentInfo* depthAttachment = nullptr) override;
+    void EnableRendering(const VkRect2D&                 renderArea,
+                         const std::vector<FrameBuffer>& colorAttachments,
+                         FrameBuffer*                    depthAttachment = nullptr) override;
     void DisableRendering() override;
 
     void SetGraphicsState(GraphicsState* state) override;
@@ -91,12 +92,6 @@ class VulkanDevice final : public Device
     GPUTexture CreateTexture(const TextureDescriptor& descriptor,
                              const void*              data = nullptr) override;
     void       DestroyTexture(TextureResource) override;
-
-    VkRenderingAttachmentInfo GetAttachment(const GPUTextureView& textureView,
-                                            VkImageLayout         layout,
-                                            VkAttachmentLoadOp    loadOp,
-                                            VkAttachmentStoreOp   storeOp,
-                                            VkClearValue          clearValue) override;
 
     void TransitionImageLayout(TextureResource         image,
                                VkAccessFlags           srcAccessFlags,

@@ -458,6 +458,7 @@ bool Application::SetupVulkan()
         state.endFrameSemaphore   = m_endFrameSemaphore;
         state.swapchain           = m_swapchainInfo.swapchain;
         state.swapchainImage      = m_swapchainInfo.images.at(m_swapchainInfo.imageIndex);
+        state.swapchainImageView  = m_swapchainInfo.imageViews.at(m_swapchainInfo.imageIndex);
         state.swapchainImageIndex = m_swapchainInfo.imageIndex;
         return state;
     };
