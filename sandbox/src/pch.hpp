@@ -14,3 +14,4 @@
 #include <glm/glm.hpp>
 
 #include <src/core/defines.h>
+#include <src/renderer/common.h>

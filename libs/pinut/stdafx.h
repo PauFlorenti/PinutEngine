@@ -23,3 +23,4 @@
 #include <vulkan/vulkan.h>
 
 #include "src/core/defines.h"
+#include "src/renderer/common.h"

@@ -14,7 +14,6 @@
 #include "src/core/light.h"
 #include "src/core/renderable.h"
 #include "src/core/scene.h"
-#include "src/renderer/common.h"
 #include "src/renderer/primitives.h"
 #include "src/renderer/renderer.h"
 
@@ -285,24 +284,14 @@ void Application::Update()
     m_deltaTime      = currentTime - m_lastFrameTime;
     m_lastFrameTime  = currentTime;
 
-    ViewportData viewport{};
-    viewport.width          = m_width;
-    viewport.height         = m_height;
-    viewport.view           = m_currentCamera->View();
-    viewport.projection     = m_currentCamera->Projection();
-    viewport.cameraPosition = m_currentCamera->Position();
+    m_viewport.width                     = m_width;
+    m_viewport.height                    = m_height;
+    m_viewport.cameraData.view           = m_currentCamera->View();
+    m_viewport.cameraData.projection     = m_currentCamera->Projection();
+    m_viewport.cameraData.cameraPosition = m_currentCamera->Position();
 }
 
-void Application::Render()
-{
-    ViewportData viewport{};
-    viewport.width          = m_width;
-    viewport.height         = m_height;
-    viewport.view           = m_currentCamera->View();
-    viewport.projection     = m_currentCamera->Projection();
-    viewport.cameraPosition = m_currentCamera->Position();
-    m_renderer->Render(m_currentScene->Registry(), viewport, bResized);
-}
+void Application::Render() { m_renderer->Render(m_currentScene->Registry(), m_viewport, bResized); }
 
 void Application::Present()
 {

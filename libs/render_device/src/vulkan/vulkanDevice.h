@@ -4,6 +4,7 @@
 #include "render_device/drawCall.h"
 #include "render_device/states.h"
 #include "src/resourceGenerator.h"
+
 #include "src/vulkan/descriptorSetManager.h"
 #include "src/vulkan/vulkanBuffer.h"
 #include "src/vulkan/vulkanPipeline.h"
@@ -14,46 +15,44 @@ namespace RED
 struct RenderPipeline;
 namespace vulkan
 {
-struct DeviceInfo
-{
-    VkInstance       instance;
-    VkDevice         device;
-    VkPhysicalDevice physicalDevice;
-};
-
-struct QueueInfo
-{
-    VkQueue queue{VK_NULL_HANDLE};
-    u32     index;
-};
-
-struct SwapchainState
-{
-    VkSwapchainKHR swapchain;
-    VkImage        swapchainImage;
-    VkImageView    swapchainImageView;
-    u32            swapchainImageIndex;
-    VkSemaphore    endFrameSemaphore;
-};
-
-using BeginFrameCallback_fn        = std::function<void(void*, VkSemaphore)>;
-using EndFrameCallback_fn          = std::function<void(void*, VkSemaphore)>;
-using GetSwapchainStateCallback_fn = std::function<SwapchainState()>;
-
-struct DeviceCallbacks
-{
-    void*                        context;
-    BeginFrameCallback_fn        BeginFrame_fn;
-    EndFrameCallback_fn          EndFrame_fn;
-    GetSwapchainStateCallback_fn GetSwapchainState_fn;
-};
-
 static constexpr u32 MAX_FRAMES_IN_FLIGHT = 3;
-constexpr u32        UNIFORM_BUFFER_SIZE  = 1024; // Currently just 1MB
 
 class VulkanDevice final : public Device
 {
-  private:
+    struct DeviceInfo
+    {
+        VkInstance       instance;
+        VkDevice         device;
+        VkPhysicalDevice physicalDevice;
+    };
+
+    struct QueueInfo
+    {
+        VkQueue queue{VK_NULL_HANDLE};
+        u32     index;
+    };
+
+    struct SwapchainState
+    {
+        VkSwapchainKHR swapchain;
+        VkImage        swapchainImage;
+        VkImageView    swapchainImageView;
+        u32            swapchainImageIndex;
+        VkSemaphore    endFrameSemaphore;
+    };
+
+    using BeginFrameCallback_fn        = std::function<void(void*, VkSemaphore)>;
+    using EndFrameCallback_fn          = std::function<void(void*, VkSemaphore)>;
+    using GetSwapchainStateCallback_fn = std::function<SwapchainState()>;
+
+    struct DeviceCallbacks
+    {
+        void*                        context;
+        BeginFrameCallback_fn        BeginFrame_fn;
+        EndFrameCallback_fn          EndFrame_fn;
+        GetSwapchainStateCallback_fn GetSwapchainState_fn;
+    };
+
     struct CommandBuffer
     {
         QueueType       queueType;
@@ -86,12 +85,14 @@ class VulkanDevice final : public Device
     void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) override;
 
     GPUBuffer CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr) override;
-    void      UpdateBuffer(BufferResource bufferId, void* data) override;
+    void      UpdateBuffer(BufferResource bufferId, const void* data) override;
     void      DestroyBuffer(BufferResource) override;
 
     GPUTexture CreateTexture(const TextureDescriptor& descriptor,
                              const void*              data = nullptr) override;
     void       DestroyTexture(TextureResource) override;
+
+    bool IsResourceValid(const GPUResource& resource) const override;
 
     void TransitionImageLayout(TextureResource         image,
                                VkAccessFlags           srcAccessFlags,
@@ -176,17 +177,14 @@ class VulkanDevice final : public Device
     DescriptorSetManager                                 m_descriptorSetManager;
     ResourceGenerator                                    m_resourceGenerator;
     std::unordered_map<BufferResource, VulkanBuffer>     m_buffers;
+    std::vector<std::pair<BufferResource, VulkanBuffer>> m_bufferToUpdate;
     std::unordered_map<TextureResource, VulkanTexture>   m_textures;
-    VkSampler                                            m_sampler; // TODO Temporal
     std::unordered_map<u64, std::deque<VulkanBuffer>>    m_stagingBuffers;
     std::deque<VulkanBuffer>                             m_stagingBufferUsed;
-    std::vector<std::pair<BufferResource, VulkanBuffer>> m_bufferToUpdate;
+    VkSampler                                            m_sampler; // TODO Temporal
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;
-
-    // Light uniform
-    std::array<VulkanBuffer, MAX_FRAMES_IN_FLIGHT> m_globalUniformBuffers;
 };
 } // namespace vulkan
 } // namespace RED

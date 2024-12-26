@@ -6,10 +6,10 @@
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/renderPipeline.h"
+
 #include "src/vulkan/utils.h"
 #include "src/vulkan/vulkanDevice.h"
 #include "src/vulkan/vulkanPipeline.h"
-#include "vulkanDevice.h"
 
 namespace RED
 {
@@ -69,12 +69,6 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
         m_imagesAvailableSemaphores.at(i) = CreateSemaphore();
     }
 
-    for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        m_globalUniformBuffers.at(i) =
-          CreateInternalBuffer(UNIFORM_BUFFER_SIZE, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    }
-
     // TODO Temporal
     VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
     samplerInfo.magFilter               = VK_FILTER_LINEAR;
@@ -100,24 +94,19 @@ VulkanDevice::~VulkanDevice()
     for (auto& pipeline : m_pipelines)
         pipeline.second.Destroy(m_device);
 
-    m_pipelines.clear();
-
     for (auto& buffer : m_buffers)
         vmaDestroyBuffer(m_allocator, buffer.second.m_buffer, buffer.second.m_allocation);
-
-    m_buffers.clear();
 
     for (auto& texture : m_textures)
         vmaDestroyImage(m_allocator, texture.second.image, texture.second.allocation);
 
+    m_pipelines.clear();
+    m_buffers.clear();
     m_textures.clear();
 
     vkDestroySampler(m_device, m_sampler, nullptr);
 
     m_descriptorSetManager.OnDestroy(m_device);
-
-    for (auto& uniformBuffers : m_globalUniformBuffers)
-        vmaDestroyBuffer(m_allocator, uniformBuffers.m_buffer, uniformBuffers.m_allocation);
 
     for (auto& stagingBuffers : m_stagingBuffers)
     {
@@ -126,18 +115,19 @@ VulkanDevice::~VulkanDevice()
             vmaDestroyBuffer(m_allocator, stagingBuffer.m_buffer, stagingBuffer.m_allocation);
         }
     }
-    m_stagingBuffers.clear();
 
     for (auto& buffer : m_stagingBufferUsed)
     {
         vmaDestroyBuffer(m_allocator, buffer.m_buffer, buffer.m_allocation);
     }
-    m_stagingBufferUsed.clear();
 
     for (auto& buffer : m_bufferToUpdate)
     {
         vmaDestroyBuffer(m_allocator, buffer.second.m_buffer, buffer.second.m_allocation);
     }
+
+    m_stagingBuffers.clear();
+    m_stagingBufferUsed.clear();
     m_bufferToUpdate.clear();
 
     for (auto& commandBufferSet : m_commandBufferSets)
@@ -428,7 +418,7 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
     return {id, info.size, this};
 }
 
-void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
+void VulkanDevice::UpdateBuffer(BufferResource bufferId, const void* data)
 {
     if (!data)
         return;
@@ -578,6 +568,11 @@ void VulkanDevice::DestroyTexture(TextureResource resource)
 
         m_textures.erase(texture);
     }
+}
+
+bool VulkanDevice::IsResourceValid(const GPUResource& resource) const
+{
+    return resource.id == GPU_RESOURCE_INVALID ? false : true;
 }
 
 void VulkanDevice::WaitIdle() const { assert(vkDeviceWaitIdle(m_device) == VK_SUCCESS); }

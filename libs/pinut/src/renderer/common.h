@@ -3,11 +3,20 @@
 namespace Pinut
 {
 constexpr i32 MAX_LIGHTS = 10;
-struct PerFrameData
+struct ShaderCameraData
 {
-    glm::mat4 view{};
-    glm::mat4 projection{};
-    glm::vec3 cameraPosition{};
+    glm::mat4 view{glm::mat4(1.0f)};
+    glm::mat4 projection{glm::mat4(1.0f)};
+    glm::vec3 cameraPosition{glm::vec3(0.0f)};
+};
+
+struct ViewportData
+{
+    i32              x{0};
+    i32              y{0};
+    i32              width{0};
+    i32              height{0};
+    ShaderCameraData cameraData;
 };
 
 struct LightData

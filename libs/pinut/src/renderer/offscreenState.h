@@ -1,13 +1,17 @@
 #pragma once
 
+#include "render_device/buffer.h"
 #include "render_device/texture.h"
 
 namespace RED
 {
 class Device;
+}
+namespace Pinut
+{
 struct OffscreenState
 {
-    void Create(Device&                      device,
+    void Create(RED::Device&                 device,
                 u32                          width,
                 u32                          height,
                 const std::vector<VkFormat>& attachmentFormats,
@@ -19,7 +23,9 @@ struct OffscreenState
     u32 width;
     u32 height;
 
-    GPUTexture                depthTexture;
-    std::array<GPUTexture, 4> colorTextures;
+    RED::GPUBuffer                 globalUniformBuffer;
+    RED::GPUBuffer                 quadBuffer;
+    RED::GPUTexture                depthTexture;
+    std::array<RED::GPUTexture, 4> colorTextures;
 };
-} // namespace RED
+} // namespace Pinut

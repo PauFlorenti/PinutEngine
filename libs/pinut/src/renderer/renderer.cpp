@@ -19,14 +19,9 @@
 #include "src/renderer/swapchain.h"
 #include "src/renderer/utils.h"
 
-// TODO TEMP
-#include "src/renderer/common.h"
-
 namespace Pinut
 {
-RED::GPUBuffer uniformBuffer;
-RED::GPUBuffer quadBuffer;
-PerFrameData   uniformData{};
+std::unordered_map<std::string, RED::RenderPipeline> m_pipelines;
 
 RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType shaderType)
 {
@@ -113,32 +108,11 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain
                              PopulateAttachmentsFromJson(jdata),
                              GetFormatFromString(jdata.value("depth", ""))}});
     }
-
-    uniformBuffer = m_device->CreateBuffer({140, 140, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
-
-    struct QuadVertex
-    {
-        glm::vec3 position;
-        glm::vec2 uv;
-    };
-
-    // clang-format off
-    std::array<QuadVertex, 6> quadData = {QuadVertex{glm::vec3(-1.0f,  1.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
-                                          QuadVertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
-                                          QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)},
-                                          QuadVertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
-                                          QuadVertex{glm::vec3( 1.0f, -1.0f, 0.0f), glm::vec2(1.0f, 1.0f)},
-                                          QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}};
-    // clang-format on
-    quadBuffer =
-      m_device->CreateBuffer({120, 20, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}, quadData.data());
 }
 
 Renderer::~Renderer()
 {
     m_device->WaitIdle();
-    quadBuffer.Destroy();
-    uniformBuffer.Destroy();
     m_rendererRegistry.clear();
     m_offscreenState.Clear();
     m_device.reset();
@@ -206,57 +180,15 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     Update(registry, viewportData, resized);
 
     // PASS
-
-    std::vector<RED::FrameBuffer> colorAttachments;
-    colorAttachments.reserve(m_offscreenState.colorTextures.size());
-
-    m_device->TransitionImageLayout(m_offscreenState.colorTextures.at(0).GetID(),
-                                    0,
-                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                    {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
-
-    for (const auto& t : m_offscreenState.colorTextures)
-    {
-        if (t.IsEmpty())
-            break;
-
-        RED::FrameBuffer attachment{.textureView    = t.GetID(),
-                                    .loadOperation  = RED::FrameBufferLoadOperation::CLEAR,
-                                    .storeOperation = RED::FrameBufferStoreOperation::STORE,
-                                    .clearColor     = {.0f, .0f, .0f, .0f}};
-
-        colorAttachments.emplace_back(attachment);
-    }
-
-    auto depthAttachment = RED::FrameBuffer{.textureView    = m_offscreenState.depthTexture,
-                                            .loadOperation  = RED::FrameBufferLoadOperation::CLEAR,
-                                            .storeOperation = RED::FrameBufferStoreOperation::STORE,
-                                            .clearColor     = {1.0f, .0f}};
-
-    RED::ViewportState viewport{};
-    viewport.x      = viewportData.x;
-    viewport.y      = viewportData.y;
-    viewport.width  = viewportData.width;
-    viewport.height = viewportData.height;
-
-    RED::GraphicsState graphicsState{};
-    graphicsState.viewport = std::move(viewport);
-    graphicsState.depth    = {VK_FORMAT_D32_SFLOAT};
-
-    m_device->SetGraphicsState(&graphicsState);
-    m_device->SetRenderPipeline(&m_pipelines.at("flat"));
-
     // Start updating/uploading data to gpu resources.
     // Cannot be done inside a render pass.
 
-    uniformData.view           = viewportData.view;
-    uniformData.projection     = viewportData.projection;
-    uniformData.cameraPosition = viewportData.cameraPosition;
-    m_device->UpdateBuffer(uniformBuffer.GetID(), &uniformData);
+    m_device->UpdateBuffer(m_offscreenState.globalUniformBuffer.GetID(), &viewportData.cameraData);
+
+    RED::ViewportState viewport{viewportData.x,
+                                viewportData.y,
+                                viewportData.width,
+                                viewportData.height};
 
     std::vector<RED::DrawCall> drawCalls;
     drawCalls.reserve(1000);
@@ -276,7 +208,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
           dc.vertexBuffer = meshData->m_vertexBuffer;
           dc.indexBuffer  = meshData->m_indexBuffer;
 
-          dc.SetUniformBuffer(uniformBuffer, RED::ShaderType::VERTEX, 0, 0);
+          dc.SetUniformBuffer(m_offscreenState.globalUniformBuffer, RED::ShaderType::VERTEX, 0, 0);
           dc.SetUniformBuffer(materialData->uniformBuffer, RED::ShaderType::VERTEX, 0, 1);
           dc.SetUniformTexture(materialData->difuseTexture, RED::ShaderType::FRAGMENT, 1, 1);
 
@@ -286,23 +218,20 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     // Finish updating data to resources.
     // Start render pass.
 
-    m_device->EnableRendering({viewportData.x,
-                               viewportData.y,
-                               static_cast<u32>(viewportData.width),
-                               static_cast<u32>(viewportData.height)},
-                              std::move(colorAttachments),
-                              &depthAttachment);
+    DrawOpaqueInputParameters drawOpaqueParameters;
+    drawOpaqueParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();
+    drawOpaqueParameters.depthFrameBuffer = m_offscreenState.depthTexture.GetID();
+    drawOpaqueParameters.viewport         = viewportData;
+    drawOpaqueParameters.drawCalls        = std::move(drawCalls);
 
-    m_device->SubmitDrawCalls({drawCalls});
-
-    m_device->DisableRendering();
+    m_lightForwardStage.Execute(m_device.get(), std::move(drawOpaqueParameters), {});
 
     // End render pass.
 
     PresentInputParameters presentParameters{};
-    presentParameters.quadBuffer       = quadBuffer;
+    presentParameters.quadBuffer       = m_offscreenState.quadBuffer;
     presentParameters.offscreenTexture = m_offscreenState.colorTextures.at(0).GetID();
-    presentParameters.viewport         = viewport;
+    presentParameters.viewport         = std::move(viewport);
 
     RED::GPUTextureView backbuffer;
     m_presentStage.Execute(m_device.get(), presentParameters, backbuffer);

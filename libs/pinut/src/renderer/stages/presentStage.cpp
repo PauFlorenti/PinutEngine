@@ -27,12 +27,6 @@ void PresentStage::Execute(RED::Device*               device,
                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
-    RED::ViewportState viewport{};
-    viewport.x      = parameters.viewport.x;
-    viewport.y      = parameters.viewport.y;
-    viewport.width  = parameters.viewport.width;
-    viewport.height = parameters.viewport.height;
-
     device->EnableRendering({parameters.viewport.x,
                              parameters.viewport.y,
                              static_cast<u32>(parameters.viewport.width),
@@ -40,7 +34,7 @@ void PresentStage::Execute(RED::Device*               device,
                             {});
 
     RED::GraphicsState graphicsState{};
-    graphicsState.viewport = std::move(viewport);
+    graphicsState.viewport = parameters.viewport;
     graphicsState.depth    = {VK_FORMAT_UNDEFINED};
 
     device->SetGraphicsState(&graphicsState);

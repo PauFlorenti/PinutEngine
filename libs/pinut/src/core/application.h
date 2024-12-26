@@ -129,6 +129,7 @@ class Application
     f64 m_lastFrameTime{0};
 
     AssetManager m_assetManager;
+    ViewportData m_viewport;
 
     // RENDERING
     std::unique_ptr<Renderer> m_renderer{nullptr};

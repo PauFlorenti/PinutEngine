@@ -4,12 +4,13 @@
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 
 #include "render_device/device.h"
-#include "render_device/offscreenState.h"
 #include "render_device/renderPipeline.h"
 #include "render_device/texture.h"
 
 #include "src/components/renderComponent.h"
 #include "src/components/transformComponent.h"
+#include "src/renderer/offscreenState.h"
+#include "src/renderer/stages/lightForwardStage.h"
 #include "src/renderer/stages/presentStage.h"
 
 struct GLFWwindow;
@@ -20,16 +21,7 @@ class Device;
 namespace Pinut
 {
 struct SwapchainInfo;
-struct ViewportData
-{
-    i32       x{0};
-    i32       y{0};
-    i32       width{0};
-    i32       height{0};
-    glm::mat4 view{glm::mat4(1.0f)};
-    glm::mat4 projection{glm::mat4(1.0f)};
-    glm::vec3 cameraPosition{glm::vec3(0.0f)};
-};
+
 class Renderer final
 {
   public:
@@ -44,10 +36,10 @@ class Renderer final
     std::shared_ptr<RED::Device> m_device{nullptr};
     SwapchainInfo*               m_swapchain{nullptr};
 
-    std::unordered_map<std::string, RED::RenderPipeline> m_pipelines;
-    entt::registry                                       m_rendererRegistry;
+    entt::registry m_rendererRegistry;
 
-    RED::OffscreenState m_offscreenState;
-    PresentStage        m_presentStage;
+    OffscreenState    m_offscreenState;
+    PresentStage      m_presentStage;
+    LightForwardStage m_lightForwardStage;
 };
 } // namespace Pinut

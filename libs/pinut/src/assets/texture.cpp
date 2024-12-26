@@ -9,12 +9,18 @@
 
 namespace Pinut
 {
-Texture::Texture(const u32 width, const u32 height, VkFormat format, void* data)
+Texture::Texture(const u32 width, const u32 height, VkFormat format, const void* data)
 : m_width(width),
   m_height(height),
-  m_format(format),
-  m_data(data)
+  m_format(format)
 {
+    const auto dataSize = m_width * m_height * 4; // TODO This should vary depending on the format.
+    m_data              = new u8[dataSize];
+
+    if (data)
+    {
+        memcpy(m_data, data, dataSize);
+    }
 }
 
 Texture::Texture(const std::filesystem::path& filepath)
@@ -42,7 +48,7 @@ void Texture::Destroy()
     m_data = nullptr;
 }
 
-const void*    Texture::GetData() const { return m_data; }
+const u8*      Texture::GetData() const { return m_data; }
 const u32      Texture::GetWidth() const { return m_width; }
 const u32      Texture::GetHeight() const { return m_height; }
 const VkFormat Texture::GetFormat() const { return m_format; }
