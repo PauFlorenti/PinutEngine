@@ -70,12 +70,13 @@ class Device
     virtual void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) = 0;
 
     virtual GPUBuffer CreateBuffer(const BufferDescriptor&, void* data = nullptr) = 0;
-    virtual void      UpdateBuffer(BufferResource bufferId, const void* data)     = 0;
+    virtual void      UpdateBuffer(BufferResource bufferId, void* data)           = 0;
     virtual void      DestroyBuffer(BufferResource)                               = 0;
 
     virtual GPUTexture CreateTexture(const TextureDescriptor& descriptor,
-                                     const void*              data = nullptr) = 0;
-    virtual void       DestroyTexture(TextureResource)           = 0;
+                                     const void*              data = nullptr)                       = 0;
+    virtual void       UpdateTexture(const TextureResource& texture, const void* data) = 0;
+    virtual void       DestroyTexture(TextureResource)                                 = 0;
 
     virtual bool IsResourceValid(const GPUResource& resource) const = 0;
 

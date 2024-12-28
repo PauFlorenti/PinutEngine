@@ -182,8 +182,8 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     // PASS
     // Start updating/uploading data to gpu resources.
     // Cannot be done inside a render pass.
-
-    m_device->UpdateBuffer(m_offscreenState.globalUniformBuffer.GetID(), &viewportData.cameraData);
+    auto cameraData = viewportData.cameraData;
+    m_device->UpdateBuffer(m_offscreenState.globalUniformBuffer.GetID(), (void*)&cameraData);
 
     RED::ViewportState viewport{viewportData.x,
                                 viewportData.y,
