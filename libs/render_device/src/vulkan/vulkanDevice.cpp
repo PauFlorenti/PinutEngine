@@ -10,6 +10,7 @@
 #include "src/vulkan/utils.h"
 #include "src/vulkan/vulkanDevice.h"
 #include "src/vulkan/vulkanPipeline.h"
+#include "vulkanDevice.h"
 
 namespace RED
 {
@@ -89,7 +90,13 @@ VulkanDevice::VulkanDevice(void* deviceInfo, void* queues, void* callbacks)
 
 VulkanDevice::~VulkanDevice()
 {
+    BeginCommandRecording(QueueType::GRAPHICS);
+    UpdateResources();
+    EndCommandRecording(false);
+
     vkDeviceWaitIdle(m_device);
+
+    DeleteResources();
 
     for (auto& pipeline : m_pipelines)
         pipeline.second.Destroy(m_device);
@@ -121,14 +128,8 @@ VulkanDevice::~VulkanDevice()
         vmaDestroyBuffer(m_allocator, buffer.m_buffer, buffer.m_allocation);
     }
 
-    for (auto& buffer : m_bufferToUpdate)
-    {
-        vmaDestroyBuffer(m_allocator, buffer.second.m_buffer, buffer.second.m_allocation);
-    }
-
     m_stagingBuffers.clear();
     m_stagingBufferUsed.clear();
-    m_bufferToUpdate.clear();
 
     for (auto& commandBufferSet : m_commandBufferSets)
     {
@@ -214,7 +215,7 @@ void VulkanDevice::BeginFrame()
 
     BeginCommandRecording(QueueType::GRAPHICS);
 
-    UpdateBuffers();
+    UpdateResources(); // TODO Make sure resources in use are not destroyed.
 
     TransitionImageLayout(swapchainState.swapchainImage,
                           0,
@@ -248,6 +249,8 @@ void VulkanDevice::EndFrame()
 
     m_descriptorSetManager.Update();
 
+    DeleteResources();
+
     m_currentCommandBuffer          = nullptr;
     m_lastCommandBuffer             = nullptr;
     m_currentRenderPipeline         = nullptr;
@@ -258,6 +261,8 @@ void VulkanDevice::EnableRendering(const VkRect2D&                 renderArea,
                                    const std::vector<FrameBuffer>& colorAttachments,
                                    FrameBuffer*                    depthAttachment)
 {
+    UpdateResources();
+
     auto fillAttachmentInfo = [this](const FrameBuffer& frameBuffer, bool isDepth = false)
     {
         const auto vulkanTexture = this->GetVulkanTexture(frameBuffer.textureView.GetID());
@@ -383,7 +388,12 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
 {
     const auto id = m_resourceGenerator.GenerateBufferResource();
 
-    VulkanBuffer buffer;
+    auto  bufferCreationInfoPtr = new BufferCreationInfo();
+    auto& bufferCreationInfo    = *bufferCreationInfoPtr;
+    bufferCreationInfo.data     = std::move(static_cast<u8*>(data));
+    bufferCreationInfo.bufferId = id;
+
+    auto& buffer        = bufferCreationInfo.buffer;
     buffer.m_descriptor = descriptor;
 
     VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -395,52 +405,41 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-    VmaAllocationInfo debugInfo{};
-    debugInfo.pUserData = (void*)"Buffer";
-    debugInfo.pName     = "Buffer";
-
     auto ok = vmaCreateBuffer(m_allocator,
                               &info,
                               &allocInfo,
                               &buffer.m_buffer,
                               &buffer.m_allocation,
-                              &debugInfo);
-
-    buffer.m_allocation->SetName(m_allocator, "Buffer");
+                              nullptr);
 
     assert(ok == VK_SUCCESS);
 
-    m_buffers.insert({id, buffer});
-
-    if (data != nullptr)
-        UpdateBuffer(id, data);
+    m_bufferCreateList.push(bufferCreationInfoPtr);
 
     return {id, info.size, this};
 }
 
-void VulkanDevice::UpdateBuffer(BufferResource bufferId, const void* data)
+void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
 {
+    CreateBuffersInternal();
+
     if (!data)
         return;
 
-    auto       vulkanBuffer = GetVulkanBuffer(bufferId);
+    const auto vulkanBuffer = GetVulkanBuffer(bufferId);
     const auto size         = vulkanBuffer.m_descriptor.size;
 
-    VulkanBuffer staging = GetStagingBuffer(size);
+    if (vulkanBuffer.m_buffer == VK_NULL_HANDLE)
+        return;
 
-    vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, size);
-
-    m_bufferToUpdate.emplace_back(bufferId, staging);
+    UpdateBufferInternal(bufferId, 0, static_cast<u8*>(data), 0);
 }
 
 void VulkanDevice::DestroyBuffer(BufferResource resource)
 {
     if (auto buffer = m_buffers.find(resource); buffer != m_buffers.end())
     {
-        auto b = buffer->second;
-        vmaDestroyBuffer(m_allocator, b.m_buffer, b.m_allocation);
-
-        m_buffers.erase(buffer);
+        m_buffersToDestroy.at(m_currentIndexFrame).push_back(resource);
     }
 }
 
@@ -557,6 +556,8 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, cons
 
     return {id, this};
 }
+
+void VulkanDevice::UpdateTexture(const TextureResource& texture, const void* data) {}
 
 void VulkanDevice::DestroyTexture(TextureResource resource)
 {
@@ -751,27 +752,6 @@ VkCommandBuffer VulkanDevice::CreateCommandBuffer(const VkCommandPool& commandPo
     return cmd;
 }
 
-VulkanBuffer VulkanDevice::CreateInternalBuffer(u32 size, VkBufferUsageFlagBits usage)
-{
-    VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage;
-    info.size        = size;
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-
-    VulkanBuffer buffer;
-    auto         ok = vmaCreateBuffer(m_allocator,
-                              &info,
-                              &allocInfo,
-                              &buffer.m_buffer,
-                              &buffer.m_allocation,
-                              nullptr);
-
-    return buffer;
-}
-
 VulkanPipeline* VulkanDevice::GetRenderPipeline(const RenderPipeline* pipeline,
                                                 const GraphicsState&  graphicsState)
 {
@@ -871,25 +851,39 @@ void VulkanDevice::SubmitDrawCall(const DrawCall& drawCall)
     }
 }
 
-void VulkanDevice::UpdateBuffers()
+void VulkanDevice::CreateBuffersInternal()
 {
-    for (auto [bufferId, stagingBuffer] : m_bufferToUpdate)
+    while (!m_bufferCreateList.empty())
     {
-        auto       vulkanBuffer = GetVulkanBuffer(bufferId);
-        const auto size         = vulkanBuffer.m_descriptor.size;
+        auto& [bufferId, buffer, data] = *m_bufferCreateList.front();
+        m_buffers.emplace(bufferId, buffer);
 
-        VkBufferCopy region{0, 0, size};
+        if (data != nullptr)
+        {
+            UpdateBufferInternal(bufferId, 0, data, 0);
+        }
 
-        const auto cmd = m_currentCommandBuffer->commandBuffer;
+        m_bufferCreateList.pop();
+    }
+}
 
-        vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, vulkanBuffer.m_buffer, 1, &region);
+void VulkanDevice::UpdateBuffersInternal()
+{
+    const auto cmd = m_currentCommandBuffer->commandBuffer;
+
+    for (auto bufferUpdateInfo : m_bufferUpdateList)
+    {
+        auto& [buffer, stagingBuffer, region] = bufferUpdateInfo;
+        const auto size                       = buffer.m_descriptor.size;
+
+        vkCmdCopyBuffer(cmd, stagingBuffer.m_buffer, buffer.m_buffer, 1, &region);
 
         VkBufferMemoryBarrier2 barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2};
         barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
         barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
         barrier.dstStageMask  = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
         barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
-        barrier.buffer        = vulkanBuffer.m_buffer;
+        barrier.buffer        = buffer.m_buffer;
         barrier.size          = size;
 
         VkDependencyInfo dependency{VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
@@ -901,7 +895,80 @@ void VulkanDevice::UpdateBuffers()
         m_stagingBufferUsed.emplace_back(std::move(stagingBuffer));
     }
 
-    m_bufferToUpdate.clear();
+    m_bufferUpdateList.clear();
+}
+
+void VulkanDevice::DeleteBufferInternal(BufferResource bufferId)
+{
+    if (auto it = m_buffers.find(bufferId); it != m_buffers.end())
+    {
+        vmaDestroyBuffer(m_allocator, it->second.m_buffer, it->second.m_allocation);
+    }
+
+    m_buffers.erase(bufferId);
+}
+
+void VulkanDevice::UpdateBufferInternal(BufferResource bufferId,
+                                        size_t         bufferOffset,
+                                        const u8*      data,
+                                        size_t         dataOffset)
+{
+    auto buffer = m_buffers.find(bufferId);
+    if (buffer == m_buffers.end())
+    {
+        return;
+    }
+
+    const auto dataSize = buffer->second.m_descriptor.size;
+    const auto region   = VkBufferCopy{dataOffset, bufferOffset, dataSize};
+
+    auto stagingBuffer = GetStagingBuffer(dataSize);
+    vmaCopyMemoryToAllocation(m_allocator, data, stagingBuffer.m_allocation, 0, dataSize);
+
+    m_bufferUpdateList.emplace_back(buffer->second, stagingBuffer, region);
+}
+
+void VulkanDevice::CreateTextures() {}
+
+void VulkanDevice::UpdateTextures() {}
+
+void VulkanDevice::DeleteTexture(TextureResource textureId)
+{
+    if (auto it = m_textures.find(textureId); it != m_textures.end())
+    {
+        if (it->second.imageView != VK_NULL_HANDLE)
+        {
+            vkDestroyImageView(m_device, it->second.imageView, nullptr);
+        }
+        vmaDestroyImage(m_allocator, it->second.image, it->second.allocation);
+    }
+
+    m_textures.erase(textureId);
+}
+
+void VulkanDevice::UpdateResources()
+{
+    CreateBuffersInternal();
+    UpdateBuffersInternal();
+    CreateTextures();
+    UpdateTextures();
+}
+
+void VulkanDevice::DeleteResources()
+{
+    auto& buffersToDestroy = m_buffersToDestroy.at(m_currentIndexFrame);
+    while (!buffersToDestroy.empty())
+    {
+        DeleteBufferInternal(buffersToDestroy.front());
+        buffersToDestroy.pop_front();
+    }
+
+    auto& textureDestroyList = m_texturesToDestroy.at(m_currentIndexFrame);
+    while (!textureDestroyList.empty())
+    {
+        DeleteTexture(textureDestroyList.front());
+        textureDestroyList.pop_front();
+    }
 }
 
 VkCommandBuffer VulkanDevice::BeginImmediateCommandBuffer(VkCommandPool commandPool)

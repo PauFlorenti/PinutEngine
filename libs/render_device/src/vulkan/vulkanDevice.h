@@ -85,11 +85,12 @@ class VulkanDevice final : public Device
     void SubmitDrawCalls(const std::vector<DrawCall>& drawCalls) override;
 
     GPUBuffer CreateBuffer(const BufferDescriptor& descriptor, void* data = nullptr) override;
-    void      UpdateBuffer(BufferResource bufferId, const void* data) override;
+    void      UpdateBuffer(BufferResource bufferId, void* data) override;
     void      DestroyBuffer(BufferResource) override;
 
     GPUTexture CreateTexture(const TextureDescriptor& descriptor,
                              const void*              data = nullptr) override;
+    void       UpdateTexture(const TextureResource& texture, const void* data) override;
     void       DestroyTexture(TextureResource) override;
 
     bool IsResourceValid(const GPUResource& resource) const override;
@@ -123,7 +124,6 @@ class VulkanDevice final : public Device
 
     VkCommandPool   CreateCommandPool(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags = 0x0);
     VkCommandBuffer CreateCommandBuffer(const VkCommandPool& commandPool);
-    VulkanBuffer    CreateInternalBuffer(u32 size, VkBufferUsageFlagBits usage);
 
     VulkanPipeline* GetRenderPipeline(const RenderPipeline* pipeline,
                                       const GraphicsState&  graphicsState);
@@ -143,8 +143,20 @@ class VulkanDevice final : public Device
 
     void SubmitDrawCall(const DrawCall& drawCall);
 
-    void UpdateBuffers();
+    void CreateBuffersInternal();
+    void UpdateBuffersInternal();
+    void DeleteBufferInternal(BufferResource bufferId);
+    void UpdateBufferInternal(BufferResource bufferId,
+                              size_t         bufferOffset,
+                              const u8*      data,
+                              size_t         dataOffset);
+
+    void CreateTextures();
     void UpdateTextures();
+    void DeleteTexture(TextureResource textureId);
+
+    void DeleteResources();
+    void UpdateResources();
 
     VkDevice         m_device{VK_NULL_HANDLE};
     VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
@@ -174,14 +186,44 @@ class VulkanDevice final : public Device
 #endif
 
     // Resources
-    DescriptorSetManager                                 m_descriptorSetManager;
-    ResourceGenerator                                    m_resourceGenerator;
-    std::unordered_map<BufferResource, VulkanBuffer>     m_buffers;
-    std::vector<std::pair<BufferResource, VulkanBuffer>> m_bufferToUpdate;
-    std::unordered_map<TextureResource, VulkanTexture>   m_textures;
-    std::unordered_map<u64, std::deque<VulkanBuffer>>    m_stagingBuffers;
-    std::deque<VulkanBuffer>                             m_stagingBufferUsed;
-    VkSampler                                            m_sampler; // TODO Temporal
+    DescriptorSetManager m_descriptorSetManager;
+    ResourceGenerator    m_resourceGenerator;
+
+    struct BufferCreationInfo
+    {
+        BufferResource bufferId;
+        VulkanBuffer   buffer;
+        u8*            data;
+    };
+
+    struct BufferUpdateInfo
+    {
+        VulkanBuffer buffer;
+        VulkanBuffer stagingBuffer;
+        VkBufferCopy region;
+    };
+
+    std::unordered_map<BufferResource, VulkanBuffer> m_buffers; // TODO Use registry for this?
+    std::vector<BufferUpdateInfo>                    m_bufferUpdateList;
+    std::queue<const BufferCreationInfo*>            m_bufferCreateList;
+    std::array<std::deque<BufferResource>, MAX_FRAMES_IN_FLIGHT> m_buffersToDestroy;
+
+    struct TextureCreationInfo
+    {
+    };
+
+    struct TextureUpdateInfo
+    {
+    };
+
+    std::unordered_map<TextureResource, VulkanTexture>            m_textures;
+    std::vector<TextureUpdateInfo>                                m_textureUpdateList;
+    std::queue<const TextureCreationInfo*>                        m_textureCreateList;
+    std::array<std::deque<TextureResource>, MAX_FRAMES_IN_FLIGHT> m_texturesToDestroy;
+
+    std::unordered_map<u64, std::deque<VulkanBuffer>> m_stagingBuffers;
+    std::deque<VulkanBuffer>                          m_stagingBufferUsed;
+    VkSampler                                         m_sampler; // TODO Temporal
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;

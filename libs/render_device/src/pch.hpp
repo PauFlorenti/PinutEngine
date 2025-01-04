@@ -6,6 +6,7 @@
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>

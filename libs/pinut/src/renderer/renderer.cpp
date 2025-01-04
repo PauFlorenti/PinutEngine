@@ -138,18 +138,18 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
               return;
 
           renderComponent.id = m_rendererRegistry.create();
-          const auto& mesh   = meshComponent.mesh;
+          auto& mesh         = meshComponent.mesh;
 
           auto& data = m_rendererRegistry.emplace<MeshData>(renderComponent.id);
 
-          auto vertices       = mesh.m_vertices;
+          auto& vertices      = mesh.m_vertices;
           data.m_vertexBuffer = m_device->CreateBuffer(
             {vertices.size() * sizeof(Vertex), sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
             vertices.data());
 
           if (!mesh.m_indices.empty())
           {
-              auto indices       = mesh.m_indices;
+              auto& indices      = mesh.m_indices;
               data.m_indexBuffer = m_device->CreateBuffer(
                 {indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
                 indices.data());
@@ -182,8 +182,8 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     // PASS
     // Start updating/uploading data to gpu resources.
     // Cannot be done inside a render pass.
-
-    m_device->UpdateBuffer(m_offscreenState.globalUniformBuffer.GetID(), &viewportData.cameraData);
+    auto cameraData = viewportData.cameraData;
+    m_device->UpdateBuffer(m_offscreenState.globalUniformBuffer.GetID(), (void*)&cameraData);
 
     RED::ViewportState viewport{viewportData.x,
                                 viewportData.y,

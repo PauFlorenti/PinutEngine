@@ -8,6 +8,21 @@
 
 namespace Pinut
 {
+struct QuadVertex
+{
+    glm::vec3 position;
+    glm::vec2 uv;
+};
+
+// clang-format off
+    std::array<QuadVertex, 6> quadData = {QuadVertex{glm::vec3(-1.0f,  1.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
+                                          QuadVertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
+                                          QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)},
+                                          QuadVertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
+                                          QuadVertex{glm::vec3( 1.0f, -1.0f, 0.0f), glm::vec2(1.0f, 1.0f)},
+                                          QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}};
+// clang-format on
+
 void OffscreenState::Create(RED::Device&                 device,
                             u32                          width,
                             u32                          height,
@@ -38,20 +53,6 @@ void OffscreenState::Create(RED::Device&                 device,
 
     globalUniformBuffer = device.CreateBuffer({140, 140, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
 
-    struct QuadVertex
-    {
-        glm::vec3 position;
-        glm::vec2 uv;
-    };
-
-    // clang-format off
-    std::array<QuadVertex, 6> quadData = {QuadVertex{glm::vec3(-1.0f,  1.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
-                                          QuadVertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
-                                          QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)},
-                                          QuadVertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
-                                          QuadVertex{glm::vec3( 1.0f, -1.0f, 0.0f), glm::vec2(1.0f, 1.0f)},
-                                          QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}};
-    // clang-format on
     quadBuffer = device.CreateBuffer({120, 20, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}, quadData.data());
 }
 
