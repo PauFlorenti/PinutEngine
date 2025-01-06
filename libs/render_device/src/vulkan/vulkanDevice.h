@@ -88,9 +88,8 @@ class VulkanDevice final : public Device
     void      UpdateBuffer(BufferResource bufferId, void* data) override;
     void      DestroyBuffer(BufferResource) override;
 
-    GPUTexture CreateTexture(const TextureDescriptor& descriptor,
-                             const void*              data = nullptr) override;
-    void       UpdateTexture(const TextureResource& texture, const void* data) override;
+    GPUTexture CreateTexture(const TextureDescriptor& descriptor, void* data = nullptr) override;
+    void       UpdateTexture(const TextureResource& texture, void* data) override;
     void       DestroyTexture(TextureResource) override;
 
     bool IsResourceValid(const GPUResource& resource) const override;
@@ -151,9 +150,13 @@ class VulkanDevice final : public Device
                               const u8*      data,
                               size_t         dataOffset);
 
-    void CreateTextures();
-    void UpdateTextures();
-    void DeleteTexture(TextureResource textureId);
+    void CreateTexturesInternal();
+    void UpdateTexturesInternal();
+    void DeleteTextureInternal(TextureResource textureId);
+    void UpdateTextureInternal(TextureResource textureId,
+                               size_t          textureOffset,
+                               const u8*       data,
+                               size_t          dataOffset);
 
     void DeleteResources();
     void UpdateResources();
@@ -210,10 +213,16 @@ class VulkanDevice final : public Device
 
     struct TextureCreationInfo
     {
+        TextureResource textureId;
+        VulkanTexture   texture;
+        u8*             data;
     };
 
     struct TextureUpdateInfo
     {
+        VulkanTexture     texture;
+        VulkanBuffer      stagingBuffer;
+        VkBufferImageCopy region;
     };
 
     std::unordered_map<TextureResource, VulkanTexture>            m_textures;

@@ -427,7 +427,6 @@ void VulkanDevice::UpdateBuffer(BufferResource bufferId, void* data)
         return;
 
     const auto vulkanBuffer = GetVulkanBuffer(bufferId);
-    const auto size         = vulkanBuffer.m_descriptor.size;
 
     if (vulkanBuffer.m_buffer == VK_NULL_HANDLE)
         return;
@@ -443,9 +442,14 @@ void VulkanDevice::DestroyBuffer(BufferResource resource)
     }
 }
 
-GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, const void* data)
+GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void* data)
 {
     const auto id = m_resourceGenerator.GenerateTextureResource();
+
+    auto  textureCreationInfoPtr  = new TextureCreationInfo();
+    auto& textureCreationInfo     = *textureCreationInfoPtr;
+    textureCreationInfo.data      = static_cast<u8*>(data);
+    textureCreationInfo.textureId = id;
 
     VulkanTexture texture;
     texture.descriptor = descriptor;
@@ -492,72 +496,28 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, cons
     ok = vkCreateImageView(m_device, &viewInfo, nullptr, &texture.imageView);
     assert(ok == VK_SUCCESS);
 
+    textureCreationInfo.texture = std::move(texture);
+
+    m_textureCreateList.emplace(textureCreationInfoPtr);
+
     m_textures.insert({id, texture});
-
-    if (data != nullptr)
-    {
-        // Get staging buffer and copy data to it.
-        const auto   stagingBufferSize = info.extent.height * info.extent.width * 4;
-        VulkanBuffer staging           = GetStagingBuffer(stagingBufferSize);
-
-        vmaCopyMemoryToAllocation(m_allocator, data, staging.m_allocation, 0, stagingBufferSize);
-
-        // Transition the image from undefined to transfer_dst
-        TransitionImageLayout(texture.image,
-                              0,
-                              VK_ACCESS_2_MEMORY_WRITE_BIT,
-                              VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                              viewInfo.subresourceRange);
-
-        // Copy buffer to image
-        VkBufferImageCopy region{};
-        region.imageExtent                     = descriptor.extent;
-        region.bufferOffset                    = 0;
-        region.imageOffset                     = {0, 0, 0};
-        region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount     = 1;
-        region.imageSubresource.mipLevel       = 0;
-
-        const auto cmd = m_currentCommandBuffer->commandBuffer;
-        vkCmdCopyBufferToImage(cmd,
-                               staging.m_buffer,
-                               texture.image,
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                               1,
-                               &region);
-
-        // Transition image again from transfer_dst to desired (generally shader_read_only)
-        TransitionImageLayout(texture.image,
-                              VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                              VK_ACCESS_2_SHADER_READ_BIT,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              descriptor.layout,
-                              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                              viewInfo.subresourceRange);
-
-        m_stagingBufferUsed.emplace_back(std::move(staging));
-    }
-    else
-    {
-        TransitionImageLayout(texture.image,
-                              VK_ACCESS_2_MEMORY_WRITE_BIT,
-                              VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
-                              VK_IMAGE_LAYOUT_UNDEFINED,
-                              descriptor.layout,
-                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                              viewInfo.subresourceRange);
-    }
 
     return {id, this};
 }
 
-void VulkanDevice::UpdateTexture(const TextureResource& texture, const void* data) {}
+void VulkanDevice::UpdateTexture(const TextureResource& textureId, void* data)
+{
+    CreateTexturesInternal();
+
+    if (data == nullptr)
+        return;
+
+    const auto texture = GetVulkanTexture(textureId);
+    if (texture.image == VK_NULL_HANDLE || texture.imageView == VK_NULL_HANDLE)
+        return;
+
+    UpdateTextureInternal(textureId, 0, static_cast<u8*>(data), 0);
+}
 
 void VulkanDevice::DestroyTexture(TextureResource resource)
 {
@@ -928,11 +888,76 @@ void VulkanDevice::UpdateBufferInternal(BufferResource bufferId,
     m_bufferUpdateList.emplace_back(buffer->second, stagingBuffer, region);
 }
 
-void VulkanDevice::CreateTextures() {}
+void VulkanDevice::CreateTexturesInternal()
+{
+    while (!m_textureCreateList.empty())
+    {
+        auto& [textureId, texture, data] = *m_textureCreateList.front();
+        m_textures.emplace(textureId, texture);
 
-void VulkanDevice::UpdateTextures() {}
+        if (data)
+        {
+            UpdateTextureInternal(textureId, 0, data, 0);
+        }
 
-void VulkanDevice::DeleteTexture(TextureResource textureId)
+        m_textureCreateList.pop();
+    }
+}
+
+void VulkanDevice::UpdateTexturesInternal()
+{
+    const auto cmd = m_currentCommandBuffer->commandBuffer;
+
+    for (auto updateInfo : m_textureUpdateList)
+    {
+        auto& [texture, stagingBuffer, region] = updateInfo;
+        const auto size = texture.descriptor.extent.width * texture.descriptor.extent.height * 4;
+        VkImageAspectFlags imageAspect = texture.descriptor.format == VK_FORMAT_D32_SFLOAT ?
+                                           VK_IMAGE_ASPECT_DEPTH_BIT :
+                                           VK_IMAGE_ASPECT_COLOR_BIT;
+
+        VkImageSubresourceRange subresourceRange{
+          .aspectMask     = imageAspect,
+          .baseMipLevel   = 0,
+          .levelCount     = 1,
+          .baseArrayLayer = 0,
+          .layerCount     = 1,
+        };
+
+        TransitionImageLayout(texture.image,
+                              0,
+                              VK_ACCESS_2_MEMORY_WRITE_BIT,
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                              subresourceRange);
+
+        const auto cmd = m_currentCommandBuffer->commandBuffer;
+        vkCmdCopyBufferToImage(cmd,
+                               stagingBuffer.m_buffer,
+                               texture.image,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               1,
+                               &region);
+
+        // Transition image again from transfer_dst to desired (generally shader_read_only)
+        TransitionImageLayout(texture.image,
+                              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                              VK_ACCESS_2_SHADER_READ_BIT,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              texture.descriptor.layout,
+                              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                              subresourceRange);
+
+        m_stagingBufferUsed.emplace_back(stagingBuffer);
+    }
+
+    m_textureUpdateList.clear();
+}
+
+void VulkanDevice::DeleteTextureInternal(TextureResource textureId)
 {
     if (auto it = m_textures.find(textureId); it != m_textures.end())
     {
@@ -946,12 +971,30 @@ void VulkanDevice::DeleteTexture(TextureResource textureId)
     m_textures.erase(textureId);
 }
 
-void VulkanDevice::UpdateResources()
+void VulkanDevice::UpdateTextureInternal(TextureResource textureId,
+                                         size_t          textureOffset,
+                                         const u8*       data,
+                                         size_t          dataOffset)
 {
-    CreateBuffersInternal();
-    UpdateBuffersInternal();
-    CreateTextures();
-    UpdateTextures();
+    auto textureIt = m_textures.find(textureId);
+    if (textureIt == m_textures.end())
+    {
+        return;
+    }
+
+    auto       texture  = textureIt->second;
+    const auto dataSize = texture.descriptor.extent.width * texture.descriptor.extent.height *
+                          4; // TODO 4 is hardcoded so far.
+    const auto region = VkBufferImageCopy{0,
+                                          0,
+                                          0,
+                                          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+                                          {0, 0, 0},
+                                          texture.descriptor.extent};
+
+    auto stagingBuffer = GetStagingBuffer(dataSize);
+    vmaCopyMemoryToAllocation(m_allocator, data, stagingBuffer.m_allocation, 0, dataSize);
+    m_textureUpdateList.emplace_back(texture, stagingBuffer, region);
 }
 
 void VulkanDevice::DeleteResources()
@@ -966,9 +1009,17 @@ void VulkanDevice::DeleteResources()
     auto& textureDestroyList = m_texturesToDestroy.at(m_currentIndexFrame);
     while (!textureDestroyList.empty())
     {
-        DeleteTexture(textureDestroyList.front());
+        DeleteTextureInternal(textureDestroyList.front());
         textureDestroyList.pop_front();
     }
+}
+
+void VulkanDevice::UpdateResources()
+{
+    CreateBuffersInternal();
+    UpdateBuffersInternal();
+    CreateTexturesInternal();
+    UpdateTexturesInternal();
 }
 
 VkCommandBuffer VulkanDevice::BeginImmediateCommandBuffer(VkCommandPool commandPool)

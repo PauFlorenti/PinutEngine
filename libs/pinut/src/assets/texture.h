@@ -15,7 +15,7 @@ class Texture final : public Asset
 
     const u32      GetWidth() const;
     const u32      GetHeight() const;
-    const u8*      GetData() const;
+    u8*            GetData() const;
     const VkFormat GetFormat() const;
 
   private:

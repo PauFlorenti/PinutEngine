@@ -48,7 +48,7 @@ void Texture::Destroy()
     m_data = nullptr;
 }
 
-const u8*      Texture::GetData() const { return m_data; }
+u8*            Texture::GetData() const { return m_data; }
 const u32      Texture::GetWidth() const { return m_width; }
 const u32      Texture::GetHeight() const { return m_height; }
 const VkFormat Texture::GetFormat() const { return m_format; }
