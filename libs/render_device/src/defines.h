@@ -23,3 +23,8 @@ static_assert(sizeof(u64) == 8);
 
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
+
+constexpr u64 KiB(u64 kb = 1) { return kb * 1024; }
+constexpr u64 MiB(u64 mb = 1) { return KiB(mb) * 1024; }
+constexpr u64 GiB(u64 gb = 1) { return MiB(gb) * 1024; }
+constexpr u64 TiB(u64 tb = 1) { return GiB(tb) * 1024; }

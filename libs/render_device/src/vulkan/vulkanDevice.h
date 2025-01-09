@@ -67,6 +67,14 @@ class VulkanDevice final : public Device
         std::array<i32, MAX_FRAMES_IN_FLIGHT>                         commandBufferIndex;
     };
 
+    struct StagingBuffer
+    {
+        u64           size{MiB(1)};
+        u64           memory{0};
+        VmaAllocation allocation;
+        VkBuffer      buffer;
+    };
+
   public:
     VulkanDevice(void* deviceInfo, void* queues, void* callbacks);
     ~VulkanDevice() override;
@@ -129,16 +137,16 @@ class VulkanDevice final : public Device
     VulkanBuffer    GetVulkanBuffer(const BufferResource& bufferResource);
     VulkanTexture   GetVulkanTexture(const TextureResource& textureResource);
 
-    VulkanBuffer GetStagingBuffer(u64 size);
-    void         TransitionImageLayout(VkImage                 image,
-                                       VkAccessFlags           srcAccessFlags,
-                                       VkAccessFlags           dstAccessFlags,
-                                       VkImageLayout           currentLayout,
-                                       VkImageLayout           targetLayout,
-                                       VkPipelineStageFlags    srcStageFlags,
-                                       VkPipelineStageFlags    dstStageFlags,
-                                       VkImageSubresourceRange subresourceRange,
-                                       bool                    immediate = false);
+    StagingBuffer GetStagingBuffer(u64 size);
+    void          TransitionImageLayout(VkImage                 image,
+                                        VkAccessFlags           srcAccessFlags,
+                                        VkAccessFlags           dstAccessFlags,
+                                        VkImageLayout           currentLayout,
+                                        VkImageLayout           targetLayout,
+                                        VkPipelineStageFlags    srcStageFlags,
+                                        VkPipelineStageFlags    dstStageFlags,
+                                        VkImageSubresourceRange subresourceRange,
+                                        bool                    immediate = false);
 
     void SubmitDrawCall(const DrawCall& drawCall);
 
@@ -201,9 +209,9 @@ class VulkanDevice final : public Device
 
     struct BufferUpdateInfo
     {
-        VulkanBuffer buffer;
-        VulkanBuffer stagingBuffer;
-        VkBufferCopy region;
+        VulkanBuffer  buffer;
+        StagingBuffer stagingBuffer;
+        VkBufferCopy  region;
     };
 
     std::unordered_map<BufferResource, VulkanBuffer> m_buffers; // TODO Use registry for this?
@@ -221,7 +229,7 @@ class VulkanDevice final : public Device
     struct TextureUpdateInfo
     {
         VulkanTexture     texture;
-        VulkanBuffer      stagingBuffer;
+        StagingBuffer     stagingBuffer;
         VkBufferImageCopy region;
     };
 
@@ -230,9 +238,8 @@ class VulkanDevice final : public Device
     std::queue<const TextureCreationInfo*>                        m_textureCreateList;
     std::array<std::deque<TextureResource>, MAX_FRAMES_IN_FLIGHT> m_texturesToDestroy;
 
-    std::unordered_map<u64, std::deque<VulkanBuffer>> m_stagingBuffers;
-    std::deque<VulkanBuffer>                          m_stagingBufferUsed;
-    VkSampler                                         m_sampler; // TODO Temporal
+    std::vector<StagingBuffer> m_stagingBuffers;
+    VkSampler                  m_sampler; // TODO Temporal
 
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT>     m_frameCompletedFences;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imagesAvailableSemaphores;
