@@ -33,8 +33,7 @@
 		"input_vertex": "PosColorUvN",
 		"attachments": [
 			"r32g32b32a32"
-		],
-		"depth": "d32"
+		]
 	},
 	"present": {
 		"vs": {
@@ -52,5 +51,31 @@
 			]
 		},
 		"input_vertex": "PosUv"
+	},
+	"depth_pass": {
+		"vs": {
+			"name": "depth_pass.vert",
+			"uniforms": [
+				{
+					"name": "Camera",
+					"binding": 0,
+					"set": 0,
+					"size": 140,
+					"type": "Buffer"
+				},
+				{
+					"name": "Model",
+					"binding": 0,
+					"set": 1,
+					"size": 64,
+					"type": "Buffer"
+				}
+			]
+		},
+		"fs": {
+			"name": ""
+		},
+		"input_vertex": "PosColorUvN",
+		"depth": "d32"
 	}
 }

@@ -29,7 +29,9 @@ struct BlendState
 
 struct DepthState
 {
-    VkFormat depthFormat{VK_FORMAT_UNDEFINED};
+    VkFormat    depthFormat{VK_FORMAT_UNDEFINED};
+    VkCompareOp compareOperation{VK_COMPARE_OP_NEVER};
+    bool        writeEnable{false};
 
     bool operator==(const DepthState&) const noexcept = default;
 };

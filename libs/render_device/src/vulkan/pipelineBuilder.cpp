@@ -20,12 +20,15 @@ void PipelineBuilder::clear()
     render_info            = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
 }
 
-void PipelineBuilder::set_shaders(VkShaderModule shader_module, VkShaderStageFlags shader_stage)
+void PipelineBuilder::set_shaders(VkShaderModule shaderModule, VkShaderStageFlags shaderStage)
 {
+    if (shaderModule == VK_NULL_HANDLE)
+        return;
+
     VkPipelineShaderStageCreateInfo info{
       .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-      .stage  = (VkShaderStageFlagBits)shader_stage,
-      .module = shader_module,
+      .stage  = (VkShaderStageFlagBits)shaderStage,
+      .module = shaderModule,
       .pName  = "main",
     };
 

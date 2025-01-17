@@ -31,12 +31,19 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     const auto     vertexShaderPath   = "shaders/" + renderPipeline.vertexShader.name + ".spv";
     const auto     fragmentShaderPath = "shaders/" + renderPipeline.fragmentShader.name + ".spv";
     vertexShaderModule                = CreateShaderModule(device, vertexShaderPath.c_str());
-    fragmentShaderModule              = CreateShaderModule(device, fragmentShaderPath.c_str());
+    fragmentShaderModule              = renderPipeline.fragmentShader.name.empty() ?
+                                          VK_NULL_HANDLE :
+                                          CreateShaderModule(device, fragmentShaderPath.c_str());
 
-    if (!vertexShaderModule || !fragmentShaderModule)
+    if (!vertexShaderModule)
     {
-        printf("[ERROR]: Failed to create shaders.");
+        printf("[ERROR]: Failed to create vertex shader.");
         return {};
+    }
+
+    if (!fragmentShaderModule)
+    {
+        printf("[DEBUG]: Fragment shader is null. Assuming only depth/stencil pipeline.");
     }
 
     pipeline.m_descriptorSetLayouts = CreateDescriptorSetLayouts(device, renderPipeline);
@@ -67,14 +74,16 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     builder.set_topology(graphicsState.topology);
     builder.set_rasterizer(graphicsState.raster);
     builder.disable_blending();
-    // builder.setBlendingState(graphicsState.blend);
     builder.set_input_attribute(vertexDeclaration->layout, vertexDeclaration->stride);
     builder.set_multisampling_none();
     graphicsState.depth.depthFormat != VK_FORMAT_UNDEFINED ?
-      builder.enable_depth_test(true, true, VK_COMPARE_OP_LESS_OR_EQUAL) :
-      builder.enable_depth_test(false, false, VK_COMPARE_OP_MAX_ENUM);
+      builder.enable_depth_test(true,
+                                graphicsState.depth.writeEnable,
+                                graphicsState.depth.compareOperation) :
+      builder.enable_depth_test(false,
+                                graphicsState.depth.writeEnable,
+                                graphicsState.depth.compareOperation);
     builder.set_depth_format(graphicsState.depth.depthFormat);
-    // builder.set_stencil_format(VK_FORMAT_UNDEFINED);
     builder.SetColorAttachmentFormats(renderPipeline.attachmentFormats);
 
     pipeline.m_pipeline = builder.build(device);
@@ -121,8 +130,8 @@ VkShaderModule VulkanPipeline::CreateShaderModule(VkDevice device, const char* f
         return VK_NULL_HANDLE;
     }
 
-    const size_t          file_size = static_cast<size_t>(file.tellg());
-    std::vector<uint32_t> buffer(file_size / sizeof(uint32_t));
+    const size_t     file_size = static_cast<size_t>(file.tellg());
+    std::vector<u32> buffer(file_size / sizeof(u32));
 
     file.seekg(0);
     file.read((char*)buffer.data(), file_size);
@@ -130,7 +139,7 @@ VkShaderModule VulkanPipeline::CreateShaderModule(VkDevice device, const char* f
 
     VkShaderModuleCreateInfo info{
       .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-      .codeSize = buffer.size() * sizeof(uint32_t),
+      .codeSize = buffer.size() * sizeof(u32),
       .pCode    = buffer.data(),
     };
 

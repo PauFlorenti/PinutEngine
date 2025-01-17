@@ -10,6 +10,7 @@
 #include "src/components/renderComponent.h"
 #include "src/components/transformComponent.h"
 #include "src/renderer/offscreenState.h"
+#include "src/renderer/stages/depthPassStage.h"
 #include "src/renderer/stages/lightForwardStage.h"
 #include "src/renderer/stages/presentStage.h"
 
@@ -38,6 +39,7 @@ class Renderer final
 
     entt::registry m_rendererRegistry;
 
+    DepthPassStage m_depthPassStage;
     OffscreenState    m_offscreenState;
     PresentStage      m_presentStage;
     LightForwardStage m_lightForwardStage;

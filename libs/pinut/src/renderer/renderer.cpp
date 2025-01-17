@@ -192,9 +192,13 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     std::vector<RED::DrawCall> drawCalls;
     drawCalls.reserve(1000);
+    std::vector<RED::DrawCall> depthPassDrawCalls;
+    depthPassDrawCalls.reserve(1000);
 
     registry.view<Component::TransformComponent, Component::RenderComponent>().each(
-      [&drawCalls, this](auto entity, auto& transformComponent, auto& renderComponent)
+      [&drawCalls, &depthPassDrawCalls, this](auto  entity,
+                                              auto& transformComponent,
+                                              auto& renderComponent)
       {
           const auto meshData     = m_rendererRegistry.try_get<MeshData>(renderComponent.id);
           const auto materialData = m_rendererRegistry.try_get<MaterialData>(renderComponent.id);
@@ -204,19 +208,37 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
           m_device->UpdateBuffer(materialData->uniformBuffer.GetID(), &transformComponent.model);
 
+          RED::DrawCall depthDrawCall;
           RED::DrawCall dc;
-          dc.vertexBuffer = meshData->m_vertexBuffer;
-          dc.indexBuffer  = meshData->m_indexBuffer;
+          dc.vertexBuffer = depthDrawCall.vertexBuffer = meshData->m_vertexBuffer;
+          dc.indexBuffer = depthDrawCall.indexBuffer = meshData->m_indexBuffer;
 
           dc.SetUniformBuffer(m_offscreenState.globalUniformBuffer, RED::ShaderType::VERTEX, 0, 0);
           dc.SetUniformBuffer(materialData->uniformBuffer, RED::ShaderType::VERTEX, 0, 1);
           dc.SetUniformTexture(materialData->difuseTexture, RED::ShaderType::FRAGMENT, 1, 1);
 
+          depthDrawCall.SetUniformBuffer(m_offscreenState.globalUniformBuffer,
+                                         RED::ShaderType::VERTEX,
+                                         0,
+                                         0);
+          depthDrawCall.SetUniformBuffer(materialData->uniformBuffer,
+                                         RED::ShaderType::VERTEX,
+                                         0,
+                                         1);
+
           drawCalls.push_back(dc);
+          depthPassDrawCalls.push_back(depthDrawCall);
       });
 
     // Finish updating data to resources.
     // Start render pass.
+
+    DepthPassInputParameters depthPassParameters;
+    depthPassParameters.viewport         = viewportData;
+    depthPassParameters.depthFrameBuffer = m_offscreenState.depthTexture.GetID();
+    depthPassParameters.drawCalls        = std::move(depthPassDrawCalls);
+
+    m_depthPassStage.Execute(m_device.get(), std::move(depthPassParameters), {});
 
     DrawOpaqueInputParameters drawOpaqueParameters;
     drawOpaqueParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();

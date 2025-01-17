@@ -34,7 +34,7 @@ void LightForwardStage::Execute(RED::Device*               device,
                                 .clearColor     = {.0f, .0f, .0f, .0f}};
 
     auto depthAttachment = RED::FrameBuffer{.textureView    = parameters.depthFrameBuffer,
-                                            .loadOperation  = RED::FrameBufferLoadOperation::CLEAR,
+                                            .loadOperation  = RED::FrameBufferLoadOperation::LOAD,
                                             .storeOperation = RED::FrameBufferStoreOperation::STORE,
                                             .clearColor     = {1.0f, .0f}};
 
@@ -50,7 +50,7 @@ void LightForwardStage::Execute(RED::Device*               device,
                               parameters.viewport.y,
                               parameters.viewport.width,
                               parameters.viewport.height};
-    graphicsState.depth    = {VK_FORMAT_D32_SFLOAT};
+    graphicsState.depth    = {VK_FORMAT_D32_SFLOAT, VK_COMPARE_OP_LESS_OR_EQUAL, false};
 
     device->SetGraphicsState(&graphicsState);
     device->SetRenderPipeline(&m_pipelines.at("flat"));

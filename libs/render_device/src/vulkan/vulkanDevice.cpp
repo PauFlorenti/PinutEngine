@@ -291,7 +291,7 @@ void VulkanDevice::EnableRendering(const VkRect2D&                 renderArea,
     attachments.reserve(colorAttachments.size());
 
     // Enable present to swapchain image.
-    if (colorAttachments.empty())
+    if (colorAttachments.empty() && !depthAttachment)
     {
         assert(depthAttachment == nullptr);
 
@@ -1091,8 +1091,9 @@ VulkanDevice::StagingBuffer VulkanDevice::GetStagingBuffer(u64 size)
         }
     }
 
-    u64 stagingBufferSize =
-      size < MiB(1) ? MiB(1) : static_cast<u64>(std::ceil(static_cast<f64>(size) / MiB(1))) * MiB(1);
+    u64           stagingBufferSize = size < MiB(1) ?
+                                        MiB(1) :
+                                        static_cast<u64>(std::ceil(static_cast<f64>(size) / MiB(1))) * MiB(1);
     StagingBuffer stagingBuffer;
     stagingBuffer.size   = stagingBufferSize;
     stagingBuffer.memory = size;
