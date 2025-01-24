@@ -61,8 +61,6 @@ VkRenderingInfo RenderingInfo(uint32_t                   attachmentCount,
                               VkRect2D                   extent,
                               VkRenderingAttachmentInfo* depthAttachment = VK_NULL_HANDLE);
 
-bool load_shader_module(const char* filename, VkDevice device, VkShaderModule* out_shader_module);
-
 VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags);
 } // namespace vkinit
 } // namespace vulkan

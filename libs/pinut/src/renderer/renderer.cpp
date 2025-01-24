@@ -144,14 +144,14 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
 
           auto& vertices      = mesh.m_vertices;
           data.m_vertexBuffer = m_device->CreateBuffer(
-            {vertices.size() * sizeof(Vertex), sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+            {vertices.size() * sizeof(Vertex), sizeof(Vertex), RED::BufferUsage::VERTEX},
             vertices.data());
 
           if (!mesh.m_indices.empty())
           {
               auto& indices      = mesh.m_indices;
               data.m_indexBuffer = m_device->CreateBuffer(
-                {indices.size() * sizeof(u16), sizeof(u16), VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+                {indices.size() * sizeof(u16), sizeof(u16), RED::BufferUsage::INDEX},
                 indices.data());
           }
 
@@ -168,7 +168,7 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
                 m_device->CreateTexture(textureDescriptor, renderComponent.difuse.GetData());
 
               materialData.uniformBuffer =
-                m_device->CreateBuffer({64, 64, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
+                m_device->CreateBuffer({64, 64, RED::BufferUsage::UNIFORM});
           }
       });
 }

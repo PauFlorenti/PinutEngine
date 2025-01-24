@@ -387,8 +387,8 @@ GPUBuffer VulkanDevice::CreateBuffer(const BufferDescriptor& descriptor, void* d
 
     VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    info.usage =
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | descriptor.usage;
+    info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                 GetVulkanBufferUsage(descriptor.usage);
     info.size = descriptor.size;
 
     VmaAllocationCreateInfo allocInfo{};

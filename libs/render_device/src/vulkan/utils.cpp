@@ -200,34 +200,6 @@ VkRenderingInfo RenderingInfo(uint32_t                   attachmentCount,
     return info;
 }
 
-bool load_shader_module(const char* filename, VkDevice device, VkShaderModule* out_shader_module)
-{
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open())
-        return false;
-
-    const size_t          file_size = static_cast<size_t>(file.tellg());
-    std::vector<uint32_t> buffer(file_size / sizeof(uint32_t));
-
-    file.seekg(0);
-    file.read((char*)buffer.data(), file_size);
-    file.close();
-
-    VkShaderModuleCreateInfo info{
-      .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-      .codeSize = buffer.size() * sizeof(uint32_t),
-      .pCode    = buffer.data(),
-    };
-
-    VkShaderModule module;
-    if (vkCreateShaderModule(device, &info, nullptr, &module) != VK_SUCCESS)
-        return false;
-
-    *out_shader_module = module;
-    return true;
-}
-
 VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 queueFamilyIndex, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo info{

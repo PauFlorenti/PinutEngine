@@ -51,9 +51,9 @@ void OffscreenState::Create(RED::Device&                 device,
         colorTextures.at(attachmentIndex) = device.CreateTexture(descriptor);
     }
 
-    globalUniformBuffer = device.CreateBuffer({140, 140, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT});
+    globalUniformBuffer = device.CreateBuffer({140, 140, RED::BufferUsage::UNIFORM});
 
-    quadBuffer = device.CreateBuffer({120, 20, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}, quadData.data());
+    quadBuffer = device.CreateBuffer({120, 20, RED::BufferUsage::VERTEX}, quadData.data());
 }
 
 void OffscreenState::Clear()
