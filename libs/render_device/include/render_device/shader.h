@@ -28,6 +28,7 @@ struct UniformData
                 UniformType uniformType,
                 std::string name,
                 i32         binding,
+                u32         count,
                 u32         set);
 
     //! TODO Check if size is necessary here.
@@ -35,12 +36,14 @@ struct UniformData
                               UniformType uniformType,
                               std::string name,
                               i32         binding,
-                              u32         set = 0);
+                              u32         count = 1,
+                              u32         set   = 0);
 
     ShaderType  m_shaderType{ShaderType::COUNT};
     UniformType m_uniformType{UniformType::COUNT};
     std::string m_name;
     i32         m_binding{-1};
+    u32         m_count{1};
     u32         m_set{0};
 };
 

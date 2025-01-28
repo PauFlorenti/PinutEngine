@@ -134,20 +134,30 @@ std::vector<VkDescriptorSet> DescriptorSetManager::GetDescriptorSet(
         for (const auto& resource : uniformDescriptorSetInfo.at(setIndex).resources)
         {
             VkWriteDescriptorSet write{};
-            write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.pNext           = nullptr;
-            write.dstSet          = sets.back();
-            write.descriptorCount = 1;
-            write.descriptorType  = resource.type;
-            write.dstBinding      = resource.binding;
-            write.pBufferInfo =
-              std::holds_alternative<VkDescriptorBufferInfo>(resource.descriptorInfo) ?
-                &std::get<VkDescriptorBufferInfo>(resource.descriptorInfo) :
-                VK_NULL_HANDLE;
-            write.pImageInfo =
-              std::holds_alternative<VkDescriptorImageInfo>(resource.descriptorInfo) ?
-                &std::get<VkDescriptorImageInfo>(resource.descriptorInfo) :
-                VK_NULL_HANDLE;
+            write.sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.pNext          = nullptr;
+            write.dstSet         = sets.back();
+            write.descriptorType = resource.type;
+            write.dstBinding     = resource.binding;
+
+            if (resource.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                if (const auto& bufferInfo =
+                      std::get_if<std::vector<VkDescriptorBufferInfo>>(&resource.descriptorInfo))
+                {
+                    write.descriptorCount = static_cast<u32>(bufferInfo->size());
+                    write.pBufferInfo     = bufferInfo->data();
+                }
+            }
+            else if (resource.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+            {
+                if (const auto& imageInfo =
+                      std::get_if<std::vector<VkDescriptorImageInfo>>(&resource.descriptorInfo))
+                {
+                    write.descriptorCount = static_cast<u32>(imageInfo->size());
+                    write.pImageInfo      = imageInfo->data();
+                }
+            }
 
             writes.emplace_back(write);
         }

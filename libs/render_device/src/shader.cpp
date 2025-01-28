@@ -8,20 +8,23 @@ UniformData UniformData::Create(ShaderType  shaderType,
                                 UniformType uniformType,
                                 std::string name,
                                 i32         binding,
+                                u32         count,
                                 u32         set)
 {
-    return {shaderType, uniformType, name, binding, set};
+    return {shaderType, uniformType, name, binding, count, set};
 }
 
 UniformData::UniformData(ShaderType  shaderType,
                          UniformType uniformType,
                          std::string name,
                          i32         binding,
+                         u32         count,
                          u32         set)
 : m_shaderType(shaderType),
   m_uniformType(uniformType),
   m_name(name),
   m_binding(binding),
+  m_count(count),
   m_set(set)
 {
 }

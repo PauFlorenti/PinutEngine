@@ -538,31 +538,49 @@ UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
 
     for (const auto& uniform : uniformDescriptors)
     {
-        if (const auto& bufferId = uniform.bufferView.GetID();
-            bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
+        if (!uniform.bufferViews.empty())
         {
-            const auto             buffer = GetVulkanBuffer(bufferId);
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = buffer.m_buffer;
-            bufferInfo.offset = 0;
-            bufferInfo.range  = buffer.m_descriptor.size;
+            std::vector<VkDescriptorBufferInfo> bufferInfos;
+            bufferInfos.reserve(uniform.bufferViews.size());
+            for (const auto& bufferView : uniform.bufferViews)
+            {
+                if (const auto& bufferId = bufferView.GetID();
+                    bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
+                {
+                    const auto             buffer = GetVulkanBuffer(bufferId);
+                    VkDescriptorBufferInfo bufferInfo{};
+                    bufferInfo.buffer = buffer.m_buffer;
+                    bufferInfo.offset = 0;
+                    bufferInfo.range  = buffer.m_descriptor.size;
 
+                    bufferInfos.emplace_back(bufferInfo);
+                }
+            }
             uniformDescriptorSetInfos.at(uniform.set)
-              .resources.emplace_back(std::move(bufferInfo),
+              .resources.emplace_back(std::move(bufferInfos),
                                       uniform.binding,
                                       VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         }
-        else if (const auto& textureId = uniform.textureView.GetID();
-                 textureId.id != GPU_RESOURCE_INVALID && textureId.type == ResourceType::TEXTURE)
+        else if (!uniform.textureViews.empty())
         {
-            const auto            texture = GetVulkanTexture(textureId);
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView   = texture.imageView;
-            imageInfo.sampler     = m_sampler;
+            std::vector<VkDescriptorImageInfo> imageInfos;
+            imageInfos.reserve(uniform.textureViews.size());
+            for (const auto& textureView : uniform.textureViews)
+            {
+                if (const auto& textureId = textureView.GetID();
+                    textureId.id != GPU_RESOURCE_INVALID && textureId.type == ResourceType::TEXTURE)
+                {
+                    const auto            texture = GetVulkanTexture(textureId);
+                    VkDescriptorImageInfo imageInfo{};
+                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo.imageView   = texture.imageView;
+                    imageInfo.sampler     = m_sampler;
 
+                    imageInfos.emplace_back(std::move(imageInfo));
+                }
+            }
             uniformDescriptorSetInfos.at(uniform.set)
-              .resources.emplace_back(std::move(imageInfo),
+              .resources.emplace_back(std::move(imageInfos),
                                       uniform.binding,
                                       VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         }

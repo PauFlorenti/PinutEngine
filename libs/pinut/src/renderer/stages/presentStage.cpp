@@ -42,7 +42,7 @@ void PresentStage::Execute(RED::Device*               device,
 
     RED::DrawCall dc;
     dc.vertexBuffer = parameters.quadBuffer;
-    dc.SetUniformTexture(parameters.offscreenTexture, RED::ShaderType::FRAGMENT, 0);
+    dc.SetUniformTexture({parameters.offscreenTexture}, RED::ShaderType::FRAGMENT, 0);
 
     device->SubmitDrawCalls({dc});
 

@@ -7,35 +7,27 @@ namespace RED
 
 DrawCall::DrawCall() { uniforms.reserve(16); }
 
-void DrawCall::SetUniformBuffer(GPUBufferView bufferView,
-                                ShaderType    shaderType,
-                                u32           binding,
-                                u32           set)
+void DrawCall::SetUniformBuffer(std::vector<GPUBufferView> bufferViews,
+                                ShaderType                 shaderType,
+                                u32                        binding,
+                                u32                        set)
 {
     assert(set < 2 /*MAX_DESCRIPTOR_SETS*/);
     assert(binding < 4 /*MAX_UNIFORM_SLOTS*/);
 
-    UniformDescriptor uniform{bufferView, {}, shaderType, binding, set, ""};
+    UniformDescriptor uniform{std::move(bufferViews), {}, shaderType, binding, set, ""};
     uniforms.emplace_back(std::move(uniform));
 }
 
-void DrawCall::SetUniformBuffer(const std::string& name,
-                                ShaderType         shaderType,
-                                GPUBufferView      bufferView)
+void RED::DrawCall::SetUniformTexture(std::vector<GPUTextureView> textureViews,
+                                      ShaderType                  shaderType,
+                                      u32                         binding,
+                                      u32                         set)
 {
-    UniformDescriptor uniform{bufferView, {}, shaderType, 0, 0, name.c_str()};
+    assert(set < 2 /*MAX_DESCRIPTOR_SETS*/);
+    assert(binding < 4 /*MAX_UNIFORM_SLOTS*/);
+
+    UniformDescriptor uniform{{}, std::move(textureViews), shaderType, binding, set, ""};
     uniforms.emplace_back(std::move(uniform));
 }
 } // namespace RED
-
-void RED::DrawCall::SetUniformTexture(GPUTextureView textureView,
-                                      ShaderType     shaderType,
-                                      u32            binding,
-                                      u32            set)
-{
-    assert(set < 2 /*MAX_DESCRIPTOR_SETS*/);
-    assert(binding < 4 /*MAX_UNIFORM_SLOTS*/);
-
-    UniformDescriptor uniform{{}, textureView, shaderType, binding, set, ""};
-    uniforms.emplace_back(std::move(uniform));
-}

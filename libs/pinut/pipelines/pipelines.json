@@ -7,14 +7,12 @@
 					"name": "Camera",
 					"binding": 0,
 					"set": 0,
-					"size": 140,
 					"type": "Buffer"
 				},
 				{
 					"name": "Model",
 					"binding": 0,
 					"set": 1,
-					"size": 64,
 					"type": "Buffer"
 				}
 			]
@@ -26,6 +24,7 @@
 					"name": "Difuse",
 					"binding": 1,
 					"set": 1,
+					"count": 2,
 					"type": "Texture"
 				}
 			]
@@ -60,14 +59,12 @@
 					"name": "Camera",
 					"binding": 0,
 					"set": 0,
-					"size": 140,
 					"type": "Buffer"
 				},
 				{
 					"name": "Model",
 					"binding": 0,
 					"set": 1,
-					"size": 64,
 					"type": "Buffer"
 				}
 			]

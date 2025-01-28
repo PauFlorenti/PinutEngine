@@ -40,6 +40,7 @@ RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType shad
                                                                     RED::UniformType::TEXTURE,
                                                  uniform["name"].get<std::string>(),
                                                  uniform["binding"].get<i32>(),
+                                                 uniform.value("count", 1),
                                                  set);
 
             if (std::find(shader.descriptorSets.begin(), shader.descriptorSets.end(), set) ==
@@ -213,15 +214,21 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
           dc.vertexBuffer = depthDrawCall.vertexBuffer = meshData->m_vertexBuffer;
           dc.indexBuffer = depthDrawCall.indexBuffer = meshData->m_indexBuffer;
 
-          dc.SetUniformBuffer(m_offscreenState.globalUniformBuffer, RED::ShaderType::VERTEX, 0, 0);
-          dc.SetUniformBuffer(materialData->uniformBuffer, RED::ShaderType::VERTEX, 0, 1);
-          dc.SetUniformTexture(materialData->difuseTexture, RED::ShaderType::FRAGMENT, 1, 1);
+          dc.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
+                              RED::ShaderType::VERTEX,
+                              0,
+                              0);
+          dc.SetUniformBuffer({materialData->uniformBuffer}, RED::ShaderType::VERTEX, 0, 1);
+          dc.SetUniformTexture({materialData->difuseTexture, materialData->difuseTexture},
+                               RED::ShaderType::FRAGMENT,
+                               1,
+                               1);
 
-          depthDrawCall.SetUniformBuffer(m_offscreenState.globalUniformBuffer,
+          depthDrawCall.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
                                          RED::ShaderType::VERTEX,
                                          0,
                                          0);
-          depthDrawCall.SetUniformBuffer(materialData->uniformBuffer,
+          depthDrawCall.SetUniformBuffer({materialData->uniformBuffer},
                                          RED::ShaderType::VERTEX,
                                          0,
                                          1);

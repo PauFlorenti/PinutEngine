@@ -172,7 +172,7 @@ void VulkanPipeline::AddDescriptorSetLayoutBindings(
         VkDescriptorSetLayoutBinding binding{
           .binding            = static_cast<u32>(uniform.m_binding),
           .descriptorType     = descriptorType,
-          .descriptorCount    = 1,
+          .descriptorCount    = uniform.m_count,
           .stageFlags         = shaderStage,
           .pImmutableSamplers = nullptr,
         };

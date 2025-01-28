@@ -25,9 +25,10 @@ struct UniformDescriptorInfo
 {
     struct UniformResource
     {
-        std::variant<VkDescriptorBufferInfo, VkDescriptorImageInfo> descriptorInfo;
-        i32                                                         binding{-1};
-        VkDescriptorType                                            type;
+        std::variant<std::vector<VkDescriptorBufferInfo>, std::vector<VkDescriptorImageInfo>>
+                         descriptorInfo;
+        i32              binding{-1};
+        VkDescriptorType type;
     };
 
     std::vector<UniformResource> resources;

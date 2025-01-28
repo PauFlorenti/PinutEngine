@@ -6,12 +6,12 @@ layout (location = 2) in vec2 in_uv;
 
 layout (location = 0) out vec4 out_color;
 
-layout (set = 1, binding = 1) uniform sampler2D difuse_texture;
+layout (set = 1, binding = 1) uniform sampler2D difuse_texture[2];
 
 void main()
 {
     float NdotL = clamp(dot(in_normal, vec3(0, 1, 0)), 0.0f, 1.0f);
-    vec4 color  = vec4(in_color, 1) * texture(difuse_texture, in_uv);
+    vec4 color  = vec4(in_color, 1) * texture(difuse_texture[1], in_uv);
 
     out_color = NdotL * color;
 }
