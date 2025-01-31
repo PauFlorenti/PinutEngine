@@ -12,6 +12,7 @@
 #include "render_device/textureDescriptor.h"
 
 #include "src/assets/mesh.h"
+#include "src/components/lightComponent.h"
 #include "src/components/meshComponent.h"
 #include "src/renderer/materialData.h"
 #include "src/renderer/meshData.h"
@@ -132,6 +133,31 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
                                 VK_FORMAT_D32_SFLOAT);
     }
 
+    std::array<LightData, 4> lightData;
+    memset(lightData.data(), 0, sizeof(LightData) * lightData.size());
+    u32 lightIndex{0};
+    registry.view<Component::LightComponent, Component::TransformComponent>().each(
+      [this, &lightData, &lightIndex](entt::entity entity,
+                                      auto&        lightComponent,
+                                      auto&        transformComponent)
+      {
+          if (!lightComponent.m_enabled || lightComponent.m_intensity <= 0.0f)
+              return;
+
+          const auto m                       = transformComponent.model;
+          lightData.at(lightIndex).color     = lightComponent.m_color;
+          lightData.at(lightIndex).intensity = lightComponent.m_intensity;
+          lightData.at(lightIndex).position  = glm::vec3(m[3]);
+          lightData.at(lightIndex).radius    = lightComponent.m_radius;
+          lightData.at(lightIndex).direction = glm::normalize(glm::vec3(m[2][0], m[2][1], m[2][2]));
+          lightData.at(lightIndex).innerCone = lightComponent.m_innerCone;
+          lightData.at(lightIndex).outerCone = lightComponent.m_outerCone;
+          lightData.at(lightIndex).cosineExponent = lightComponent.m_cosineExponent;
+
+          ++lightIndex;
+      });
+    m_device->UpdateBuffer(m_offscreenState.lightsBuffer.GetID(), lightData.data());
+
     registry.view<Component::RenderComponent, Component::MeshComponent>().each(
       [this](entt::entity entity, auto& renderComponent, auto& meshComponent)
       {
@@ -160,16 +186,27 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
           {
               auto& materialData = m_rendererRegistry.emplace<MaterialData>(renderComponent.id);
 
-              RED::TextureDescriptor textureDescriptor{
-                {renderComponent.difuse.GetWidth(), renderComponent.difuse.GetHeight(), 1},
-                renderComponent.difuse.GetFormat(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_USAGE_SAMPLED_BIT};
-              materialData.difuseTexture =
-                m_device->CreateTexture(textureDescriptor, renderComponent.difuse.GetData());
+              auto CreateMaterialDataTexture = [&device = this->m_device](Texture t)
+              {
+                  RED::TextureDescriptor textureDescriptor{{t.GetWidth(), t.GetHeight(), 1},
+                                                           t.GetFormat(),
+                                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                           VK_IMAGE_USAGE_SAMPLED_BIT};
+                  return device->CreateTexture(textureDescriptor, t.GetData());
+              };
 
-              materialData.uniformBuffer =
+              materialData.difuseTexture = CreateMaterialDataTexture(renderComponent.difuse);
+              materialData.normalTexture = CreateMaterialDataTexture(renderComponent.normal);
+              materialData.metallicRoughnessTexture =
+                CreateMaterialDataTexture(renderComponent.metallicRoughness);
+              materialData.emissiveTexture = CreateMaterialDataTexture(renderComponent.emissive);
+
+              materialData.modelBuffer =
                 m_device->CreateBuffer({64, 64, RED::BufferUsage::UNIFORM});
+
+              u32 uniformMaterialData[4] = {0xFFFFFFFF, 0x00000000, 0, 0};
+              materialData.uniformBuffer =
+                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM}, &uniformMaterialData);
           }
       });
 }
@@ -207,28 +244,31 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
           if (!meshData || !materialData)
               return;
 
-          m_device->UpdateBuffer(materialData->uniformBuffer.GetID(), &transformComponent.model);
+          m_device->UpdateBuffer(materialData->modelBuffer.GetID(), &transformComponent.model);
 
-          RED::DrawCall depthDrawCall;
           RED::DrawCall dc;
+          RED::DrawCall depthDrawCall;
           dc.vertexBuffer = depthDrawCall.vertexBuffer = meshData->m_vertexBuffer;
           dc.indexBuffer = depthDrawCall.indexBuffer = meshData->m_indexBuffer;
 
-          dc.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
-                              RED::ShaderType::VERTEX,
-                              0,
-                              0);
-          dc.SetUniformBuffer({materialData->uniformBuffer}, RED::ShaderType::VERTEX, 0, 1);
-          dc.SetUniformTexture({materialData->difuseTexture, materialData->difuseTexture},
+          dc.SetUniformBuffer({m_offscreenState.globalUniformBuffer}, RED::ShaderType::VERTEX, 0);
+          dc.SetUniformBuffer({m_offscreenState.lightsBuffer}, RED::ShaderType::FRAGMENT, 1);
+          dc.SetUniformBuffer({materialData->modelBuffer}, RED::ShaderType::VERTEX, 0, 1);
+          dc.SetUniformBuffer({materialData->uniformBuffer}, RED::ShaderType::FRAGMENT, 1, 1);
+          dc.SetUniformTexture({materialData->difuseTexture,
+                                materialData->normalTexture,
+                                materialData->metallicRoughnessTexture,
+                                materialData->emissiveTexture,
+                                materialData->emissiveTexture},
                                RED::ShaderType::FRAGMENT,
-                               1,
+                               2,
                                1);
 
           depthDrawCall.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
                                          RED::ShaderType::VERTEX,
                                          0,
                                          0);
-          depthDrawCall.SetUniformBuffer({materialData->uniformBuffer},
+          depthDrawCall.SetUniformBuffer({materialData->modelBuffer},
                                          RED::ShaderType::VERTEX,
                                          0,
                                          1);

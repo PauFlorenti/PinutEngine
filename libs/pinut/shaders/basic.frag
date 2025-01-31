@@ -34,17 +34,13 @@ struct DirectionalLight
     float   dummy;
 };
 
-layout(set = 0, binding = 2) uniform perFrame
+layout(set = 0, binding = 1) uniform perFrame
 {
-    uint count;
-    float dummy1;
-    float dummy2;
-    float dummy3;
-    Light lights[10];
+    Light lights[4];
     DirectionalLight directionalLight;
 } lightData;
 
-layout(set = 1, binding = 0) uniform perInstance
+layout(set = 1, binding = 1) uniform perInstance
 {
     uint diffuse;
     uint specularExponent;
@@ -52,7 +48,7 @@ layout(set = 1, binding = 0) uniform perInstance
     uint dummy2;
 } perInstanceData;
 
-layout(set = 1, binding = 1) uniform sampler2D[5] materialTextures;
+layout(set = 1, binding = 2) uniform sampler2D[5] materialTextures;
 
 float ambientLightIntensity = 0.01;
 
@@ -105,7 +101,7 @@ void main()
     vec3 Lo = vec3(0.0);
     Lo += ComputeDirectionalLight(lightData.directionalLight, N, materialDiffuseColor);
 
-    for (int i = 0; i < lightData.count; ++i)
+    for (int i = 0; i < 4; ++i)
     {
         Light light = lightData.lights[i];
 

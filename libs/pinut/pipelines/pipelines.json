@@ -34,6 +34,53 @@
 			"r32g32b32a32"
 		]
 	},
+	"forward": {
+		"vs": {
+			"name": "basic.vert",
+			"uniforms": [
+				{
+					"name": "Camera",
+					"set": 0,
+					"binding": 0,
+					"type": "Buffer"
+				},
+				{
+					"name": "Model",
+					"set": 1,
+					"binding": 0,
+					"type": "Buffer"
+				}
+			]
+		},
+		"fs": {
+			"name": "basic.frag",
+			"uniforms": [
+				{
+					"name": "Lights",
+					"set": 0,
+					"binding": 1,
+					"type": "Buffer"
+				},
+				{
+					"name": "Material",
+					"set": 1,
+					"binding": 1,
+					"type": "Buffer"
+				},
+				{
+					"name": "Textures",
+					"set": 1,
+					"binding": 2,
+					"type": "Texture",
+					"count": 5
+				}
+			]
+		},
+		"input_vertex": "PosColorUvN",
+		"attachments": [
+			"r32g32b32a32"
+		]
+	},
 	"present": {
 		"vs": {
 			"name": "quad.vert"

@@ -11,6 +11,9 @@ namespace Component
 struct RenderComponent
 {
     Texture      difuse;
+    Texture      normal;
+    Texture      metallicRoughness;
+    Texture      emissive;
     entt::entity id{entt::null};
     // Material
     // Pipeline

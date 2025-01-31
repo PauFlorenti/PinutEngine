@@ -53,7 +53,7 @@ void LightForwardStage::Execute(RED::Device*               device,
     graphicsState.depth    = {VK_FORMAT_D32_SFLOAT, VK_COMPARE_OP_LESS_OR_EQUAL, false};
 
     device->SetGraphicsState(&graphicsState);
-    device->SetRenderPipeline(&m_pipelines.at("flat"));
+    device->SetRenderPipeline(&m_pipelines.at("forward"));
 
     device->SubmitDrawCalls(parameters.drawCalls);
 

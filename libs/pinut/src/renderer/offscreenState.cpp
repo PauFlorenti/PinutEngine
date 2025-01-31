@@ -53,7 +53,13 @@ void OffscreenState::Create(RED::Device&                 device,
 
     globalUniformBuffer = device.CreateBuffer({140, 140, RED::BufferUsage::UNIFORM});
 
-    quadBuffer = device.CreateBuffer({120, 20, RED::BufferUsage::VERTEX}, quadData.data());
+    lightsBuffer = device.CreateBuffer({sizeof(LightData) * 4 + sizeof(DirectionalLightData),
+                                        sizeof(LightData),
+                                        RED::BufferUsage::UNIFORM});
+
+    quadBuffer =
+      device.CreateBuffer({sizeof(quadData), sizeof(QuadVertex), RED::BufferUsage::VERTEX},
+                          quadData.data());
 }
 
 void OffscreenState::Clear()
@@ -66,6 +72,7 @@ void OffscreenState::Clear()
     }
 
     globalUniformBuffer.Destroy();
+    lightsBuffer.Destroy();
     quadBuffer.Destroy();
 
     width  = 0;

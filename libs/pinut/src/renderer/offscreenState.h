@@ -24,6 +24,7 @@ struct OffscreenState
     u32 height;
 
     RED::GPUBuffer                 globalUniformBuffer;
+    RED::GPUBuffer                 lightsBuffer;
     RED::GPUBuffer                 quadBuffer;
     RED::GPUTexture                depthTexture;
     std::array<RED::GPUTexture, 4> colorTextures;
