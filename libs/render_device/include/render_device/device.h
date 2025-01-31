@@ -56,6 +56,8 @@ class Device
 
     virtual ~Device() = 0;
 
+    virtual void* GetCurrentCommandBuffer() const = 0;
+
     virtual void BeginFrame() = 0;
     virtual void EndFrame()   = 0;
 

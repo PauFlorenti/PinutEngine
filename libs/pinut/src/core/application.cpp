@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <external/imgui/imgui.h>
 
+#include "render_device/device.h"
+
 #include "application.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
@@ -201,10 +203,17 @@ Application::Application(const std::string& name, i32 width, i32 height)
 
     auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
     m_assetManager.Init(device);
-    m_renderer = std::make_unique<Renderer>(std::move(device), &m_swapchainInfo);
 
 #ifdef _DEBUG
-    //m_imgui.Init(&m_device, &m_swapchain, window);
+    auto imgui =
+      std::make_unique<PinutImGUI>(&m_deviceInfo,
+                                   &m_deviceQueues.at(static_cast<u32>(RED::QueueType::GRAPHICS)),
+                                   m_window,
+                                   m_width,
+                                   m_height);
+    m_renderer = std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, std::move(imgui));
+#else
+    m_renderer = std::make_unique<Renderer>(std::move(device), &m_swapchainInfo);
 #endif
 }
 

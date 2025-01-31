@@ -3,9 +3,11 @@
 #include <external/vk-bootstrap/src/VkBootstrap.h>
 #define GLFW_INCLUDE_VULKAN
 #include <external/glfw/include/GLFW/glfw3.h>
+#include <external/imgui/backends/imgui_impl_vulkan.h>
 #include <external/tinygltf/json.hpp>
 
 #include "render_device/bufferDescriptor.h"
+#include "render_device/device.h"
 #include "render_device/drawCall.h"
 #include "render_device/shader.h"
 #include "render_device/states.h"
@@ -14,6 +16,7 @@
 #include "src/assets/mesh.h"
 #include "src/components/lightComponent.h"
 #include "src/components/meshComponent.h"
+#include "src/imgui/pinutImgui.h"
 #include "src/renderer/materialData.h"
 #include "src/renderer/meshData.h"
 #include "src/renderer/renderer.h"
@@ -73,9 +76,15 @@ std::vector<VkFormat> PopulateAttachmentsFromJson(const nlohmann::json& j)
     return formats;
 }
 
-Renderer::Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain)
+Renderer::Renderer(std::shared_ptr<RED::Device> device,
+                   SwapchainInfo*               swapchain,
+                   std::unique_ptr<PinutImGUI>  imgui)
 : m_device(device),
   m_swapchain(swapchain)
+#ifdef _DEBUG
+  ,
+  m_imgui(std::move(imgui))
+#endif
 {
     // Init pipelines
     std::ifstream pipelineFile(std::filesystem::path("../libs/pinut/pipelines/pipelines.json"));
@@ -115,6 +124,9 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device, SwapchainInfo* swapchain
 Renderer::~Renderer()
 {
     m_device->WaitIdle();
+#ifdef _DEBUG
+    m_imgui.reset();
+#endif
     m_rendererRegistry.clear();
     m_offscreenState.Clear();
     m_device.reset();
@@ -294,6 +306,30 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     drawOpaqueParameters.drawCalls        = std::move(drawCalls);
 
     m_lightForwardStage.Execute(m_device.get(), std::move(drawOpaqueParameters), {});
+
+#ifdef _DEBUG
+    m_imgui->BeginImGUIRender();
+
+    RED::FrameBuffer attachment{.textureView    = m_offscreenState.colorTextures.at(0).GetID(),
+                                .loadOperation  = RED::FrameBufferLoadOperation::LOAD,
+                                .storeOperation = RED::FrameBufferStoreOperation::STORE,
+                                .clearColor     = {.0f, .0f, .0f, .0f}};
+
+    m_device->EnableRendering({viewportData.x,
+                               viewportData.y,
+                               static_cast<u32>(viewportData.width),
+                               static_cast<u32>(viewportData.height)},
+                              {attachment});
+
+    ImGui::ShowDebugLogWindow();
+
+    ImGui::Render();
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
+                                    (VkCommandBuffer)m_device->GetCurrentCommandBuffer());
+
+    m_device->DisableRendering();
+#endif
 
     // End render pass.
 

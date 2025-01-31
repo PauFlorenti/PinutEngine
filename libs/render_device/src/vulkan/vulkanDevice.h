@@ -79,6 +79,8 @@ class VulkanDevice final : public Device
     VulkanDevice(void* deviceInfo, void* queues, void* callbacks);
     ~VulkanDevice() override;
 
+    void* GetCurrentCommandBuffer() const override;
+
     void BeginFrame() override;
     void EndFrame() override;
 

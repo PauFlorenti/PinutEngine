@@ -158,6 +158,11 @@ VulkanDevice::~VulkanDevice()
     m_rendererContext = nullptr;
 }
 
+void* VulkanDevice::GetCurrentCommandBuffer() const
+{
+    return m_currentCommandBuffer->commandBuffer;
+}
+
 void VulkanDevice::BeginFrame()
 {
     m_currentIndexFrame = ++m_currentIndexFrame % MAX_FRAMES_IN_FLIGHT;

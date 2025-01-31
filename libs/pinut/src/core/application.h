@@ -4,13 +4,13 @@
 //#include "src/loaders/objLoader.h"
 //#include "src/renderer/pipelines/forward.h"
 //#include "src/renderer/stages/materialManager.h"
-//#ifdef _DEBUG
-//#include "src/imgui/pinutImgui.h"
-//#endif
 
 #include "src/core/assetManager.h"
 #include "src/renderer/renderer.h"
 #include "src/renderer/swapchain.h"
+#ifdef _DEBUG
+#include "src/imgui/pinutImgui.h"
+#endif
 
 struct GLFWwindow;
 namespace Pinut
@@ -144,7 +144,6 @@ class Application
 
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT m_debugMessenger{nullptr};
-    //PinutImGUI m_imgui;
 #endif
 };
 } // namespace Pinut
