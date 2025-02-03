@@ -1,11 +1,17 @@
 #pragma once
 
+#include "src/components/baseComponent.h"
+
 namespace Pinut
 {
 namespace Component
 {
-struct LightComponent
+struct LightComponent : public BaseComponent
 {
+#ifdef _DEBUG
+    void RenderDebug() override;
+#endif
+
     bool      m_enabled{true};
     bool      m_castShadows{false};
     f32       m_intensity{1.0f};

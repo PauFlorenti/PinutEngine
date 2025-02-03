@@ -156,14 +156,13 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
           if (!lightComponent.m_enabled || lightComponent.m_intensity <= 0.0f)
               return;
 
-          const auto m                       = transformComponent.model;
-          lightData.at(lightIndex).color     = lightComponent.m_color;
-          lightData.at(lightIndex).intensity = lightComponent.m_intensity;
-          lightData.at(lightIndex).position  = glm::vec3(m[3]);
-          lightData.at(lightIndex).radius    = lightComponent.m_radius;
-          lightData.at(lightIndex).direction = glm::normalize(glm::vec3(m[2][0], m[2][1], m[2][2]));
-          lightData.at(lightIndex).innerCone = lightComponent.m_innerCone;
-          lightData.at(lightIndex).outerCone = lightComponent.m_outerCone;
+          lightData.at(lightIndex).color          = lightComponent.m_color;
+          lightData.at(lightIndex).intensity      = lightComponent.m_intensity;
+          lightData.at(lightIndex).position       = transformComponent.GetPosition();
+          lightData.at(lightIndex).radius         = lightComponent.m_radius;
+          lightData.at(lightIndex).direction      = transformComponent.GetForward();
+          lightData.at(lightIndex).innerCone      = lightComponent.m_innerCone;
+          lightData.at(lightIndex).outerCone      = lightComponent.m_outerCone;
           lightData.at(lightIndex).cosineExponent = lightComponent.m_cosineExponent;
 
           ++lightIndex;
@@ -256,7 +255,8 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
           if (!meshData || !materialData)
               return;
 
-          m_device->UpdateBuffer(materialData->modelBuffer.GetID(), &transformComponent.model);
+          auto transform = transformComponent.GetTransform();
+          m_device->UpdateBuffer(materialData->modelBuffer.GetID(), &transform);
 
           RED::DrawCall dc;
           RED::DrawCall depthDrawCall;
@@ -309,6 +309,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
 #ifdef _DEBUG
     m_imgui->BeginImGUIRender();
+    m_imgui->Render(registry, cameraData);
 
     RED::FrameBuffer attachment{.textureView    = m_offscreenState.colorTextures.at(0).GetID(),
                                 .loadOperation  = RED::FrameBufferLoadOperation::LOAD,
@@ -320,8 +321,6 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
                                static_cast<u32>(viewportData.width),
                                static_cast<u32>(viewportData.height)},
                               {attachment});
-
-    ImGui::ShowDebugLogWindow();
 
     ImGui::Render();
 

@@ -9,7 +9,12 @@
 
 #include "render_device/device.h"
 
+#include "src/components/lightComponent.h"
+#include "src/components/meshComponent.h"
+#include "src/components/renderComponent.h"
+#include "src/components/transformComponent.h"
 #include "src/imgui/pinutImgui.h"
+#include "src/renderer/common.h"
 
 namespace Pinut
 {
@@ -90,3 +95,27 @@ void PinutImGUI::BeginImGUIRender()
     ImGuizmo::BeginFrame();
 }
 } // namespace Pinut
+
+void Pinut::PinutImGUI::Render(entt::registry& registry, const ShaderCameraData& camera)
+{
+    ImGui::Begin("Entities");
+
+    ImGui::Text("FPS: %f", &ImGui::GetIO().Framerate);
+
+    registry.view<entt::entity>().each(
+      [&](auto entity)
+      {
+          std::string label = "Entity " + std::to_string(static_cast<int>(entity));
+          if (ImGui::TreeNode(label.c_str()))
+          {
+              registry.get<Component::TransformComponent>(entity).RenderDebug(camera);
+              ComponentRenderDebug<Component::LightComponent>(registry, entity);
+              ComponentRenderDebug<Component::MeshComponent>(registry, entity);
+              ComponentRenderDebug<Component::RenderComponent>(registry, entity);
+
+              ImGui::TreePop();
+          }
+      });
+
+    ImGui::End();
+}

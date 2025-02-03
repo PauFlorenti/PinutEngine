@@ -1,10 +1,22 @@
 #pragma once
 
+#include <entt/entt.hpp>
 #include <vulkan/vulkan.h>
 
 struct GLFWwindow;
 namespace Pinut
 {
+struct ShaderCameraData;
+
+template <typename ComponentType>
+void ComponentRenderDebug(entt::registry& registry, entt::entity entity)
+{
+    if (registry.any_of<ComponentType>(entity))
+    {
+        registry.get<ComponentType>(entity).RenderDebug();
+    }
+}
+
 class PinutImGUI
 {
     struct VulkanImguiDeviceInfo
@@ -28,6 +40,7 @@ class PinutImGUI
                         u32         height);
     ~PinutImGUI();
     void BeginImGUIRender();
+    void Render(entt::registry& registry, const ShaderCameraData& camera);
 
   private:
     VkDevice         m_device = {VK_NULL_HANDLE};

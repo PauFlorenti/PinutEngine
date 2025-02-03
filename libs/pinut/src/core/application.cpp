@@ -13,7 +13,6 @@
 #include "src/components/transformComponent.h"
 #include "src/core/application.h"
 #include "src/core/camera.h"
-#include "src/core/light.h"
 #include "src/core/renderable.h"
 #include "src/core/scene.h"
 #include "src/renderer/primitives.h"
