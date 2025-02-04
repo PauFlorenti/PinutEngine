@@ -4,7 +4,6 @@
 
 namespace RED
 {
-
 DrawCall::DrawCall() { uniforms.reserve(16); }
 
 void DrawCall::SetUniformBuffer(std::vector<GPUBufferView> bufferViews,
@@ -15,7 +14,7 @@ void DrawCall::SetUniformBuffer(std::vector<GPUBufferView> bufferViews,
     assert(set < 2 /*MAX_DESCRIPTOR_SETS*/);
     assert(binding < 4 /*MAX_UNIFORM_SLOTS*/);
 
-    UniformDescriptor uniform{std::move(bufferViews), {}, shaderType, binding, set, ""};
+    UniformDescriptor uniform{std::move(bufferViews), shaderType, binding, set, ""};
     uniforms.emplace_back(std::move(uniform));
 }
 
@@ -27,7 +26,7 @@ void RED::DrawCall::SetUniformTexture(std::vector<GPUTextureView> textureViews,
     assert(set < 2 /*MAX_DESCRIPTOR_SETS*/);
     assert(binding < 4 /*MAX_UNIFORM_SLOTS*/);
 
-    UniformDescriptor uniform{{}, std::move(textureViews), shaderType, binding, set, ""};
+    UniformDescriptor uniform{std::move(textureViews), shaderType, binding, set, ""};
     uniforms.emplace_back(std::move(uniform));
 }
 } // namespace RED

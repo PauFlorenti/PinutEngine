@@ -1,5 +1,7 @@
 #pragma once
 
+#include <variant>
+
 #include "render_device/buffer.h"
 #include "render_device/shader.h"
 #include "render_device/texture.h"
@@ -8,13 +10,11 @@ namespace RED
 {
 struct UniformDescriptor
 {
-    // TODO This should use variant.
-    std::vector<GPUBufferView>  bufferViews;
-    std::vector<GPUTextureView> textureViews;
-    ShaderType                  shaderType{ShaderType::COUNT};
-    u32                         binding{0};
-    u32                         set{0};
-    const char*                 name = "";
+    std::variant<std::vector<GPUBufferView>, std::vector<GPUTextureView>> uniformViews;
+    ShaderType  shaderType{ShaderType::COUNT};
+    u32         binding{0};
+    u32         set{0};
+    const char* name = "";
 };
 
 struct DrawCall

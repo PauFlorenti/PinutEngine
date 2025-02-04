@@ -543,11 +543,12 @@ UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
 
     for (const auto& uniform : uniformDescriptors)
     {
-        if (!uniform.bufferViews.empty())
+        if (const auto& bufferViews =
+              std::get_if<std::vector<GPUBufferView>>(&uniform.uniformViews))
         {
             std::vector<VkDescriptorBufferInfo> bufferInfos;
-            bufferInfos.reserve(uniform.bufferViews.size());
-            for (const auto& bufferView : uniform.bufferViews)
+            bufferInfos.reserve(bufferViews->size());
+            for (const auto& bufferView : *bufferViews)
             {
                 if (const auto& bufferId = bufferView.GetID();
                     bufferId.id != GPU_RESOURCE_INVALID && bufferId.type == ResourceType::BUFFER)
@@ -566,11 +567,12 @@ UniformDescriptorSetInfos VulkanDevice::GetUniformDescriptorSetInfos(
                                       uniform.binding,
                                       VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         }
-        else if (!uniform.textureViews.empty())
+        else if (const auto& textureViews =
+                   std::get_if<std::vector<GPUTextureView>>(&uniform.uniformViews))
         {
             std::vector<VkDescriptorImageInfo> imageInfos;
-            imageInfos.reserve(uniform.textureViews.size());
-            for (const auto& textureView : uniform.textureViews)
+            imageInfos.reserve(textureViews->size());
+            for (const auto& textureView : *textureViews)
             {
                 if (const auto& textureId = textureView.GetID();
                     textureId.id != GPU_RESOURCE_INVALID && textureId.type == ResourceType::TEXTURE)
