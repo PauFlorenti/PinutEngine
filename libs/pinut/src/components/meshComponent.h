@@ -12,15 +12,7 @@ struct MeshComponent : public BaseComponent
     MeshComponent(const Mesh& inMesh) : mesh(inMesh) {}
 
 #ifdef _DEBUG
-    void RenderDebug() override
-    {
-        if (ImGui::TreeNode("Mesh Component"))
-        {
-            // TODO Show path ...
-            ImGui::Text("Mesh");
-            ImGui::TreePop();
-        }
-    }
+    void RenderDebug() override;
 #endif
 
     Mesh mesh;
