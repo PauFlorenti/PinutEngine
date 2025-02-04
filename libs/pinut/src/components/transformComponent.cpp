@@ -82,76 +82,81 @@ void TransformComponent::SetScale(const glm::vec3& scale)
 #ifdef _DEBUG
 void TransformComponent::RenderDebug(const ShaderCameraData& camera)
 {
-    static ImGuizmo::OPERATION currentGuizmoOperation(ImGuizmo::TRANSLATE);
-    static ImGuizmo::MODE      currentGuizmoMode(ImGuizmo::WORLD);
-
-    glm::vec3 translation, rotation, scale;
-    ImGuizmo::DecomposeMatrixToComponents(&m_transform[0][0],
-                                          &translation.x,
-                                          &rotation.x,
-                                          &scale.x);
-    ImGui::DragFloat3("Translation", &translation.x, 3);
-    ImGui::DragFloat3("Rotation", &rotation.x, 3);
-    ImGui::DragFloat3("Scale", &scale.x, 3);
-
-    ImGuizmo::RecomposeMatrixFromComponents(&translation.x,
-                                            &rotation.x,
-                                            &scale.x,
-                                            &m_transform[0][0]);
-
-    if (ImGui::RadioButton("Translate", currentGuizmoOperation == ImGuizmo::TRANSLATE))
-        currentGuizmoOperation = ImGuizmo::TRANSLATE;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Rotate", currentGuizmoOperation == ImGuizmo::ROTATE))
-        currentGuizmoOperation = ImGuizmo::ROTATE;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Scale", currentGuizmoOperation == ImGuizmo::SCALE))
-        currentGuizmoOperation = ImGuizmo::SCALE;
-    ImGui::SameLine();
-
-    if (currentGuizmoOperation != ImGuizmo::SCALE)
+    if (ImGui::TreeNode("Transform Component"))
     {
-        if (ImGui::RadioButton("Local", currentGuizmoMode == ImGuizmo::LOCAL))
-            currentGuizmoMode = ImGuizmo::LOCAL;
+        static ImGuizmo::OPERATION currentGuizmoOperation(ImGuizmo::TRANSLATE);
+        static ImGuizmo::MODE      currentGuizmoMode(ImGuizmo::WORLD);
+
+        glm::vec3 translation, rotation, scale;
+        ImGuizmo::DecomposeMatrixToComponents(&m_transform[0][0],
+                                              &translation.x,
+                                              &rotation.x,
+                                              &scale.x);
+        ImGui::DragFloat3("Translation", &translation.x, 3);
+        ImGui::DragFloat3("Rotation", &rotation.x, 3);
+        ImGui::DragFloat3("Scale", &scale.x, 3);
+
+        ImGuizmo::RecomposeMatrixFromComponents(&translation.x,
+                                                &rotation.x,
+                                                &scale.x,
+                                                &m_transform[0][0]);
+
+        if (ImGui::RadioButton("Translate", currentGuizmoOperation == ImGuizmo::TRANSLATE))
+            currentGuizmoOperation = ImGuizmo::TRANSLATE;
         ImGui::SameLine();
-        if (ImGui::RadioButton("World", currentGuizmoMode == ImGuizmo::WORLD))
-            currentGuizmoMode = ImGuizmo::WORLD;
-    }
+        if (ImGui::RadioButton("Rotate", currentGuizmoOperation == ImGuizmo::ROTATE))
+            currentGuizmoOperation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", currentGuizmoOperation == ImGuizmo::SCALE))
+            currentGuizmoOperation = ImGuizmo::SCALE;
+        ImGui::SameLine();
 
-    bool changed = false;
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Reset"))
-    {
-        if (currentGuizmoOperation == ImGuizmo::TRANSLATE)
+        if (currentGuizmoOperation != ImGuizmo::SCALE)
+        {
+            if (ImGui::RadioButton("Local", currentGuizmoMode == ImGuizmo::LOCAL))
+                currentGuizmoMode = ImGuizmo::LOCAL;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("World", currentGuizmoMode == ImGuizmo::WORLD))
+                currentGuizmoMode = ImGuizmo::WORLD;
+        }
+
+        bool changed = false;
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Reset"))
+        {
+            if (currentGuizmoOperation == ImGuizmo::TRANSLATE)
+                SetPosition(glm::vec3(0.0f));
+            else if (currentGuizmoOperation == ImGuizmo::ROTATE)
+                SetRotation(glm::quat(glm::vec3(0.0f)));
+            else if (currentGuizmoOperation == ImGuizmo::SCALE)
+                SetScale(glm::vec3(1.0f));
+            changed = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::SmallButton("All"))
+        {
             SetPosition(glm::vec3(0.0f));
-        else if (currentGuizmoOperation == ImGuizmo::ROTATE)
             SetRotation(glm::quat(glm::vec3(0.0f)));
-        else if (currentGuizmoOperation == ImGuizmo::SCALE)
             SetScale(glm::vec3(1.0f));
-        changed = true;
+            changed = true;
+        }
+
+        auto mat = m_transform;
+
+        // Using full screen
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+        ImGuizmo::Manipulate(&camera.view[0][0],
+                             &camera.projection[0][0],
+                             currentGuizmoOperation,
+                             currentGuizmoMode,
+                             &mat[0][0]);
+
+        SetTransform(mat);
+
+        ImGui::TreePop();
     }
-    ImGui::SameLine();
-    if (ImGui::SmallButton("All"))
-    {
-        SetPosition(glm::vec3(0.0f));
-        SetRotation(glm::quat(glm::vec3(0.0f)));
-        SetScale(glm::vec3(1.0f));
-        changed = true;
-    }
-
-    auto mat = m_transform;
-
-    // Using full screen
-    ImGuiIO& io = ImGui::GetIO();
-    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-
-    ImGuizmo::Manipulate(&camera.view[0][0],
-                         &camera.projection[0][0],
-                         currentGuizmoOperation,
-                         currentGuizmoMode,
-                         &mat[0][0]);
-
-    SetTransform(mat);
 }
 #endif
 } // namespace Component

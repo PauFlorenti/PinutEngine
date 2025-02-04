@@ -22,9 +22,9 @@ RenderComponent::RenderComponent(Texture inDifuse,
 #ifdef _DEBUG
 void RenderComponent::RenderDebug()
 {
-    if (ImGui::TreeNode("Transform Component"))
+    if (ImGui::TreeNode("Render Component"))
     {
-        ImGui::Text("Transform");
+        ImGui::Text("Render Component");
         ImGui::TreePop();
     }
 }
