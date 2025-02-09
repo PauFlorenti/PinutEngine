@@ -1,7 +1,5 @@
 #pragma once
 
-#include <entt/entt.hpp>
-
 #include "src/assets/texture.h"
 #include "src/components/baseComponent.h"
 

@@ -175,23 +175,7 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
           if (m_rendererRegistry.try_get<MeshData>(renderComponent.id))
               return;
 
-          renderComponent.id = m_rendererRegistry.create();
-          auto& mesh         = meshComponent.mesh;
-
-          auto& data = m_rendererRegistry.emplace<MeshData>(renderComponent.id);
-
-          auto& vertices      = mesh.m_vertices;
-          data.m_vertexBuffer = m_device->CreateBuffer(
-            {vertices.size() * sizeof(Vertex), sizeof(Vertex), RED::BufferUsage::VERTEX},
-            vertices.data());
-
-          if (!mesh.m_indices.empty())
-          {
-              auto& indices      = mesh.m_indices;
-              data.m_indexBuffer = m_device->CreateBuffer(
-                {indices.size() * sizeof(u16), sizeof(u16), RED::BufferUsage::INDEX},
-                indices.data());
-          }
+          renderComponent.id = CreateMeshData(m_device, m_rendererRegistry, meshComponent.m_mesh);
 
           if (!m_rendererRegistry.try_get<MaterialData>(renderComponent.id))
           {

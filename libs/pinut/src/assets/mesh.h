@@ -4,7 +4,9 @@
 #include <glm/gtx/hash.hpp>
 
 #include "render_device/buffer.h"
+
 #include "src/assets/asset.h"
+#include "src/renderer/meshData.h"
 
 namespace Pinut
 {
@@ -39,9 +41,14 @@ struct Primitive
 
 class Mesh final : public Asset
 {
+    friend entt::entity Pinut::CreateMeshData(std::shared_ptr<RED::Device> device,
+                                              entt::registry&              registry,
+                                              Mesh&                        mesh);
+
   public:
-    Mesh()  = default;
-    ~Mesh() = default;
+    Mesh();
+    Mesh(std::vector<Vertex> vertices, std::vector<u16> indices, std::vector<Primitive> primitives);
+    ~Mesh();
 
     Mesh(const Mesh&)            = default;
     Mesh& operator=(const Mesh&) = default;
@@ -57,6 +64,9 @@ class Mesh final : public Asset
     std::vector<Vertex>    m_vertices;
     std::vector<u16>       m_indices;
     std::vector<Primitive> m_primitives;
+
+  private:
+    entt::entity m_handle{entt::null};
 };
 } // namespace Pinut
 

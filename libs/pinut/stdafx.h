@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include <entt/entt.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
