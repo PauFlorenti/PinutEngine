@@ -22,5 +22,5 @@ void main()
     gl_Position = position.xyww;
 
     outColor    = skyboxData.color.xyz;
-    outUv       = inUv;
+    outUv       = inUv * -1;
 }

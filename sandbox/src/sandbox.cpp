@@ -39,6 +39,7 @@ void Sandbox::OnCreate()
     Pinut::Texture blackTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &blackData);
     Pinut::Texture blueTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &blueData);
     Pinut::Texture t("../assets/viking_room/viking_room_diffuse.png");
+    Pinut::Texture skyTexture("../assets/textures/ciel_diffuse.jpg");
 
     m_currentScene = new Pinut::Scene();
     auto& registry = m_currentScene->Registry();
@@ -73,7 +74,7 @@ void Sandbox::OnCreate()
     auto  sky = m_currentScene->CreateEntity();
     auto& skyComponent =
       registry.emplace<Pinut::Component::SkyComponent>(sky,
-                                                       blueTexture,
+                                                       skyTexture,
                                                        *LoadAsset<Pinut::Mesh>("sphere.obj"));
 
     {
