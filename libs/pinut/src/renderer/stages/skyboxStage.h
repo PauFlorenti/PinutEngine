@@ -12,19 +12,22 @@ class Device;
 }
 namespace Pinut
 {
-struct PresentInputParameters
+struct SkyboxInputParameters
 {
-    RED::GPUBufferView   quadBuffer;
-    RED::TextureResource offscreenTexture;
     RED::ViewportState   viewport;
+    RED::TextureResource colorFrameBuffer;
+    RED::DrawCall        drawCall;
 };
 
-class PresentStage final : public Stage<PresentStage, PresentInputParameters>
+class SkyboxStage final : public Stage<SkyboxStage, SkyboxInputParameters>
 {
   public:
-    PresentStage();
+    SkyboxStage();
     void Execute(RED::Device*               device,
                  const InputParameters&     parameters,
                  const RED::GPUTextureView& outputTarget);
+
+  private:
+    RED::GPUBuffer skyboxModelBuffer;
 };
 } // namespace Pinut

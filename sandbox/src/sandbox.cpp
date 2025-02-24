@@ -6,6 +6,7 @@
 #include "src/components/lightComponent.h"
 #include "src/components/meshComponent.h"
 #include "src/components/renderComponent.h"
+#include "src/components/skyComponent.h"
 #include "src/components/transformComponent.h"
 #include "src/core/camera.h"
 #include "src/core/node.h"
@@ -69,11 +70,11 @@ void Sandbox::OnCreate()
     vikingRoomTransformComponent.SetTransform(
       glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
-    // auto  directionalLight = m_currentScene->CreateEntity();
-    // auto& light            = registry.emplace<Pinut::Component::LightComponent>(directionalLight);
-    // light.m_color          = glm::vec3(1.0f, 0.0f, 0.0f);
-    // registry.get<Pinut::Component::TransformComponent>(directionalLight).model =
-    //   glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 5.0f));
+    auto  sky = m_currentScene->CreateEntity();
+    auto& skyComponent =
+      registry.emplace<Pinut::Component::SkyComponent>(sky,
+                                                       blueTexture,
+                                                       *LoadAsset<Pinut::Mesh>("sphere.obj"));
 
     {
         auto  pointLight           = m_currentScene->CreateEntity();

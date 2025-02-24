@@ -19,6 +19,14 @@ struct ViewportData
     ShaderCameraData cameraData;
 };
 
+struct SkyboxUniformData
+{
+    glm::mat4 view;
+    glm::mat4 projection;
+    glm::mat4 model;
+    glm::vec4 color;
+};
+
 struct LightData
 {
     glm::vec3 color{};

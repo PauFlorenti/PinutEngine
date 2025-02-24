@@ -9,13 +9,7 @@ class Device;
 namespace Pinut
 {
 class Mesh;
-namespace Component
-{
-struct MeshComponent;
-} // namespace Component
-entt::entity CreateMeshData(std::shared_ptr<RED::Device> device,
-                            entt::registry&              registry,
-                            Mesh&                        meshComponent);
+void CreateMeshData(std::shared_ptr<RED::Device> device, entt::registry& registry, Mesh& mesh);
 
 struct MeshData
 {

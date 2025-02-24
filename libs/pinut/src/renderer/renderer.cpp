@@ -16,10 +16,12 @@
 #include "src/assets/mesh.h"
 #include "src/components/lightComponent.h"
 #include "src/components/meshComponent.h"
+#include "src/components/skyComponent.h"
 #include "src/imgui/pinutImgui.h"
 #include "src/renderer/materialData.h"
 #include "src/renderer/meshData.h"
 #include "src/renderer/renderer.h"
+#include "src/renderer/skyData.h"
 #include "src/renderer/swapchain.h"
 #include "src/renderer/utils.h"
 
@@ -128,6 +130,7 @@ Renderer::~Renderer()
     m_imgui.reset();
 #endif
     m_rendererRegistry.clear();
+    m_rendererRegistry.ctx().erase<SkyData>();
     m_offscreenState.Clear();
     m_device.reset();
 }
@@ -172,14 +175,13 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
     registry.view<Component::RenderComponent, Component::MeshComponent>().each(
       [this](entt::entity entity, auto& renderComponent, auto& meshComponent)
       {
-          if (m_rendererRegistry.try_get<MeshData>(renderComponent.id))
-              return;
+          CreateMeshData(m_device, m_rendererRegistry, meshComponent.m_mesh);
 
-          renderComponent.id = CreateMeshData(m_device, m_rendererRegistry, meshComponent.m_mesh);
-
-          if (!m_rendererRegistry.try_get<MaterialData>(renderComponent.id))
+          if (!m_rendererRegistry.try_get<MaterialData>(renderComponent.m_handle))
           {
-              auto& materialData = m_rendererRegistry.emplace<MaterialData>(renderComponent.id);
+              renderComponent.m_handle = m_rendererRegistry.create();
+              auto& materialData =
+                m_rendererRegistry.emplace<MaterialData>(renderComponent.m_handle);
 
               auto CreateMaterialDataTexture = [&device = this->m_device](Texture t)
               {
@@ -204,6 +206,32 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
                 m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM}, &uniformMaterialData);
           }
       });
+
+    if (auto skyEntt = registry.view<Component::SkyComponent>().front(); skyEntt != entt::null)
+    {
+        auto& skyComponent = registry.get<Component::SkyComponent>(skyEntt);
+
+        if (skyComponent.m_dirty)
+        {
+            CreateMeshData(m_device, m_rendererRegistry, skyComponent.m_mesh);
+
+            auto& skyData      = m_rendererRegistry.ctx().emplace<SkyData>();
+            skyData.meshHandle = skyComponent.m_mesh.m_handle;
+
+            const auto&            texture = skyComponent.GetTexture();
+            RED::TextureDescriptor textureDescriptor{{texture.GetWidth(), texture.GetHeight(), 1},
+                                                     texture.GetFormat(),
+                                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                     VK_IMAGE_USAGE_SAMPLED_BIT};
+            skyData.skyTexture =
+              m_device->CreateTexture(std::move(textureDescriptor), texture.GetData());
+
+            skyData.skyMeshDataBuffer = m_device->CreateBuffer(
+              {sizeof(SkyboxUniformData), sizeof(SkyboxUniformData), RED::BufferUsage::UNIFORM});
+
+            skyComponent.m_dirty = false;
+        }
+    }
 }
 
 void Renderer::Render(entt::registry& registry, const ViewportData& viewportData, bool resized)
@@ -228,50 +256,54 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     std::vector<RED::DrawCall> depthPassDrawCalls;
     depthPassDrawCalls.reserve(1000);
 
-    registry.view<Component::TransformComponent, Component::RenderComponent>().each(
-      [&drawCalls, &depthPassDrawCalls, this](auto  entity,
-                                              auto& transformComponent,
-                                              auto& renderComponent)
-      {
-          const auto meshData     = m_rendererRegistry.try_get<MeshData>(renderComponent.id);
-          const auto materialData = m_rendererRegistry.try_get<MaterialData>(renderComponent.id);
+    registry
+      .view<Component::TransformComponent, Component::MeshComponent, Component::RenderComponent>()
+      .each(
+        [&drawCalls,
+         &depthPassDrawCalls,
+         this](auto entity, auto& transformComponent, auto& meshComponent, auto& renderComponent)
+        {
+            const auto meshData =
+              m_rendererRegistry.try_get<MeshData>(meshComponent.m_mesh.m_handle);
+            const auto materialData =
+              m_rendererRegistry.try_get<MaterialData>(renderComponent.m_handle);
 
-          if (!meshData || !materialData)
-              return;
+            if (!meshData || !materialData)
+                return;
 
-          auto transform = transformComponent.GetTransform();
-          m_device->UpdateBuffer(materialData->modelBuffer.GetID(), &transform);
+            auto transform = transformComponent.GetTransform();
+            m_device->UpdateBuffer(materialData->modelBuffer.GetID(), &transform);
 
-          RED::DrawCall dc;
-          RED::DrawCall depthDrawCall;
-          dc.vertexBuffer = depthDrawCall.vertexBuffer = meshData->m_vertexBuffer;
-          dc.indexBuffer = depthDrawCall.indexBuffer = meshData->m_indexBuffer;
+            RED::DrawCall dc;
+            RED::DrawCall depthDrawCall;
+            dc.vertexBuffer = depthDrawCall.vertexBuffer = meshData->m_vertexBuffer;
+            dc.indexBuffer = depthDrawCall.indexBuffer = meshData->m_indexBuffer;
 
-          dc.SetUniformBuffer({m_offscreenState.globalUniformBuffer}, RED::ShaderType::VERTEX, 0);
-          dc.SetUniformBuffer({m_offscreenState.lightsBuffer}, RED::ShaderType::FRAGMENT, 1);
-          dc.SetUniformBuffer({materialData->modelBuffer}, RED::ShaderType::VERTEX, 0, 1);
-          dc.SetUniformBuffer({materialData->uniformBuffer}, RED::ShaderType::FRAGMENT, 1, 1);
-          dc.SetUniformTexture({materialData->difuseTexture,
-                                materialData->normalTexture,
-                                materialData->metallicRoughnessTexture,
-                                materialData->emissiveTexture,
-                                materialData->emissiveTexture},
-                               RED::ShaderType::FRAGMENT,
-                               2,
-                               1);
+            dc.SetUniformBuffer({m_offscreenState.globalUniformBuffer}, RED::ShaderType::VERTEX, 0);
+            dc.SetUniformBuffer({m_offscreenState.lightsBuffer}, RED::ShaderType::FRAGMENT, 1);
+            dc.SetUniformBuffer({materialData->modelBuffer}, RED::ShaderType::VERTEX, 0, 1);
+            dc.SetUniformBuffer({materialData->uniformBuffer}, RED::ShaderType::FRAGMENT, 1, 1);
+            dc.SetUniformTexture({materialData->difuseTexture,
+                                  materialData->normalTexture,
+                                  materialData->metallicRoughnessTexture,
+                                  materialData->emissiveTexture,
+                                  materialData->emissiveTexture},
+                                 RED::ShaderType::FRAGMENT,
+                                 2,
+                                 1);
 
-          depthDrawCall.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
-                                         RED::ShaderType::VERTEX,
-                                         0,
-                                         0);
-          depthDrawCall.SetUniformBuffer({materialData->modelBuffer},
-                                         RED::ShaderType::VERTEX,
-                                         0,
-                                         1);
+            depthDrawCall.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
+                                           RED::ShaderType::VERTEX,
+                                           0,
+                                           0);
+            depthDrawCall.SetUniformBuffer({materialData->modelBuffer},
+                                           RED::ShaderType::VERTEX,
+                                           0,
+                                           1);
 
-          drawCalls.push_back(dc);
-          depthPassDrawCalls.push_back(depthDrawCall);
-      });
+            drawCalls.push_back(dc);
+            depthPassDrawCalls.push_back(depthDrawCall);
+        });
 
     // Finish updating data to resources.
     // Start render pass.
@@ -282,6 +314,35 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     depthPassParameters.drawCalls        = std::move(depthPassDrawCalls);
 
     m_depthPassStage.Execute(m_device.get(), std::move(depthPassParameters), {});
+
+    if (m_rendererRegistry.ctx().contains<SkyData>())
+    {
+        auto&       sky     = m_rendererRegistry.ctx().get<SkyData>();
+        const auto& skyMesh = m_rendererRegistry.try_get<MeshData>(sky.meshHandle);
+
+        if (skyMesh)
+        {
+            SkyboxUniformData skyboxUniformData;
+            skyboxUniformData.model = glm::translate(glm::mat4(1.0f), cameraData.cameraPosition);
+            skyboxUniformData.color = glm::vec4(1.0f);
+            skyboxUniformData.view  = cameraData.view;
+            skyboxUniformData.projection = cameraData.projection;
+            m_device->UpdateBuffer(sky.skyMeshDataBuffer.GetID(), &skyboxUniformData);
+
+            RED::DrawCall dc;
+            dc.vertexBuffer = skyMesh->m_vertexBuffer;
+            dc.indexBuffer  = skyMesh->m_indexBuffer;
+            dc.SetUniformBuffer({sky.skyMeshDataBuffer}, RED::ShaderType::VERTEX, 0);
+            dc.SetUniformTexture({sky.skyTexture}, RED::ShaderType::FRAGMENT, 1, 1);
+
+            SkyboxInputParameters skyboxParameters;
+            skyboxParameters.viewport         = viewport;
+            skyboxParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();
+            skyboxParameters.drawCall         = std::move(dc);
+
+            m_skyboxStage.Execute(m_device.get(), std::move(skyboxParameters), {});
+        }
+    }
 
     DrawOpaqueInputParameters drawOpaqueParameters;
     drawOpaqueParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();

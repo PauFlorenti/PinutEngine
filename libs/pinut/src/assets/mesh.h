@@ -41,9 +41,10 @@ struct Primitive
 
 class Mesh final : public Asset
 {
-    friend entt::entity Pinut::CreateMeshData(std::shared_ptr<RED::Device> device,
-                                              entt::registry&              registry,
-                                              Mesh&                        mesh);
+    friend void Pinut::CreateMeshData(std::shared_ptr<RED::Device> device,
+                                      entt::registry&              registry,
+                                      Mesh&                        mesh);
+    friend class Renderer;
 
   public:
     Mesh();

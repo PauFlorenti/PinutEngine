@@ -22,7 +22,7 @@ struct RenderComponent : public BaseComponent
     Texture      normal;
     Texture      metallicRoughness;
     Texture      emissive;
-    entt::entity id{entt::null};
+    entt::entity m_handle{entt::null};
 };
 } // namespace Component
 } // namespace Pinut

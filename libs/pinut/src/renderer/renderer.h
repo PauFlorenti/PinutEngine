@@ -12,6 +12,7 @@
 #include "src/renderer/stages/depthPassStage.h"
 #include "src/renderer/stages/lightForwardStage.h"
 #include "src/renderer/stages/presentStage.h"
+#include "src/renderer/stages/skyboxStage.h"
 
 struct GLFWwindow;
 namespace RED
@@ -46,6 +47,7 @@ class Renderer final
     OffscreenState    m_offscreenState;
     PresentStage      m_presentStage;
     LightForwardStage m_lightForwardStage;
+    SkyboxStage       m_skyboxStage;
 
 #ifdef _DEBUG
     std::unique_ptr<PinutImGUI> m_imgui{nullptr};

@@ -8,10 +8,11 @@
 
 namespace Pinut
 {
-entt::entity CreateMeshData(std::shared_ptr<RED::Device> device,
-                            entt::registry&              registry,
-                            Mesh&                        mesh)
+void CreateMeshData(std::shared_ptr<RED::Device> device, entt::registry& registry, Mesh& mesh)
 {
+    if (auto data = registry.try_get<MeshData>(mesh.m_handle); data)
+        return;
+
     const auto handle = registry.create();
     mesh.m_handle     = handle;
     auto& data        = registry.emplace<MeshData>(handle);
@@ -28,8 +29,6 @@ entt::entity CreateMeshData(std::shared_ptr<RED::Device> device,
           device->CreateBuffer({indices.size() * sizeof(u16), sizeof(u16), RED::BufferUsage::INDEX},
                                indices.data());
     }
-
-    return handle;
 }
 
 MeshData::~MeshData()

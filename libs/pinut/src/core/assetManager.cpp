@@ -40,13 +40,7 @@ bool AssetManager::FindFile(const std::filesystem::path& filepath,
     return false;
 }
 
-void AssetManager::Init(std::weak_ptr<RED::Device> device)
-{
-    m_device = device;
-
-    // m_materialManager.Init();
-    m_objLoader.Init(m_device);
-}
+void AssetManager::Init(std::weak_ptr<RED::Device> device) { m_device = device; }
 
 void AssetManager::Shutdown()
 {

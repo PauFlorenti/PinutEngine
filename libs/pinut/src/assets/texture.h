@@ -1,6 +1,6 @@
 #pragma once
 
-#include "asset.h"
+#include "src/assets/asset.h"
 namespace Pinut
 {
 class Texture final : public Asset
@@ -24,5 +24,7 @@ class Texture final : public Asset
     u32      m_channels{4};
     u8*      m_data{nullptr};
     VkFormat m_format{};
+
+    entt::entity m_handle;
 };
 } // namespace Pinut

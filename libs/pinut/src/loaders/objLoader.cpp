@@ -14,8 +14,6 @@ namespace Pinut
 {
 OBJLoader::OBJLoader() = default;
 
-void OBJLoader::Init(std::weak_ptr<RED::Device> device) { m_device = device; }
-
 std::shared_ptr<Renderable> OBJLoader::LoadRenderableFromFile(const std::filesystem::path& filepath,
                                                               AssetManager& assetManager)
 {
@@ -27,10 +25,6 @@ std::shared_ptr<Renderable> OBJLoader::LoadRenderableFromFile(const std::filesys
 std::shared_ptr<Mesh> OBJLoader::LoadMeshFromFile(const std::filesystem::path& filepath,
                                                   AssetManager&                assetManager)
 {
-    auto device = m_device.lock();
-    if (!device)
-        return nullptr;
-
     tinyobj::attrib_t                attrib;
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
