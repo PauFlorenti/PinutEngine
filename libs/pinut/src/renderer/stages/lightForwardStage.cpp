@@ -29,7 +29,7 @@ void LightForwardStage::Execute(RED::Device*               device,
                                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
     RED::FrameBuffer attachment{.textureView    = parameters.colorFrameBuffer,
-                                .loadOperation  = RED::FrameBufferLoadOperation::LOAD,
+                                .loadOperation  = RED::FrameBufferLoadOperation::CLEAR,
                                 .storeOperation = RED::FrameBufferStoreOperation::STORE,
                                 .clearColor     = {.0f, .0f, .0f, .0f}};
 

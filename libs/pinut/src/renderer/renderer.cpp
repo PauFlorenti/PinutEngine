@@ -315,6 +315,14 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
 
     m_depthPassStage.Execute(m_device.get(), std::move(depthPassParameters), {});
 
+    DrawOpaqueInputParameters drawOpaqueParameters;
+    drawOpaqueParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();
+    drawOpaqueParameters.depthFrameBuffer = m_offscreenState.depthTexture.GetID();
+    drawOpaqueParameters.viewport         = viewportData;
+    drawOpaqueParameters.drawCalls        = std::move(drawCalls);
+
+    m_lightForwardStage.Execute(m_device.get(), std::move(drawOpaqueParameters), {});
+
     if (m_rendererRegistry.ctx().contains<SkyData>())
     {
         auto&       sky     = m_rendererRegistry.ctx().get<SkyData>();
@@ -338,19 +346,12 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
             SkyboxInputParameters skyboxParameters;
             skyboxParameters.viewport         = viewport;
             skyboxParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();
+            skyboxParameters.depthFrameBuffer = m_offscreenState.depthTexture.GetID();
             skyboxParameters.drawCall         = std::move(dc);
 
             m_skyboxStage.Execute(m_device.get(), std::move(skyboxParameters), {});
         }
     }
-
-    DrawOpaqueInputParameters drawOpaqueParameters;
-    drawOpaqueParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();
-    drawOpaqueParameters.depthFrameBuffer = m_offscreenState.depthTexture.GetID();
-    drawOpaqueParameters.viewport         = viewportData;
-    drawOpaqueParameters.drawCalls        = std::move(drawCalls);
-
-    m_lightForwardStage.Execute(m_device.get(), std::move(drawOpaqueParameters), {});
 
 #ifdef _DEBUG
     m_imgui->BeginImGUIRender();

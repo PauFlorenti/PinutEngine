@@ -16,6 +16,7 @@ struct SkyboxInputParameters
 {
     RED::ViewportState   viewport;
     RED::TextureResource colorFrameBuffer;
+    RED::TextureResource depthFrameBuffer;
     RED::DrawCall        drawCall;
 };
 
