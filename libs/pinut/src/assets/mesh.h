@@ -14,7 +14,6 @@ class AssetManager;
 class Device;
 class Material;
 class Renderable;
-struct MaterialInstance;
 struct Vertex
 {
     glm::vec3 position;
@@ -36,7 +35,7 @@ struct Primitive
     u32                       m_firstVertex{0};
     u32                       m_indexCount{0};
     u32                       m_vertexCount{0};
-    std::shared_ptr<Material> m_material{nullptr}; // TODO
+    std::shared_ptr<Material> m_material{nullptr};
 };
 
 class Mesh final : public Asset
@@ -47,8 +46,11 @@ class Mesh final : public Asset
     friend class Renderer;
 
   public:
-    Mesh();
-    Mesh(std::vector<Vertex> vertices, std::vector<u16> indices, std::vector<Primitive> primitives);
+    Mesh(const std::string& InName);
+    Mesh(std::vector<Vertex>    vertices,
+         std::vector<u16>       indices,
+         std::vector<Primitive> primitives,
+         const std::string&     InName = "");
     ~Mesh();
 
     Mesh(const Mesh&)            = default;

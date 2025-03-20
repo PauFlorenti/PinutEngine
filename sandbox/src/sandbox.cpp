@@ -41,41 +41,45 @@ void Sandbox::OnCreate()
     Pinut::Texture t("../assets/viking_room/viking_room_diffuse.png");
     Pinut::Texture skyTexture("../assets/textures/ciel_diffuse.jpg");
 
+    m_assetManager.ImportAsset("suzanne.obj");
+    m_assetManager.ImportAsset("viking_room\\viking_room.obj");
+    m_assetManager.ImportAsset("meshes\\sphere.obj");
+
     m_currentScene = new Pinut::Scene();
     auto& registry = m_currentScene->Registry();
 
-    auto monkey = m_currentScene->CreateEntity();
-    registry.emplace<Pinut::Component::MeshComponent>(monkey,
-                                                      *LoadAsset<Pinut::Mesh>("suzanne.obj"));
+    const auto monkey = m_currentScene->CreateEntity();
+    registry.emplace<Pinut::Component::MeshComponent>(
+      monkey,
+      *m_assetManager.GetAsset<Pinut::Mesh>("meshes\\monkey_smooth\\suzanne.obj.mesh"));
     registry.emplace<Pinut::Component::RenderComponent>(monkey,
                                                         whiteTexture,
                                                         blueTexture,
                                                         blackTexture,
                                                         blackTexture);
 
-    auto& monkeyTransformComponent = registry.get<Pinut::Component::TransformComponent>(monkey);
-    monkeyTransformComponent.SetTransform(
-      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 10.0f)));
+    registry.emplace_or_replace<Pinut::Component::TransformComponent>(monkey,
+                                                                      glm::vec3(0.0f, 5.0f, 10.0f));
 
     const auto vikingRoom = m_currentScene->CreateEntity();
-    registry.emplace<Pinut::Component::MeshComponent>(vikingRoom,
-                                                      *LoadAsset<Pinut::Mesh>("viking_room.obj"));
+    registry.emplace<Pinut::Component::MeshComponent>(
+      vikingRoom,
+      *m_assetManager.GetAsset<Pinut::Mesh>("viking_room\\viking_room.obj.mesh"));
     registry.emplace<Pinut::Component::RenderComponent>(vikingRoom,
                                                         t,
                                                         blueTexture,
                                                         blackTexture,
                                                         blackTexture);
 
-    auto& vikingRoomTransformComponent =
-      registry.get<Pinut::Component::TransformComponent>(vikingRoom);
-    vikingRoomTransformComponent.SetTransform(
+    registry.emplace_or_replace<Pinut::Component::TransformComponent>(
+      vikingRoom,
       glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)));
 
-    auto  sky = m_currentScene->CreateEntity();
-    auto& skyComponent =
-      registry.emplace<Pinut::Component::SkyComponent>(sky,
-                                                       skyTexture,
-                                                       *LoadAsset<Pinut::Mesh>("sphere.obj"));
+    auto sky = m_currentScene->CreateEntity();
+    registry.emplace<Pinut::Component::SkyComponent>(
+      sky,
+      skyTexture,
+      *m_assetManager.GetAsset<Pinut::Mesh>("meshes\\sphere.obj.mesh"));
 
     {
         auto  pointLight           = m_currentScene->CreateEntity();

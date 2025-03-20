@@ -1,20 +1,26 @@
 #pragma once
 
+namespace tinyobj
+{
+struct attrib_t;
+struct shape_t;
+} // namespace tinyobj
 namespace Pinut
 {
-class AssetManager;
+class Material;
 class Mesh;
-class Renderable;
 class OBJLoader final
 {
   public:
     OBJLoader();
+    ~OBJLoader();
 
-    // TODO Loader should not create renderables ??
-    // TODO It probably should not receive an assetManager either.
-    std::shared_ptr<Renderable> LoadRenderableFromFile(const std::filesystem::path& filepath,
-                                                       AssetManager&                assetManager);
-    std::shared_ptr<Mesh>       LoadMeshFromFile(const std::filesystem::path& filepath,
-                                                 AssetManager&                assetManager);
+    std::shared_ptr<Mesh> ParseObj(const std::filesystem::path& InFilepath);
+
+  private:
+    std::shared_ptr<Mesh> ParseMesh(const std::string&                     InFilename,
+                                    const tinyobj::attrib_t&               InAttrib,
+                                    const std::vector<tinyobj::shape_t>&   InShapes,
+                                    std::vector<std::shared_ptr<Material>> InMaterials);
 };
 } // namespace Pinut

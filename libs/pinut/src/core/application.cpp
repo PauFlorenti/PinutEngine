@@ -201,7 +201,6 @@ Application::Application(const std::string& name, i32 width, i32 height)
         return;
 
     auto device = RED::Device::Create(&m_deviceInfo, m_deviceQueues.data(), &m_callbacks);
-    m_assetManager.Init(device);
 
 #ifdef _DEBUG
     auto imgui =
@@ -221,7 +220,6 @@ Application::~Application()
     if (m_currentScene)
         m_currentScene->ClearScene();
 
-    m_assetManager.Shutdown();
     DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
     m_renderer.reset();
     ShutdownVulkan();

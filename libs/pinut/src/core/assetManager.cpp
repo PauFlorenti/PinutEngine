@@ -4,18 +4,25 @@
 #include <external/tinyobjloader/tiny_obj_loader.h>
 
 #include "src/assets/asset.h"
-// #include "src/assets/material.h"
+#include "src/assets/material.h"
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
 #include "src/core/assetManager.h"
 #include "src/core/renderable.h"
-// #include "src/renderer/stages/materialManager.h"
 
 namespace Pinut
 {
-
 const std::filesystem::path AssetManager::m_assetsPath =
   std::filesystem::current_path().parent_path() / std::filesystem::path("assets");
+
+AssetManager::AssetManager() = default;
+AssetManager::~AssetManager()
+{
+    for (auto& asset : m_assets)
+        asset.second->Destroy();
+
+    m_assets.clear();
+}
 
 bool AssetManager::FindFile(const std::filesystem::path& filepath,
                             std::filesystem::path&       outAbsolutePath)
@@ -40,83 +47,51 @@ bool AssetManager::FindFile(const std::filesystem::path& filepath,
     return false;
 }
 
-void AssetManager::Init(std::weak_ptr<RED::Device> device) { m_device = device; }
-
-void AssetManager::Shutdown()
-{
-    for (auto& asset : m_assets)
-        asset.second->Destroy();
-
-    m_assets.clear();
-
-    // m_materialManager.Shutdown();
-}
-
-std::shared_ptr<Asset> AssetManager::LoadAsset(std::filesystem::path filename,
-                                               const std::string&    name)
+void AssetManager::ImportAsset(const std::filesystem::path& InFilepath)
 {
     std::filesystem::path absolutePath;
-    if (!FindFile(filename, absolutePath))
-        return nullptr;
+
+    if (!FindFile(InFilepath, absolutePath))
+    {
+        return;
+    }
 
     const auto extension = absolutePath.extension();
 
     if (extension == ".png" || extension == ".jpg")
     {
-        //if (auto t = Texture::CreateFromFile(absolutePath.string(), m_device))
-        //{
-        //    RegisterAsset(name, t);
-        //    return t;
-        //}
-        return nullptr;
+        return;
     }
     else if (extension == ".obj")
     {
-        return m_objLoader.LoadMeshFromFile(absolutePath, *this);
+        auto objAsset = m_objLoader.ParseObj(absolutePath);
+
+        auto mesh = static_cast<Mesh*>(objAsset.get());
+
+        if (!mesh)
+        {
+            return;
+        }
+
+        for (auto prim : mesh->m_primitives)
+        {
+            // TODO Load textures
+            auto material = prim.m_material;
+
+            if (!material)
+            {
+                continue;
+            }
+
+            m_assets.insert({material->GetUUID(), std::move(material)});
+        }
+
+        const auto uuid = objAsset->GetUUID();
+        m_assets.insert({uuid, std::move(objAsset)});
     }
     else
     {
         printf("[ERROR]: Unknown extension file.");
     }
-
-    return nullptr;
 }
-
-void AssetManager::RegisterAsset(const std::string& name, std::shared_ptr<Asset> asset)
-{
-    assert(asset);
-    assert(!name.empty());
-    if (auto it = m_assets.find(name); it != m_assets.end())
-    {
-        if (it->second)
-        {
-            printf("Asset trying to be loaded already found in AssetManager!\n");
-            return;
-        }
-    }
-
-    m_assets.insert({name, asset});
-}
-
-void AssetManager::ReleaseAsset(const std::string& name)
-{
-    assert(!name.empty());
-    const auto it = m_assets.find(name);
-    if (it == m_assets.end())
-    {
-        printf("[WARN]: Trying to release asset not registered in the AssetManager.");
-        return;
-    }
-
-    it->second.reset();
-}
-
-// std::shared_ptr<Material> AssetManager::CreateMaterial(const std::string&    name,
-//                                                        VkDescriptorSetLayout layout,
-//                                                        MaterialData          data)
-// {
-//     auto mat = m_materialManager.CreateMaterial(name, layout, std::move(data));
-//     RegisterAsset(name, mat);
-//     return mat;
-// }
 } // namespace Pinut

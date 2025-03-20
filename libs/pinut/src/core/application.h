@@ -75,12 +75,6 @@ class Application
     void Run();
     void RecreateSwapchain(bool bVsync);
 
-    template <typename T>
-    std::shared_ptr<T> LoadAsset(const std::string& filename)
-    {
-        return m_assetManager.GetAsset<T>(filename);
-    }
-
     const std::string GetName() const { return m_name; }
     const i32         GetWidth() const { return m_width; }
     const i32         GetHeight() const { return m_height; }
@@ -89,6 +83,8 @@ class Application
     Camera* GetCamera();
 
   protected:
+    AssetManager m_assetManager;
+
     std::string m_name;
     u32         m_width;
     u32         m_height;
@@ -128,7 +124,6 @@ class Application
     f64 m_deltaTime{0};
     f64 m_lastFrameTime{0};
 
-    AssetManager m_assetManager;
     ViewportData m_viewport;
 
     // RENDERING
