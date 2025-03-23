@@ -2,16 +2,15 @@
 
 #include "external/tinyobjloader/tiny_obj_loader.h"
 
-#include "src/assets/material.h"
-#include "src/assets/mesh.h"
 #include "src/loaders/objLoader.h"
+#include "src/loaders/rawAssetData.h"
 
 namespace Pinut
 {
 OBJLoader::OBJLoader()  = default;
 OBJLoader::~OBJLoader() = default;
 
-std::shared_ptr<Mesh> OBJLoader::ParseObj(const std::filesystem::path& InFilepath)
+RawData OBJLoader::ParseObjFile(const std::filesystem::path& InFilepath)
 {
     tinyobj::attrib_t                attrib;
     std::vector<tinyobj::shape_t>    shapes;
@@ -39,64 +38,67 @@ std::shared_ptr<Mesh> OBJLoader::ParseObj(const std::filesystem::path& InFilepat
     if (!err.empty())
     {
         printf("[ERROR]: %s\n", err.c_str());
-        return nullptr;
+        return {};
     }
 
     if (!ret)
     {
         printf("Failed to load/parse .obj.\n");
-        return nullptr;
+        return {};
     }
 
     assert(!attrib.GetVertices().empty());
     assert(attrib.GetVertices().size() % 3 == 0);
+
+    RawData rawData;
+    rawData.materialData.resize(materials.size());
 
     auto ConvertToVec3 = [](const float Input[3]) -> glm::vec3
     {
         return glm::vec3(Input[0], Input[1], Input[2]);
     };
 
-    std::vector<std::shared_ptr<Material>> coreMaterials;
-    coreMaterials.reserve(materials.size());
+    std::transform(materials.begin(),
+                   materials.end(),
+                   rawData.materialData.begin(),
+                   [&](const tinyobj::material_t& InMaterial)
+                   {
+                       return RawMaterialData{InMaterial.name,
+                                              ConvertToVec3(InMaterial.diffuse),
+                                              ConvertToVec3(InMaterial.emission),
+                                              ConvertToVec3(InMaterial.specular),
+                                              InMaterial.diffuse_texname,
+                                              InMaterial.normal_texname,
+                                              InMaterial.emissive_texname,
+                                              InMaterial.specular_texname};
+                   });
 
-    for (const auto material : materials)
-    {
-        auto m = std::make_shared<Material>(absoluteFilename + ".mat." + material.name);
+    rawData.meshData.resize(1);
 
-        m->m_diffuse  = ConvertToVec3(material.diffuse);
-        m->m_emissive = ConvertToVec3(material.emission);
-        m->m_specular = ConvertToVec3(material.specular);
+    ParseMesh(absoluteFilename, attrib, shapes, rawData);
 
-        m->m_diffuseTexture  = material.diffuse_texname;
-        m->m_normalTexture   = material.normal_texname;
-        m->m_emissiveTexture = material.emissive_texname;
-        m->m_specularTexture = material.specular_texname;
-
-        coreMaterials.emplace_back(std::move(m));
-    }
-
-    return ParseMesh(absoluteFilename, attrib, shapes, std::move(coreMaterials));
+    return rawData;
 }
 
-std::shared_ptr<Mesh> OBJLoader::ParseMesh(const std::string&                     InFilename,
-                                           const tinyobj::attrib_t&               InAttrib,
-                                           const std::vector<tinyobj::shape_t>&   InShapes,
-                                           std::vector<std::shared_ptr<Material>> InMaterials)
+void OBJLoader::ParseMesh(const std::string&                   InFilename,
+                          const tinyobj::attrib_t&             InAttrib,
+                          const std::vector<tinyobj::shape_t>& InShapes,
+                          RawData&                             OutRawData)
 {
-    const auto                      filename = InFilename + ".mesh";
-    auto                            mesh     = std::make_shared<Mesh>(filename);
-    std::unordered_map<Vertex, u16> uniqueVertices{};
+    auto& mesh = OutRawData.meshData.at(0); // At the moment assume there is only one mesh.
+    mesh.name  = InFilename + ".mesh";
+    std::unordered_map<RawVertex, u16> uniqueVertices{};
 
     for (const auto& shape : InShapes)
     {
-        uint32_t firstIndex  = static_cast<uint32_t>(mesh->m_indices.size());
-        uint32_t firstVertex = static_cast<uint32_t>(mesh->m_vertices.size());
+        uint32_t firstIndex  = static_cast<uint32_t>(mesh.indices.size());
+        uint32_t firstVertex = static_cast<uint32_t>(mesh.vertices.size());
         uint32_t indexCount  = 0;
         uint32_t vertexCount = 0;
 
         for (const auto& index : shape.mesh.indices)
         {
-            Vertex vertex{};
+            RawVertex vertex{};
 
             vertex.position = {InAttrib.vertices[3 * index.vertex_index + 0],
                                InAttrib.vertices[3 * index.vertex_index + 1],
@@ -120,30 +122,28 @@ std::shared_ptr<Mesh> OBJLoader::ParseMesh(const std::string&                   
             if (uniqueVertices.count(vertex) == 0)
             {
                 uniqueVertices[vertex] = static_cast<uint32_t>(uniqueVertices.size());
-                mesh->m_vertices.push_back(vertex);
+                mesh.vertices.push_back(vertex);
                 ++vertexCount;
             }
 
-            mesh->m_indices.push_back(static_cast<u16>(uniqueVertices[vertex]));
+            mesh.indices.push_back(static_cast<u16>(uniqueVertices[vertex]));
             ++indexCount;
         }
 
-        Primitive prim;
-        prim.m_firstIndex  = firstIndex;
-        prim.m_firstVertex = firstVertex;
-        prim.m_indexCount  = indexCount;
-        prim.m_vertexCount = vertexCount;
+        RawPrimitive prim;
+        prim.firstIndex  = firstIndex;
+        prim.firstVertex = firstVertex;
+        prim.indexCount  = indexCount;
+        prim.vertexCount = vertexCount;
 
-        for (const auto material : InMaterials)
+        for (const auto material : OutRawData.materialData)
         {
-            auto wholeName    = material->GetName();
+            auto wholeName    = material.name;
             auto materialName = wholeName.substr(wholeName.find(".mat.") + 5);
-            prim.m_material   = shape.name == materialName ? std::move(material) : nullptr;
+            prim.materialName = shape.name == materialName ? materialName : "";
         }
 
-        mesh->m_primitives.push_back(prim);
+        mesh.primitives.push_back(prim);
     }
-
-    return mesh;
 }
 } // namespace Pinut

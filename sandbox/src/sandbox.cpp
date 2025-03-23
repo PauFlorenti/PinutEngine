@@ -41,7 +41,7 @@ void Sandbox::OnCreate()
     Pinut::Texture t("../assets/viking_room/viking_room_diffuse.png");
     Pinut::Texture skyTexture("../assets/textures/ciel_diffuse.jpg");
 
-    m_assetManager.ImportAsset("suzanne.obj");
+    m_assetManager.ImportAsset("monkey_smooth\\suzanne.obj");
     m_assetManager.ImportAsset("viking_room\\viking_room.obj");
     m_assetManager.ImportAsset("meshes\\sphere.obj");
 

@@ -10,6 +10,7 @@ namespace Pinut
 class Asset;
 class Mesh;
 class Texture;
+struct RawAsset;
 
 class AssetManager
 {
@@ -52,7 +53,8 @@ class AssetManager
     static bool FindFile(const std::filesystem::path& filepath,
                          std::filesystem::path&       outAbsolutePath);
 
-    std::hash<std::string>                             m_hasher;
+    void ProcessRawData(RawData InRawData);
+
     std::unordered_map<size_t, std::shared_ptr<Asset>> m_assets;
 
     OBJLoader m_objLoader;

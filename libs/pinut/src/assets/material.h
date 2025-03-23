@@ -1,51 +1,25 @@
 #pragma once
 
 #include "src/assets/asset.h"
-
 namespace Pinut
 {
-class Device;
-class Texture;
-struct MaterialData
-{
-    u32 diffuse;
-    u32 specularExponent;
-
-    std::shared_ptr<Texture> diffuseTexture{nullptr};
-    std::shared_ptr<Texture> normalTexture{nullptr};
-    std::shared_ptr<Texture> metallicRoughnessTexture{nullptr};
-    std::shared_ptr<Texture> emissiveTexture{nullptr};
-    std::shared_ptr<Texture> ambientOcclusionTexture{nullptr};
-};
-
-struct GPUMaterialData
-{
-    u32 diffuse          = 0x00000000;
-    u32 specularExponent = 1;
-    u32 dummy1; // TODO Offset in my gpu is 16. Make it generic?
-    u32 dummy2;
-};
-
-class Material : public Asset
+class Material final : public Asset
 {
   public:
-    Material(const std::string& name, MaterialData materialData);
-    ~Material();
+    Material() = delete;
+    Material(const std::string& InFilepath);
+    ~Material() = default;
 
     void Destroy() override;
 
-    const std::string& GetName() const;
-    VkDescriptorSet    GetDescriptorSet() const;
+    glm::vec3 m_diffuse{};
+    glm::vec3 m_specular{};
+    glm::vec3 m_emissive{};
 
-    void SetMaterialData(MaterialData materialData);
-    void UpdateDescriptorSet(VkDevice device);
-    void Bind(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout) const;
-
-  private:
-    std::string  m_name;
-    MaterialData m_materialData;
-
-    VkDescriptorSet                         m_descriptorSet{VK_NULL_HANDLE};
-    std::array<std::shared_ptr<Texture>, 4> m_textures;
+    std::string m_diffuseTexture;
+    std::string m_specularTexture;
+    std::string m_normalTexture;
+    std::string m_metallicRoughnessTexture;
+    std::string m_emissiveTexture;
 };
 } // namespace Pinut

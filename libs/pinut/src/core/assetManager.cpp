@@ -8,7 +8,7 @@
 #include "src/assets/mesh.h"
 #include "src/assets/texture.h"
 #include "src/core/assetManager.h"
-#include "src/core/renderable.h"
+#include "src/loaders/rawAssetData.h"
 
 namespace Pinut
 {
@@ -64,34 +64,60 @@ void AssetManager::ImportAsset(const std::filesystem::path& InFilepath)
     }
     else if (extension == ".obj")
     {
-        auto objAsset = m_objLoader.ParseObj(absolutePath);
+        auto rawAsset = m_objLoader.ParseObjFile(absolutePath);
 
-        auto mesh = static_cast<Mesh*>(objAsset.get());
-
-        if (!mesh)
-        {
-            return;
-        }
-
-        for (auto prim : mesh->m_primitives)
-        {
-            // TODO Load textures
-            auto material = prim.m_material;
-
-            if (!material)
-            {
-                continue;
-            }
-
-            m_assets.insert({material->GetUUID(), std::move(material)});
-        }
-
-        const auto uuid = objAsset->GetUUID();
-        m_assets.insert({uuid, std::move(objAsset)});
+        ProcessRawData(std::move(rawAsset));
     }
     else
     {
         printf("[ERROR]: Unknown extension file.");
+    }
+}
+
+void AssetManager::ProcessRawData(RawData InRawData)
+{
+    for (const auto rawMaterial : InRawData.materialData)
+    {
+        auto material = std::make_shared<Material>(rawMaterial.name);
+
+        material->m_diffuse  = rawMaterial.diffuse;
+        material->m_emissive = rawMaterial.emissive;
+        material->m_specular = rawMaterial.specular;
+
+        m_assets.insert({material->GetUUID(), material});
+    }
+
+    for (const auto rawMesh : InRawData.meshData)
+    {
+        std::vector<Primitive> primitives(rawMesh.primitives.size());
+        std::vector<Vertex>    vertices(rawMesh.vertices.size());
+
+        std::transform(rawMesh.primitives.begin(),
+                       rawMesh.primitives.end(),
+                       primitives.begin(),
+                       [](const RawPrimitive& InPrimitive)
+                       {
+                           return Primitive{InPrimitive.firstIndex,
+                                            InPrimitive.firstVertex,
+                                            InPrimitive.indexCount,
+                                            InPrimitive.vertexCount};
+                       });
+
+        std::transform(
+          rawMesh.vertices.begin(),
+          rawMesh.vertices.end(),
+          vertices.begin(),
+          [](const RawVertex& InVertex)
+          {
+              return Vertex{InVertex.position, InVertex.color, InVertex.uv, InVertex.normal};
+          });
+
+        auto mesh = std::make_shared<Mesh>(std::move(vertices),
+                                           rawMesh.indices,
+                                           std::move(primitives),
+                                           rawMesh.name);
+
+        m_assets.insert({mesh->GetUUID(), mesh});
     }
 }
 } // namespace Pinut
