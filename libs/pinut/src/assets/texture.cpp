@@ -9,8 +9,13 @@
 
 namespace Pinut
 {
-Texture::Texture(const u32 width, const u32 height, VkFormat format, const void* data)
-: m_width(width),
+Texture::Texture(const u32   width,
+                 const u32   height,
+                 VkFormat    format,
+                 const void* data,
+                 std::string InName)
+: Asset(InName, AssetType::TEXTURE),
+  m_width(width),
   m_height(height),
   m_format(format)
 {
@@ -24,6 +29,7 @@ Texture::Texture(const u32 width, const u32 height, VkFormat format, const void*
 }
 
 Texture::Texture(const std::filesystem::path& filepath)
+: Asset(filepath.string(), AssetType::TEXTURE)
 {
     const auto absolutePath = std::filesystem::absolute(filepath).string();
     int32_t    w, h, channels;

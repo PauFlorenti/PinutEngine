@@ -60,7 +60,7 @@ void AssetManager::ImportAsset(const std::filesystem::path& InFilepath)
 
     if (extension == ".png" || extension == ".jpg")
     {
-        return;
+        ProcessTexture(absolutePath);
     }
     else if (extension == ".obj")
     {
@@ -76,8 +76,19 @@ void AssetManager::ImportAsset(const std::filesystem::path& InFilepath)
 
 void AssetManager::ProcessRawData(RawData InRawData)
 {
+    for (const auto rawTexture : InRawData.textureData)
+    {
+        ProcessTexture(rawTexture);
+    }
+
     for (const auto rawMaterial : InRawData.materialData)
     {
+        if (const auto materialUuid = std::hash<std::string>{}(rawMaterial.name);
+            m_assets.find(materialUuid) != m_assets.end())
+        {
+            continue;
+        }
+
         auto material = std::make_shared<Material>(rawMaterial.name);
 
         material->m_diffuse  = rawMaterial.diffuse;
@@ -92,16 +103,23 @@ void AssetManager::ProcessRawData(RawData InRawData)
         std::vector<Primitive> primitives(rawMesh.primitives.size());
         std::vector<Vertex>    vertices(rawMesh.vertices.size());
 
-        std::transform(rawMesh.primitives.begin(),
-                       rawMesh.primitives.end(),
-                       primitives.begin(),
-                       [](const RawPrimitive& InPrimitive)
-                       {
-                           return Primitive{InPrimitive.firstIndex,
-                                            InPrimitive.firstVertex,
-                                            InPrimitive.indexCount,
-                                            InPrimitive.vertexCount};
-                       });
+        std::transform(
+          rawMesh.primitives.begin(),
+          rawMesh.primitives.end(),
+          primitives.begin(),
+          [](const RawPrimitive& InPrimitive)
+          {
+              //    if (auto m =
+              //          m_assets.find(std::hash<std::string>{}(InPrimitive.materialName));
+              //        m != m_assets.end())
+              //    {
+              //    }
+
+              return Primitive{InPrimitive.firstIndex,
+                               InPrimitive.firstVertex,
+                               InPrimitive.indexCount,
+                               InPrimitive.vertexCount};
+          });
 
         std::transform(
           rawMesh.vertices.begin(),
@@ -119,5 +137,11 @@ void AssetManager::ProcessRawData(RawData InRawData)
 
         m_assets.insert({mesh->GetUUID(), mesh});
     }
+}
+
+void AssetManager::ProcessTexture(const std::filesystem::path& InFilename)
+{
+    auto t = std::make_shared<Texture>(InFilename);
+    m_assets.insert({t->GetUUID(), std::move(t)});
 }
 } // namespace Pinut

@@ -6,8 +6,12 @@ namespace Pinut
 class Texture final : public Asset
 {
   public:
-    Texture() = default;
-    Texture(const u32 width, const u32 height, VkFormat format, const void* data = nullptr);
+    Texture() = delete;
+    Texture(const u32   width,
+            const u32   height,
+            VkFormat    format,
+            const void* data   = nullptr,
+            std::string InName = "");
     Texture(const std::filesystem::path& filepath);
     ~Texture() = default;
 

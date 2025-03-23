@@ -54,6 +54,7 @@ class AssetManager
                          std::filesystem::path&       outAbsolutePath);
 
     void ProcessRawData(RawData InRawData);
+    void ProcessTexture(const std::filesystem::path& InFilepath);
 
     std::unordered_map<size_t, std::shared_ptr<Asset>> m_assets;
 

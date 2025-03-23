@@ -38,12 +38,11 @@ void Sandbox::OnCreate()
     Pinut::Texture whiteTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &whiteData);
     Pinut::Texture blackTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &blackData);
     Pinut::Texture blueTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &blueData);
-    Pinut::Texture t("../assets/viking_room/viking_room_diffuse.png");
-    Pinut::Texture skyTexture("../assets/textures/ciel_diffuse.jpg");
 
     m_assetManager.ImportAsset("monkey_smooth\\suzanne.obj");
     m_assetManager.ImportAsset("viking_room\\viking_room.obj");
     m_assetManager.ImportAsset("meshes\\sphere.obj");
+    m_assetManager.ImportAsset("textures\\ciel_diffuse.jpg");
 
     m_currentScene = new Pinut::Scene();
     auto& registry = m_currentScene->Registry();
@@ -65,11 +64,12 @@ void Sandbox::OnCreate()
     registry.emplace<Pinut::Component::MeshComponent>(
       vikingRoom,
       *m_assetManager.GetAsset<Pinut::Mesh>("viking_room\\viking_room.obj.mesh"));
-    registry.emplace<Pinut::Component::RenderComponent>(vikingRoom,
-                                                        t,
-                                                        blueTexture,
-                                                        blackTexture,
-                                                        blackTexture);
+    registry.emplace<Pinut::Component::RenderComponent>(
+      vikingRoom,
+      *m_assetManager.GetAsset<Pinut::Texture>("viking_room\\viking_room_diffuse.png"),
+      blueTexture,
+      blackTexture,
+      blackTexture);
 
     registry.emplace_or_replace<Pinut::Component::TransformComponent>(
       vikingRoom,
@@ -78,7 +78,7 @@ void Sandbox::OnCreate()
     auto sky = m_currentScene->CreateEntity();
     registry.emplace<Pinut::Component::SkyComponent>(
       sky,
-      skyTexture,
+      *m_assetManager.GetAsset<Pinut::Texture>("textures\\ciel_diffuse.jpg"),
       *m_assetManager.GetAsset<Pinut::Mesh>("meshes\\sphere.obj.mesh"));
 
     {

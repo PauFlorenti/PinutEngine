@@ -58,11 +58,34 @@ RawData OBJLoader::ParseObjFile(const std::filesystem::path& InFilepath)
         return glm::vec3(Input[0], Input[1], Input[2]);
     };
 
+    auto InsertTexture = [&](const std::string& InTextureName)
+    {
+        if (InTextureName.empty())
+        {
+            return;
+        }
+
+        if (auto it =
+              std::find(rawData.textureData.begin(), rawData.textureData.end(), InTextureName);
+            it != rawData.textureData.end())
+        {
+            return;
+        }
+
+        // TODO Find recursivelly in folder ...
+        rawData.textureData.emplace_back(absolutePath + "\\" + InTextureName);
+    };
+
     std::transform(materials.begin(),
                    materials.end(),
                    rawData.materialData.begin(),
                    [&](const tinyobj::material_t& InMaterial)
                    {
+                       InsertTexture(InMaterial.diffuse_texname);
+                       InsertTexture(InMaterial.normal_texname);
+                       InsertTexture(InMaterial.emissive_texname);
+                       InsertTexture(InMaterial.specular_texname);
+
                        return RawMaterialData{InMaterial.name,
                                               ConvertToVec3(InMaterial.diffuse),
                                               ConvertToVec3(InMaterial.emission),
