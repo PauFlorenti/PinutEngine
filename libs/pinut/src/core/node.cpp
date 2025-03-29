@@ -1,8 +1,7 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include "node.h"
-#include "src/assets/material.h"
-#include "src/assets/mesh.h"
+#include "pinut/core/node.h"
+#include "pinut/assets/mesh.h"
 
 namespace Pinut
 {

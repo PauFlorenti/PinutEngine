@@ -1,11 +1,11 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 // Needs to go after imgui
-#include <external/ImGuizmo/ImGuizmo.h>
+#include <ImGuizmo/ImGuizmo.h>
 
-#include "src/core/camera.h"
-#include "src/core/entity.h"
+#include "pinut/core/camera.h"
+#include "pinut/core/entity.h"
 
 namespace Pinut
 {

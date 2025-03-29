@@ -1,16 +1,15 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
-#include <external/tinygltf/tiny_gltf.h>
+#include <tinygltf/tiny_gltf.h>
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
-#include "src/assets/mesh.h"
-#include "src/assets/texture.h"
-#include "src/core/assetManager.h"
-#include "src/core/node.h"
-#include "src/core/renderable.h"
-#include "src/loaders/gltfLoader.h"
+#include "pinut/assets/mesh.h"
+#include "pinut/assets/texture.h"
+#include "pinut/core/assetManager.h"
+#include "pinut/core/node.h"
+#include "pinut/loaders/gltfLoader.h"
 
 namespace Pinut
 {
@@ -141,7 +140,7 @@ std::shared_ptr<Renderable> GLTFLoader::LoadFromFile(const std::filesystem::path
     }
 
     auto root = LoadNode(gltfModel, gltfModel.nodes.at(0), nullptr, assetManager);
-    return std::make_shared<Renderable>(std::move(root), filename.string());
+    return nullptr;
 }
 
 std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
@@ -175,7 +174,7 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
         }
         else
         {
-            auto m = std::make_shared<Mesh>();
+            auto m = std::make_shared<Mesh>("");
             // Iterate through all primitives in mesh
             for (size_t i = 0; i < mesh.primitives.size(); i++)
             {
@@ -310,7 +309,7 @@ std::shared_ptr<Node> GLTFLoader::LoadNode(const tinygltf::Model& tmodel,
                 m->m_primitives.push_back(prim);
             }
 
-            assetManager.RegisterAsset(mesh.name, m);
+            // assetManager.RegisterAsset(mesh.name, m);
             node->SetMesh(std::move(m));
         }
     }

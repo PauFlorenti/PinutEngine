@@ -1,20 +1,20 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #define IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING
-#include <external/imgui/backends/imgui_impl_glfw.h>
-#include <external/imgui/backends/imgui_impl_vulkan.h>
-#include <external/imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/imgui.h>
 // Needs to go after imgui
 #include <ImGuizmo.h>
 
 #include "render_device/device.h"
 
-#include "src/components/lightComponent.h"
-#include "src/components/meshComponent.h"
-#include "src/components/renderComponent.h"
-#include "src/components/transformComponent.h"
-#include "src/imgui/pinutImgui.h"
-#include "src/renderer/common.h"
+#include "pinut/components/lightComponent.h"
+#include "pinut/components/meshComponent.h"
+#include "pinut/components/renderComponent.h"
+#include "pinut/components/transformComponent.h"
+#include "pinut/imgui/pinutImgui.h"
+#include "pinut/renderer/common.h"
 
 namespace Pinut
 {

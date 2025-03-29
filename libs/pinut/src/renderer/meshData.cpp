@@ -1,10 +1,10 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
 
-#include "src/components/meshComponent.h"
-#include "src/renderer/meshData.h"
+#include "pinut/assets/mesh.h"
+#include "pinut/renderer/meshData.h"
 
 namespace Pinut
 {

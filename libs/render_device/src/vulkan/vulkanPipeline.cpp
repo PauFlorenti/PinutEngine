@@ -2,10 +2,12 @@
 
 #include "render_device/renderPipeline.h"
 #include "render_device/states.h"
-#include "src/vulkan/pipelineBuilder.h"
-#include "src/vulkan/utils.h"
-#include "src/vulkan/vulkanPipeline.h"
-#include "src/vulkan/vulkanVertexDeclaration.h"
+
+#include "render_device/vulkan/utils.h"
+#include "render_device/vulkan/vulkanPipeline.h"
+#include "render_device/vulkan/vulkanPipelineBuilder.h"
+#include "render_device/vulkan/vulkanTexture.h"
+#include "render_device/vulkan/vulkanVertexDeclaration.h"
 
 namespace RED
 {
@@ -32,7 +34,7 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     const auto     fragmentShaderPath = "shaders/" + renderPipeline.fragmentShader.name + ".spv";
     vertexShaderModule                = CreateShaderModule(device, vertexShaderPath.c_str());
     fragmentShaderModule              = renderPipeline.fragmentShader.name.empty() ?
-                                          VK_NULL_HANDLE :
+                                          VK_NULL_HANDLE : 
                                           CreateShaderModule(device, fragmentShaderPath.c_str());
 
     if (!vertexShaderModule)
@@ -66,6 +68,16 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
 
     const auto vertexDeclaration =
       getVertexDeclarationByName(renderPipeline.inputVertexDeclaration);
+    const auto depthFormat = FormatToVulkanFormatMap.find(graphicsState.depth.depthFormat)->second;
+
+    std::vector<VkFormat> attachmentFormats(renderPipeline.attachmentFormats.size());
+    std::transform(renderPipeline.attachmentFormats.begin(),
+                   renderPipeline.attachmentFormats.end(),
+                   attachmentFormats.begin(),
+                   [&](const TextureFormat& InFormat)
+                   {
+                       return FormatToVulkanFormatMap.find(InFormat)->second;
+                   });
 
     PipelineBuilder builder;
     builder.layout = pipeline.m_pipelineLayout;
@@ -76,15 +88,15 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     builder.disable_blending();
     builder.set_input_attribute(vertexDeclaration->layout, vertexDeclaration->stride);
     builder.set_multisampling_none();
-    graphicsState.depth.depthFormat != VK_FORMAT_UNDEFINED ?
+    depthFormat != VK_FORMAT_UNDEFINED ?
       builder.enable_depth_test(true,
                                 graphicsState.depth.writeEnable,
                                 graphicsState.depth.compareOperation) :
       builder.enable_depth_test(false,
                                 graphicsState.depth.writeEnable,
                                 graphicsState.depth.compareOperation);
-    builder.set_depth_format(graphicsState.depth.depthFormat);
-    builder.SetColorAttachmentFormats(renderPipeline.attachmentFormats);
+    builder.set_depth_format(depthFormat);
+    builder.SetColorAttachmentFormats(attachmentFormats);
 
     pipeline.m_pipeline = builder.build(device);
 

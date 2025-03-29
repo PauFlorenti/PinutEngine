@@ -1,12 +1,14 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
+#include "render_device/states.h"
+#include "render_device/textureFormat.h"
 
-#include "src/renderer/pipelines/skybox_pipeline.h"
-#include "src/renderer/stages/skyboxStage.h"
+#include "pinut/renderer/pipelines/skybox_pipeline.h"
+#include "pinut/renderer/stages/skyboxStage.h"
 
 namespace Pinut
 {
@@ -36,8 +38,11 @@ void SkyboxStage::Execute(RED::Device*               device,
                             &depthAttachment);
 
     RED::GraphicsState graphicsState{};
-    graphicsState.viewport               = parameters.viewport;
-    graphicsState.depth.depthFormat      = VK_FORMAT_D32_SFLOAT;
+    graphicsState.viewport               = {parameters.viewport.x,
+                                            parameters.viewport.y,
+                                            parameters.viewport.width,
+                                            parameters.viewport.height};
+    graphicsState.depth.depthFormat      = RED::TextureFormat::D32_SFLOAT;
     graphicsState.depth.compareOperation = VK_COMPARE_OP_LESS_OR_EQUAL;
 
     device->SetGraphicsState(&graphicsState);

@@ -1,20 +1,20 @@
 #include "pch.hpp"
 
-#include "sandbox.h"
-#include "src/assets/mesh.h"
-#include "src/assets/texture.h"
-#include "src/components/lightComponent.h"
-#include "src/components/meshComponent.h"
-#include "src/components/renderComponent.h"
-#include "src/components/skyComponent.h"
-#include "src/components/transformComponent.h"
-#include "src/core/camera.h"
-#include "src/core/node.h"
-#include "src/core/renderable.h"
-#include "src/core/scene.h"
-#include "src/renderer/primitives.h"
+#include <GLFW/glfw3.h>
 
-#include <external/glfw/include/GLFW/glfw3.h>
+#include "pinut/assets/mesh.h"
+#include "pinut/assets/texture.h"
+#include "pinut/components/lightComponent.h"
+#include "pinut/components/meshComponent.h"
+#include "pinut/components/renderComponent.h"
+#include "pinut/components/skyComponent.h"
+#include "pinut/components/transformComponent.h"
+#include "pinut/core/camera.h"
+#include "pinut/core/scene.h"
+#include "pinut/renderer/primitives.h"
+#include "render_device/textureFormat.h"
+
+#include "sandbox.h"
 
 int main()
 {
@@ -34,10 +34,10 @@ void Sandbox::OnCreate()
     u32            whiteData = 0xFFFFFFFF;
     u32            blackData = 0xFF000000;
     u32            blueData  = 0xFFFF0000;
-    Pinut::Texture redTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &data);
-    Pinut::Texture whiteTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &whiteData);
-    Pinut::Texture blackTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &blackData);
-    Pinut::Texture blueTexture(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &blueData);
+    Pinut::Texture redTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &data);
+    Pinut::Texture whiteTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &whiteData);
+    Pinut::Texture blackTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &blackData);
+    Pinut::Texture blueTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &blueData);
 
     m_assetManager.ImportAsset("monkey_smooth\\suzanne.obj");
     m_assetManager.ImportAsset("viking_room\\viking_room.obj");

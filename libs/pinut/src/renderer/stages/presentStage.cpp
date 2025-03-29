@@ -1,12 +1,13 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
+#include "render_device/states.h"
 
-#include "src/renderer/pipelines/draw_texture_pipeline.h"
-#include "src/renderer/stages/presentStage.h"
+#include "pinut/renderer/pipelines/draw_texture_pipeline.h"
+#include "pinut/renderer/stages/presentStage.h"
 
 namespace Pinut
 {
@@ -34,8 +35,11 @@ void PresentStage::Execute(RED::Device*               device,
                             {});
 
     RED::GraphicsState graphicsState{};
-    graphicsState.viewport = parameters.viewport;
-    graphicsState.depth    = {VK_FORMAT_UNDEFINED};
+    graphicsState.viewport = {parameters.viewport.x,
+                              parameters.viewport.y,
+                              parameters.viewport.width,
+                              parameters.viewport.height};
+    graphicsState.depth    = {RED::TextureFormat::UNDEFINED};
 
     device->SetGraphicsState(&graphicsState);
     device->SetRenderPipeline(&cDrawTexturePipeline);

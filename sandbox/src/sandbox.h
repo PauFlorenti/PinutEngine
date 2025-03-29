@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/core/application.h"
+#include "pinut/core/application.h"
 
 class Sandbox final : public Pinut::Application
 {

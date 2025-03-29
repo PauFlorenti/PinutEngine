@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include "external/tinyobjloader/tiny_obj_loader.h"
+#include "tinyobjloader/tiny_obj_loader.h"
 
-#include "src/loaders/objLoader.h"
-#include "src/loaders/rawAssetData.h"
+#include "pinut/loaders/objLoader.h"
+#include "pinut/loaders/rawAssetData.h"
 
 namespace Pinut
 {
@@ -86,7 +86,7 @@ RawData OBJLoader::ParseObjFile(const std::filesystem::path& InFilepath)
                        InsertTexture(InMaterial.emissive_texname);
                        InsertTexture(InMaterial.specular_texname);
 
-                       return RawMaterialData{InMaterial.name,
+                       return RawMaterialData{absolutePath + "\\" + InMaterial.name + ".mat",
                                               ConvertToVec3(InMaterial.diffuse),
                                               ConvertToVec3(InMaterial.emission),
                                               ConvertToVec3(InMaterial.specular),
@@ -161,9 +161,8 @@ void OBJLoader::ParseMesh(const std::string&                   InFilename,
 
         for (const auto material : OutRawData.materialData)
         {
-            auto wholeName    = material.name;
-            auto materialName = wholeName.substr(wholeName.find(".mat.") + 5);
-            prim.materialName = shape.name == materialName ? materialName : "";
+            const auto materialName = shape.name + ".mat";
+            prim.materialName       = material.name.find(materialName) > 0 ? materialName : "";
         }
 
         mesh.primitives.push_back(prim);

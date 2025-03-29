@@ -1,11 +1,12 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#ifdef _DEBUG
+#include <imgui/imgui.h>
+#endif
 // This has to go after imgui.h
-#include <external/ImGuizmo/ImGuizmo.h>
+#include <ImGuizmo/ImGuizmo.h>
 
-#include "src/components/transformComponent.h"
-#include "transformComponent.h"
+#include "pinut/components/transformComponent.h"
 
 namespace Pinut
 {

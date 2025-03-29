@@ -1,8 +1,8 @@
-//#include "stdafx.h"
+//#include "pch.hpp"
 //
 //#include "primitives.h"
-//#include "src/assets/mesh.h"
-//#include "src/core/assetManager.h"
+//#include "pinut/assets/mesh.h"
+//#include "pinut/core/assetManager.h"
 //
 //namespace Pinut
 //{

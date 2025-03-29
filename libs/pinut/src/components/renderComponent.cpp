@@ -1,8 +1,9 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 
-#include "src/components/renderComponent.h"
+#include "pinut/assets/material.h"
+#include "pinut/components/renderComponent.h"
 
 namespace Pinut
 {
@@ -16,6 +17,15 @@ RenderComponent::RenderComponent(Texture inDifuse,
   normal(inNormal),
   metallicRoughness(inMetallicRoughness),
   emissive(inEmissive)
+{
+}
+
+RenderComponent::RenderComponent(std::shared_ptr<Material> InMaterial)
+: material(InMaterial),
+  difuse(InMaterial->m_diffuseTexture),
+  normal(InMaterial->m_normalTexture),
+  metallicRoughness(InMaterial->m_metallicRoughnessTexture),
+  emissive(InMaterial->m_emissiveTexture)
 {
 }
 

@@ -1,11 +1,12 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
+#include "render_device/states.h"
 
-#include "src/renderer/stages/lightForwardStage.h"
+#include "pinut/renderer/stages/lightForwardStage.h"
 
 namespace Pinut
 {
@@ -50,7 +51,7 @@ void LightForwardStage::Execute(RED::Device*               device,
                               parameters.viewport.y,
                               parameters.viewport.width,
                               parameters.viewport.height};
-    graphicsState.depth    = {VK_FORMAT_D32_SFLOAT, VK_COMPARE_OP_LESS_OR_EQUAL, false};
+    graphicsState.depth    = {RED::TextureFormat::D32_SFLOAT, VK_COMPARE_OP_LESS_OR_EQUAL, false};
 
     device->SetGraphicsState(&graphicsState);
     device->SetRenderPipeline(&m_pipelines.at("forward"));

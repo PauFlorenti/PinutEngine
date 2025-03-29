@@ -1,22 +1,20 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include <GLFW/glfw3.h>
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 
 #include "render_device/device.h"
 
-#include "application.h"
-#include "src/assets/mesh.h"
-#include "src/assets/texture.h"
-#include "src/components/meshComponent.h"
-#include "src/components/renderComponent.h"
-#include "src/components/transformComponent.h"
-#include "src/core/application.h"
-#include "src/core/camera.h"
-#include "src/core/renderable.h"
-#include "src/core/scene.h"
-#include "src/renderer/primitives.h"
-#include "src/renderer/renderer.h"
+#include "pinut/assets/mesh.h"
+#include "pinut/assets/texture.h"
+#include "pinut/components/meshComponent.h"
+#include "pinut/components/renderComponent.h"
+#include "pinut/components/transformComponent.h"
+#include "pinut/core/application.h"
+#include "pinut/core/camera.h"
+#include "pinut/core/scene.h"
+#include "pinut/renderer/primitives.h"
+#include "pinut/renderer/renderer.h"
 
 #if _DEBUG
 static constexpr bool ENABLE_CPU_VALIDATION_DEFAULT = true;
@@ -150,7 +148,7 @@ SwapchainInfo Application::CreateSwapchain(const vkb::Device& vkbDevice,
       builder
         .set_desired_present_mode(vsyncEnabled ? VK_PRESENT_MODE_FIFO_KHR :
                                                  VK_PRESENT_MODE_IMMEDIATE_KHR)
-        .set_desired_format({VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+        .set_desired_format({VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
         .build();
 
     if (!result)

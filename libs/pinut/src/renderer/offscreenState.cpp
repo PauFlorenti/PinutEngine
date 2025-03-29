@@ -1,10 +1,10 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
 #include "render_device/textureDescriptor.h"
 
-#include "src/renderer/offscreenState.h"
+#include "pinut/renderer/offscreenState.h"
 
 namespace Pinut
 {
@@ -23,17 +23,17 @@ struct QuadVertex
                                           QuadVertex{glm::vec3( 1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}};
 // clang-format on
 
-void OffscreenState::Create(RED::Device&                 device,
-                            u32                          width,
-                            u32                          height,
-                            const std::vector<VkFormat>& attachmentFormats,
-                            bool                         depth,
-                            VkFormat                     depthFormat)
+void OffscreenState::Create(RED::Device&                           device,
+                            u32                                    width,
+                            u32                                    height,
+                            const std::vector<RED::TextureFormat>& attachmentFormats,
+                            bool                                   depth,
+                            RED::TextureFormat                     depthFormat)
 {
     RED::TextureDescriptor descriptor;
-    descriptor.extent.width  = width;
-    descriptor.extent.height = height;
-    descriptor.extent.depth  = 1;
+    descriptor.width  = width;
+    descriptor.height = height;
+    descriptor.depth  = 1;
 
     if (depth)
     {

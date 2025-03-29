@@ -1,10 +1,11 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include "render_device/device.h"
 #include "render_device/drawCall.h"
 #include "render_device/renderPipeline.h"
+#include "render_device/states.h"
 
-#include "src/renderer/stages/depthPassStage.h"
+#include "pinut/renderer/stages/depthPassStage.h"
 
 namespace Pinut
 {
@@ -35,7 +36,7 @@ void DepthPassStage::Execute(RED::Device*               device,
                               parameters.viewport.y,
                               parameters.viewport.width,
                               parameters.viewport.height};
-    graphicsState.depth    = {VK_FORMAT_D32_SFLOAT, VK_COMPARE_OP_LESS_OR_EQUAL, true};
+    graphicsState.depth    = {RED::TextureFormat::D32_SFLOAT, VK_COMPARE_OP_LESS_OR_EQUAL, true};
 
     device->SetGraphicsState(&graphicsState);
     device->SetRenderPipeline(&m_pipelines.at("depth_pass"));

@@ -1,13 +1,26 @@
-files_glob_recurse(source_files "src/*.cpp" "src/*.h" "src/pch.hpp")
+files_glob_recurse(source_files "src/*.cpp" "include/*.h" "include/pch.hpp")
+
+# Pinut static library
 add_library(Pinut STATIC ${source_files})
+target_compile_features(Pinut PRIVATE cxx_std_20)
+target_precompile_headers(Pinut PRIVATE include/pch.hpp)
+target_link_libraries(Pinut
+    PUBLIC
+    RenderDevice entt glfw glm VKBOOTSTRAP
+    PRIVATE
+    imgui imguizmo tinygltf tinyobj ${Vulkan_LIBRARIES})
+target_include_directories(Pinut
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/external ${GLFW_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR})
 
 # glm
-# add_library(glm INTERFACE)
-# files_glob_recurse(glm_source_files "external/glm/glm/*.cpp" "external/glm/glm/*.h")
-# MESSAGE("GLM Files " ${glm_source_files})
-# target_sources(glm INTERFACE ${glm_source_files})
-
-# add_subdirectory(external/glm)
+add_library(glm INTERFACE)
+set(glm_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
+files_glob_recurse(glm_source_files "external/glm/glm/*.cpp" "external/glm/glm/*.h")
+target_sources(glm INTERFACE ${glm_source_files})
+target_include_directories(glm SYSTEM INTERFACE ${glm_DIR})
 
 # imgui
 add_library(imgui INTERFACE)
@@ -17,14 +30,8 @@ target_sources(imgui INTERFACE
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
-
-    # ${IMGUI_DIR}/imgui.h
     ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-
-    # ${IMGUI_DIR}/backends/imgui_impl_glfw.h
     ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-
-    # ${IMGUI_DIR}/backends/imgui_impl_vulkan.h
 )
 
 # Set the include directories for ImGui
@@ -37,6 +44,7 @@ target_include_directories(imgui INTERFACE
 add_library(entt INTERFACE)
 set(ENTT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/entt/single_include)
 target_sources(entt INTERFACE ${ENTT_DIR}/entt/entt.hpp)
+target_include_directories(entt SYSTEM INTERFACE ${ENTT_DIR})
 
 # ImGuizmo
 add_library(imguizmo INTERFACE)
@@ -65,10 +73,7 @@ add_library(VKBOOTSTRAP INTERFACE)
 files_glob_recurse(vkbootstrap_sources "external/vk-bootstrap/src/*.cpp" "external/vk-bootstrap/src/*.h")
 set(VKBOOTSTRAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/vk-bootstrap/include)
 target_sources(VKBOOTSTRAP INTERFACE ${vkbootstrap_sources})
+target_include_directories(VKBOOTSTRAP SYSTEM INTERFACE ${VKBOOTSTRAP_DIR})
 
 add_subdirectory(shaders)
 add_subdirectory(external/glfw)
-
-target_link_libraries(Pinut PUBLIC RenderDevice PRIVATE entt glfw imgui imguizmo tinygltf tinyobj VKBOOTSTRAP)
-target_include_directories(Pinut PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${GLFW_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR} ${ENTT_DIR})
-target_compile_features(Pinut PRIVATE cxx_std_20)

@@ -1,6 +1,6 @@
 #include "pch.hpp"
 
-#include "src/vulkan/vulkanVertexDeclaration.h"
+#include "render_device/vulkan/vulkanVertexDeclaration.h"
 
 namespace RED
 {

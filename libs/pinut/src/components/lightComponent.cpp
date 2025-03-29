@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 
-#include "src/components/lightComponent.h"
+#include "pinut/components/lightComponent.h"
 
 namespace Pinut
 {

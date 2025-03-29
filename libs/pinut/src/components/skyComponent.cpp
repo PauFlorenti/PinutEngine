@@ -1,10 +1,10 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 
-#include "src/components/skyComponent.h"
-#include "src/loaders/objLoader.h"
-#include "src/renderer/primitives.h"
+#include "pinut/components/skyComponent.h"
+#include "pinut/loaders/objLoader.h"
+#include "pinut/renderer/primitives.h"
 
 namespace Pinut
 {

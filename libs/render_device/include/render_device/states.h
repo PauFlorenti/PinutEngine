@@ -1,5 +1,7 @@
 #pragma once
 
+#include "render_device/textureFormat.h"
+
 bool operator==(const VkVertexInputAttributeDescription& lhs,
                 const VkVertexInputAttributeDescription& rhs) noexcept;
 
@@ -29,9 +31,9 @@ struct BlendState
 
 struct DepthState
 {
-    VkFormat    depthFormat{VK_FORMAT_UNDEFINED};
-    VkCompareOp compareOperation{VK_COMPARE_OP_NEVER};
-    bool        writeEnable{false};
+    TextureFormat depthFormat{TextureFormat::UNDEFINED};
+    VkCompareOp   compareOperation{VK_COMPARE_OP_NEVER};
+    bool          writeEnable{false};
 
     bool operator==(const DepthState&) const noexcept = default;
 };
@@ -104,7 +106,7 @@ struct hash<DepthState>
 {
     inline size_t operator()(const DepthState& state) const noexcept
     {
-        return std::hash<VkFormat>()(state.depthFormat);
+        return std::hash<TextureFormat>()(state.depthFormat);
     }
 };
 

@@ -2,15 +2,14 @@
 
 #define VMA_IMPLEMENTATION
 #define VMA_DEBUG_LOG_FORMAT
-#include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
+#include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/renderPipeline.h"
 
-#include "src/vulkan/utils.h"
-#include "src/vulkan/vulkanDevice.h"
-#include "src/vulkan/vulkanPipeline.h"
-#include "vulkanDevice.h"
+#include "render_device/vulkan/utils.h"
+#include "render_device/vulkan/vulkanDevice.h"
+#include "render_device/vulkan/vulkanPipeline.h"
 
 namespace RED
 {
@@ -448,12 +447,16 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
     VulkanTexture texture;
     texture.descriptor = descriptor;
 
+    const auto vulkanFormatIterator = FormatToVulkanFormatMap.find(descriptor.format);
+    assert(vulkanFormatIterator != FormatToVulkanFormatMap.end());
+    const auto vulkanFormat = vulkanFormatIterator->second;
+
     VkImageCreateInfo info{};
     info.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     info.pNext         = nullptr;
     info.imageType     = VK_IMAGE_TYPE_2D;
-    info.format        = descriptor.format;
-    info.extent        = descriptor.extent;
+    info.format        = vulkanFormat;
+    info.extent        = {descriptor.width, descriptor.height, descriptor.depth};
     info.tiling        = VK_IMAGE_TILING_OPTIMAL;
     info.usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | descriptor.usage;
     info.samples       = VK_SAMPLE_COUNT_1_BIT;
@@ -478,7 +481,7 @@ GPUTexture VulkanDevice::CreateTexture(const TextureDescriptor& descriptor, void
     VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     viewInfo.pNext                           = nullptr;
     viewInfo.image                           = texture.image;
-    viewInfo.format                          = descriptor.format;
+    viewInfo.format                          = vulkanFormat;
     viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.subresourceRange.baseMipLevel   = 0;
     viewInfo.subresourceRange.levelCount     = 1;
@@ -928,10 +931,13 @@ void VulkanDevice::UpdateTexturesInternal()
     for (auto updateInfo : m_textureUpdateList)
     {
         auto& [texture, stagingBuffer, region] = updateInfo;
-        const auto size = texture.descriptor.extent.width * texture.descriptor.extent.height * 4;
-        VkImageAspectFlags imageAspect = texture.descriptor.format == VK_FORMAT_D32_SFLOAT ?
-                                           VK_IMAGE_ASPECT_DEPTH_BIT :
-                                           VK_IMAGE_ASPECT_COLOR_BIT;
+        const auto size = texture.descriptor.width * texture.descriptor.height * 4;
+        auto       it   = FormatToVulkanFormatMap.find(texture.descriptor.format);
+        assert(it != FormatToVulkanFormatMap.end());
+        const auto format = it->second;
+
+        VkImageAspectFlags imageAspect =
+          format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
         VkImageSubresourceRange subresourceRange{
           .aspectMask     = imageAspect,
@@ -997,18 +1003,19 @@ void VulkanDevice::UpdateTextureInternal(TextureResource textureId,
         return;
     }
 
-    auto       texture  = textureIt->second;
-    const auto dataSize = texture.descriptor.extent.width * texture.descriptor.extent.height *
-                          4; // TODO 4 is hardcoded so far.
+    auto       texture = textureIt->second;
+    const auto dataSize =
+      texture.descriptor.width * texture.descriptor.height * 4; // TODO 4 is hardcoded so far.
 
     const auto stagingBuffer       = GetStagingBuffer(dataSize);
     const auto stagingBufferOffset = stagingBuffer.memory - dataSize;
-    const auto region              = VkBufferImageCopy{stagingBufferOffset,
-                                          0,
-                                          0,
-                                                       {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-                                                       {0, 0, 0},
-                                          texture.descriptor.extent};
+    const auto region              = VkBufferImageCopy{
+      stagingBufferOffset,
+      0,
+      0,
+                   {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+                   {0, 0, 0},
+                   {texture.descriptor.width, texture.descriptor.height, texture.descriptor.depth}};
 
     vmaCopyMemoryToAllocation(m_allocator,
                               data,

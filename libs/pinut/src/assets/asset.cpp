@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
 #include <combaseapi.h>
 
-#include "src/assets/asset.h"
+#include "pinut/assets/asset.h"
 
 namespace Pinut
 {

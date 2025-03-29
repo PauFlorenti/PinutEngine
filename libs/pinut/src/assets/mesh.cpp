@@ -1,8 +1,6 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include "mesh.h"
-#include "src/assets/mesh.h"
-#include "src/core/renderable.h"
+#include "pinut/assets/mesh.h"
 
 namespace Pinut
 {

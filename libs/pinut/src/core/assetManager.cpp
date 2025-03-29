@@ -1,14 +1,14 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/tinygltf/tiny_gltf.h>
-#include <external/tinyobjloader/tiny_obj_loader.h>
+#include <tinygltf/tiny_gltf.h>
+#include <tinyobjloader/tiny_obj_loader.h>
 
-#include "src/assets/asset.h"
-#include "src/assets/material.h"
-#include "src/assets/mesh.h"
-#include "src/assets/texture.h"
-#include "src/core/assetManager.h"
-#include "src/loaders/rawAssetData.h"
+#include "pinut/assets/asset.h"
+#include "pinut/assets/material.h"
+#include "pinut/assets/mesh.h"
+#include "pinut/assets/texture.h"
+#include "pinut/core/assetManager.h"
+#include "pinut/loaders/rawAssetData.h"
 
 namespace Pinut
 {
@@ -103,23 +103,23 @@ void AssetManager::ProcessRawData(RawData InRawData)
         std::vector<Primitive> primitives(rawMesh.primitives.size());
         std::vector<Vertex>    vertices(rawMesh.vertices.size());
 
-        std::transform(
-          rawMesh.primitives.begin(),
-          rawMesh.primitives.end(),
-          primitives.begin(),
-          [](const RawPrimitive& InPrimitive)
-          {
-              //    if (auto m =
-              //          m_assets.find(std::hash<std::string>{}(InPrimitive.materialName));
-              //        m != m_assets.end())
-              //    {
-              //    }
+        std::transform(rawMesh.primitives.begin(),
+                       rawMesh.primitives.end(),
+                       primitives.begin(),
+                       [&assets = this->m_assets](const RawPrimitive& InPrimitive)
+                       {
+                           auto it =
+                             assets.find(std::hash<std::string>{}(InPrimitive.materialName));
+                           auto material = it != assets.end() ?
+                                             std::static_pointer_cast<Material>(it->second) :
+                                             nullptr;
 
-              return Primitive{InPrimitive.firstIndex,
-                               InPrimitive.firstVertex,
-                               InPrimitive.indexCount,
-                               InPrimitive.vertexCount};
-          });
+                           return Primitive{InPrimitive.firstIndex,
+                                            InPrimitive.firstVertex,
+                                            InPrimitive.indexCount,
+                                            InPrimitive.vertexCount,
+                                            material};
+                       });
 
         std::transform(
           rawMesh.vertices.begin(),

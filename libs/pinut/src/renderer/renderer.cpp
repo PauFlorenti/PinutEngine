@@ -1,29 +1,31 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/vk-bootstrap/src/VkBootstrap.h>
 #define GLFW_INCLUDE_VULKAN
-#include <external/glfw/include/GLFW/glfw3.h>
-#include <external/imgui/backends/imgui_impl_vulkan.h>
-#include <external/tinygltf/json.hpp>
+#include <glfw/include/GLFW/glfw3.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <tinygltf/json.hpp>
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/device.h"
 #include "render_device/drawCall.h"
+#include "render_device/renderPipeline.h"
 #include "render_device/shader.h"
-#include "render_device/states.h"
 #include "render_device/textureDescriptor.h"
+#include "render_device/textureFormat.h"
 
-#include "src/assets/mesh.h"
-#include "src/components/lightComponent.h"
-#include "src/components/meshComponent.h"
-#include "src/components/skyComponent.h"
-#include "src/imgui/pinutImgui.h"
-#include "src/renderer/materialData.h"
-#include "src/renderer/meshData.h"
-#include "src/renderer/renderer.h"
-#include "src/renderer/skyData.h"
-#include "src/renderer/swapchain.h"
-#include "src/renderer/utils.h"
+#include "pinut/assets/mesh.h"
+#include "pinut/components/lightComponent.h"
+#include "pinut/components/meshComponent.h"
+#include "pinut/components/renderComponent.h"
+#include "pinut/components/skyComponent.h"
+#include "pinut/components/transformComponent.h"
+#include "pinut/imgui/pinutImgui.h"
+#include "pinut/renderer/materialData.h"
+#include "pinut/renderer/meshData.h"
+#include "pinut/renderer/renderer.h"
+#include "pinut/renderer/skyData.h"
+#include "pinut/renderer/swapchain.h"
+#include "pinut/renderer/utils.h"
 
 namespace Pinut
 {
@@ -60,13 +62,13 @@ RED::Shader PopulateShaderFromJson(const nlohmann::json& j, RED::ShaderType shad
     return shader;
 }
 
-std::vector<VkFormat> PopulateAttachmentsFromJson(const nlohmann::json& j)
+std::vector<RED::TextureFormat> PopulateAttachmentsFromJson(const nlohmann::json& j)
 {
     if (!j.contains("attachments"))
         return {};
 
-    const auto            jAttachments = j["attachments"];
-    std::vector<VkFormat> formats;
+    const auto                      jAttachments = j["attachments"];
+    std::vector<RED::TextureFormat> formats;
     formats.reserve(jAttachments.size());
 
     for (const auto& jAttachment : jAttachments)
@@ -143,9 +145,9 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
         m_offscreenState.Create(*m_device,
                                 viewportData.width,
                                 viewportData.height,
-                                {VK_FORMAT_R32G32B32A32_SFLOAT},
+                                {RED::TextureFormat::R32G32B32A32_SFLOAT},
                                 true,
-                                VK_FORMAT_D32_SFLOAT);
+                                RED::TextureFormat::D32_SFLOAT);
     }
 
     std::array<LightData, 4> lightData;
@@ -185,7 +187,9 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
 
               auto CreateMaterialDataTexture = [&device = this->m_device](Texture t)
               {
-                  RED::TextureDescriptor textureDescriptor{{t.GetWidth(), t.GetHeight(), 1},
+                  RED::TextureDescriptor textureDescriptor{t.GetWidth(),
+                                                           t.GetHeight(),
+                                                           1,
                                                            t.GetFormat(),
                                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                            VK_IMAGE_USAGE_SAMPLED_BIT};
@@ -219,7 +223,9 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
             skyData.meshHandle = skyComponent.m_mesh.m_handle;
 
             const auto&            texture = skyComponent.GetTexture();
-            RED::TextureDescriptor textureDescriptor{{texture.GetWidth(), texture.GetHeight(), 1},
+            RED::TextureDescriptor textureDescriptor{texture.GetWidth(),
+                                                     texture.GetHeight(),
+                                                     1,
                                                      texture.GetFormat(),
                                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                      VK_IMAGE_USAGE_SAMPLED_BIT};
@@ -245,11 +251,6 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     // Cannot be done inside a render pass.
     auto cameraData = viewportData.cameraData;
     m_device->UpdateBuffer(m_offscreenState.globalUniformBuffer.GetID(), (void*)&cameraData);
-
-    RED::ViewportState viewport{viewportData.x,
-                                viewportData.y,
-                                viewportData.width,
-                                viewportData.height};
 
     std::vector<RED::DrawCall> drawCalls;
     drawCalls.reserve(1000);
@@ -344,7 +345,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
             dc.SetUniformTexture({sky.skyTexture}, RED::ShaderType::FRAGMENT, 1, 1);
 
             SkyboxInputParameters skyboxParameters;
-            skyboxParameters.viewport         = viewport;
+            skyboxParameters.viewport         = viewportData;
             skyboxParameters.colorFrameBuffer = m_offscreenState.colorTextures.at(0).GetID();
             skyboxParameters.depthFrameBuffer = m_offscreenState.depthTexture.GetID();
             skyboxParameters.drawCall         = std::move(dc);
@@ -381,7 +382,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
     PresentInputParameters presentParameters{};
     presentParameters.quadBuffer       = m_offscreenState.quadBuffer;
     presentParameters.offscreenTexture = m_offscreenState.colorTextures.at(0).GetID();
-    presentParameters.viewport         = std::move(viewport);
+    presentParameters.viewport         = viewportData;
 
     RED::GPUTextureView backbuffer;
     m_presentStage.Execute(m_device.get(), presentParameters, backbuffer);

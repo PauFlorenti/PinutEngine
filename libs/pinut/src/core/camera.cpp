@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 
-#include "camera.h"
+#include "pinut/core/camera.h"
 
 namespace Pinut
 {

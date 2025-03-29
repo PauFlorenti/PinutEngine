@@ -1,10 +1,10 @@
-files_glob_recurse(source_files "src/*.cpp" "src/*.h" "src/pch.hpp")
+files_glob_recurse(source_files "src/*.cpp" "include/*.h" "include/pch.hpp")
 
 # RenderDevice library
 add_library(RenderDevice ${source_files})
 set_target_properties(RenderDevice PROPERTIES LINKER_LANGUAGE CXX)
-target_precompile_headers(RenderDevice PRIVATE src/pch.hpp)
-target_include_directories(RenderDevice PUBLIC include PRIVATE . src ${Vulkan_INCLUDE_DIR})
+target_precompile_headers(RenderDevice PRIVATE include/pch.hpp)
+target_include_directories(RenderDevice PUBLIC include PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external ${Vulkan_INCLUDE_DIR})
 target_link_libraries(RenderDevice PUBLIC VMA ${Vulkan_LIBRARY})
 target_compile_features(RenderDevice PRIVATE cxx_std_20)
 

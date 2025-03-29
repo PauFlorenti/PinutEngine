@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include <external/imgui/imgui.h>
+#include <imgui/imgui.h>
 
-#include "src/components/meshComponent.h"
+#include "pinut/components/meshComponent.h"
 
 namespace Pinut
 {

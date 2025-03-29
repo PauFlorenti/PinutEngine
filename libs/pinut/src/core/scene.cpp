@@ -1,8 +1,7 @@
-#include "stdafx.h"
+#include "pch.hpp"
 
-#include "src/components/transformComponent.h"
-#include "src/core/renderable.h"
-#include "src/core/scene.h"
+#include "pinut/components/transformComponent.h"
+#include "pinut/core/scene.h"
 
 namespace Pinut
 {

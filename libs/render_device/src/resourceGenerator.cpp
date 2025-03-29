@@ -1,4 +1,4 @@
-#include "src/resourceGenerator.h"
+#include "render_device/resourceGenerator.h"
 
 namespace RED
 {
