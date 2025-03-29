@@ -4,10 +4,10 @@
 #include "render_device/drawCall.h"
 #include "render_device/resourceGenerator.h"
 #include "render_device/states.h"
-#include "render_device/vulkan/descriptorSetManager.h"
-#include "render_device/vulkan/vulkanBuffer.h"
-#include "render_device/vulkan/vulkanPipeline.h"
-#include "render_device/vulkan/vulkanTexture.h"
+#include "vulkan/descriptorSetManager.h"
+#include "vulkan/vulkanBuffer.h"
+#include "vulkan/vulkanPipeline.h"
+#include "vulkan/vulkanTexture.h"
 
 namespace RED
 {

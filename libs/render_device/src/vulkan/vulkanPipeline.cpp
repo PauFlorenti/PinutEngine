@@ -3,11 +3,11 @@
 #include "render_device/renderPipeline.h"
 #include "render_device/states.h"
 
-#include "render_device/vulkan/utils.h"
-#include "render_device/vulkan/vulkanPipeline.h"
-#include "render_device/vulkan/vulkanPipelineBuilder.h"
-#include "render_device/vulkan/vulkanTexture.h"
-#include "render_device/vulkan/vulkanVertexDeclaration.h"
+#include "vulkan/utils.h"
+#include "vulkan/vulkanPipeline.h"
+#include "vulkan/vulkanPipelineBuilder.h"
+#include "vulkan/vulkanTexture.h"
+#include "vulkan/vulkanVertexDeclaration.h"
 
 namespace RED
 {

@@ -1,9 +1,9 @@
 #include "pch.hpp"
 
-#include "render_device/vulkan/descriptorSetManager.h"
-#include "render_device/vulkan/descriptorSetManager.h"
-#include "render_device/vulkan/utils.h"
-#include "render_device/vulkan/vulkanPipeline.h"
+#include "vulkan/descriptorSetManager.h"
+#include "vulkan/descriptorSetManager.h"
+#include "vulkan/utils.h"
+#include "vulkan/vulkanPipeline.h"
 
 bool operator==(const VkDescriptorBufferInfo& lhs, const VkDescriptorBufferInfo& rhs)
 {

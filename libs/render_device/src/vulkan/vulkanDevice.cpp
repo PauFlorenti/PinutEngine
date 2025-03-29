@@ -7,9 +7,9 @@
 #include "render_device/bufferDescriptor.h"
 #include "render_device/renderPipeline.h"
 
-#include "render_device/vulkan/utils.h"
-#include "render_device/vulkan/vulkanDevice.h"
-#include "render_device/vulkan/vulkanPipeline.h"
+#include "vulkan/utils.h"
+#include "vulkan/vulkanDevice.h"
+#include "vulkan/vulkanPipeline.h"
 
 namespace RED
 {
