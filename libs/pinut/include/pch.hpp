@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include <entt/single_include/entt/entt.hpp>
+#include <entt/entt.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -23,7 +23,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 // Vulkan files
-#include <vk-bootstrap/src/VkBootstrap.h>
+#include <VkBootstrap.h>
 #include <vulkan/vulkan.h>
 
 #include "pinut/defines.h"

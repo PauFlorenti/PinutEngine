@@ -1,30 +1,30 @@
-[submodule "libs/pinut/external/glm"]
-	path = libs/pinut/external/glm
+[submodule "libs/external/glm"]
+	path = libs/external/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "libs/pinut/external/tinygltf"]
-	path = libs/pinut/external/tinygltf
+[submodule "libs/external/tinygltf"]
+	path = libs/external/tinygltf
 	url = https://github.com/syoyo/tinygltf.git
-[submodule "libs/pinut/external/ImGuizmo"]
-	path = libs/pinut/external/ImGuizmo
+[submodule "libs/external/ImGuizmo"]
+	path = libs/external/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
-[submodule "libs/pinut/external/vk-bootstrap"]
-	path = libs/pinut/external/vk-bootstrap
+[submodule "libs/external/vk-bootstrap"]
+	path = libs/external/vk-bootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap.git
-[submodule "libs/pinut/external/glfw"]
-	path = libs/pinut/external/glfw
+[submodule "libs/external/glfw"]
+	path = libs/external/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "libs/render_device/external/VulkanMemoryAllocator"]
-	path = libs/render_device/external/VulkanMemoryAllocator
+[submodule "libs/external/VulkanMemoryAllocator"]
+	path = libs/external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "libs/pinut/external/imgui"]
-	path = libs/pinut/external/imgui
+[submodule "libs/external/imgui"]
+	path = libs/external/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "libs/pinut/external/stb"]
-	path = libs/pinut/external/stb
+[submodule "libs/external/stb"]
+	path = libs/external/stb
 	url = https://github.com/nothings/stb.git
-[submodule "libs/pinut/external/tinyobjloader"]
-	path = libs/pinut/external/tinyobjloader
+[submodule "libs/external/tinyobjloader"]
+	path = libs/external/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git
-[submodule "libs/pinut/external/entt"]
-	path = libs/pinut/external/entt
+[submodule "libs/external/entt"]
+	path = libs/external/entt
 	url = https://github.com/skypjack/entt.git

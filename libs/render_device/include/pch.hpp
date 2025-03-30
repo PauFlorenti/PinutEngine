@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 
-#include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
 #include "render_device/defines.h"

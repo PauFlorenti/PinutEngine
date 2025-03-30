@@ -2,7 +2,7 @@
 
 #define VMA_IMPLEMENTATION
 #define VMA_DEBUG_LOG_FORMAT
-#include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #include "render_device/bufferDescriptor.h"
 #include "render_device/renderPipeline.h"

@@ -16,7 +16,7 @@
 #include <glm/glm.hpp>
 
 // TODO This should not be into sandbox.
-#include <../../../libs/pinut/external/vk-bootstrap/src/VkBootstrap.h>
+#include <../../../libs/external/vk-bootstrap/src/VkBootstrap.h>
 #include <vulkan/vulkan.h>
 
 #include <pinut/defines.h>

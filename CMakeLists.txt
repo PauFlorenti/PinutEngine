@@ -20,9 +20,10 @@ endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 add_compile_options(/MP)
 
+find_package(Vulkan REQUIRED)
+
+add_subdirectory(libs/external)
 add_subdirectory(libs/render_device)
 add_subdirectory(libs/pinut)
-
-find_package(Vulkan REQUIRED)
 add_subdirectory(sandbox)
 
