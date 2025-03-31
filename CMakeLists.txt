@@ -5,6 +5,7 @@ include(utils.cmake)
 project(Sandbox)
 
 set_property(DIRECTORY ${CMAKE_PROJECT_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+set(CMAKE_CXX_STANDARD 20)
 
 # Check MSVC toolset version, Visual Studio 2019 required
 if(MSVC_TOOLSET_VERSION VERSION_LESS 142)

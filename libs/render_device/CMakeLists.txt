@@ -14,9 +14,3 @@ PRIVATE
 target_link_libraries(RenderDevice 
 PRIVATE 
     common VMA ${Vulkan_LIBRARY})
-
-# VMA
-add_library(VMA INTERFACE)
-Set(VMA_DIR ${CMAKE_SOURCE_DIR}/libs/external/VulkanMemoryAllocator/include/)
-target_sources(VMA INTERFACE ${VMA_DIR}/vk_mem_alloc.h)
-target_include_directories(VMA SYSTEM INTERFACE ${VMA_DIR})

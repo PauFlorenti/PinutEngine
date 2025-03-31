@@ -1,4 +1,3 @@
-
 # Entt
 add_library(entt INTERFACE)
 set(ENTT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/entt/single_include)
@@ -6,16 +5,14 @@ target_sources(entt INTERFACE ${ENTT_DIR}/entt/entt.hpp)
 target_include_directories(entt SYSTEM INTERFACE ${ENTT_DIR})
 
 # glm
-add_library(glm INTERFACE)
-set(glm_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm)
 files_glob_recurse(glm_source_files "glm/glm/*.cpp" "glm/glm/*.h")
-target_sources(glm INTERFACE ${glm_source_files})
-target_include_directories(glm SYSTEM INTERFACE ${glm_DIR})
+set(glm_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm)
+add_library(glm STATIC ${glm_source_files})
+target_include_directories(glm PUBLIC ${glm_DIR})
 
 # imgui
-add_library(imgui INTERFACE)
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
-target_sources(imgui INTERFACE
+add_library(imgui STATIC
     ${IMGUI_DIR}/imgui.cpp
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
@@ -25,16 +22,21 @@ target_sources(imgui INTERFACE
 )
 
 # Set the include directories for ImGui
-target_include_directories(imgui SYSTEM INTERFACE
+target_include_directories(imgui
+    PUBLIC
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
+    PRIVATE
+    ${Vulkan_INCLUDE_DIR}
 )
 
+target_link_libraries(imgui PRIVATE glfw ${Vulkan_LIBRARIES})
+
 # ImGuizmo
-add_library(imguizmo INTERFACE)
 set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo)
-target_sources(imguizmo INTERFACE ${IMGUIZMO_DIR}/ImGuizmo.h ${IMGUIZMO_DIR}/ImGuizmo.cpp)
-target_include_directories(imguizmo SYSTEM INTERFACE ${IMGUIZMO_DIR} ${IMGUI_DIR})
+add_library(imguizmo STATIC ${IMGUIZMO_DIR}/ImGuizmo.h ${IMGUIZMO_DIR}/ImGuizmo.cpp)
+target_include_directories(imguizmo PUBLIC ${IMGUIZMO_DIR} PRIVATE ${IMGUI_DIR})
+target_link_libraries(imguizmo PRIVATE imgui)
 
 # stb
 add_library(stb INTERFACE)
@@ -54,10 +56,15 @@ set(TINYOBJ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader)
 target_sources(tinyobj INTERFACE ${TINYOBJ_DIR}/tiny_obj_loader.cc ${TINYOBJ_DIR}/tiny_obj_loader.h)
 
 # VKBOOTSTRAP
-add_library(VKBOOTSTRAP INTERFACE)
 files_glob_recurse(vkbootstrap_sources "vk-bootstrap/src/*.cpp" "vk-bootstrap/src/*.h")
 set(VKBOOTSTRAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vk-bootstrap/src)
-target_sources(VKBOOTSTRAP INTERFACE ${vkbootstrap_sources})
-target_include_directories(VKBOOTSTRAP SYSTEM INTERFACE ${VKBOOTSTRAP_DIR})
+add_library(VKBOOTSTRAP STATIC ${vkbootstrap_sources})
+target_include_directories(VKBOOTSTRAP PUBLIC ${VKBOOTSTRAP_DIR} PRIVATE ${Vulkan_INCLUDE_DIR})
+
+# VMA
+set(VMA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator/include/)
+add_library(VMA INTERFACE)
+target_sources(VMA INTERFACE ${VMA_DIR}/vk_mem_alloc.h)
+target_include_directories(VMA SYSTEM INTERFACE ${VMA_DIR})
 
 add_subdirectory(glfw)
