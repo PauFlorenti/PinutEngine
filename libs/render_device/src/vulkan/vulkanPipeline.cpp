@@ -34,7 +34,7 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
     const auto     fragmentShaderPath = "shaders/" + renderPipeline.fragmentShader.name + ".spv";
     vertexShaderModule                = CreateShaderModule(device, vertexShaderPath.c_str());
     fragmentShaderModule              = renderPipeline.fragmentShader.name.empty() ?
-                                          VK_NULL_HANDLE : 
+                                          VK_NULL_HANDLE :
                                           CreateShaderModule(device, fragmentShaderPath.c_str());
 
     if (!vertexShaderModule)
@@ -68,7 +68,7 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
 
     const auto vertexDeclaration =
       getVertexDeclarationByName(renderPipeline.inputVertexDeclaration);
-    const auto depthFormat = FormatToVulkanFormatMap.find(graphicsState.depth.depthFormat)->second;
+    const auto depthFormat = FormatToVulkanFormatMap[graphicsState.depth.depthFormat];
 
     std::vector<VkFormat> attachmentFormats(renderPipeline.attachmentFormats.size());
     std::transform(renderPipeline.attachmentFormats.begin(),
@@ -76,7 +76,7 @@ VulkanPipeline VulkanPipeline::Create(VkDevice              device,
                    attachmentFormats.begin(),
                    [&](const TextureFormat& InFormat)
                    {
-                       return FormatToVulkanFormatMap.find(InFormat)->second;
+                       return FormatToVulkanFormatMap[InFormat];
                    });
 
     PipelineBuilder builder;
