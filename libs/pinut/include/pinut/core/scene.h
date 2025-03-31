@@ -1,7 +1,5 @@
 #pragma once
 
-#include "entt/entt.hpp"
-
 namespace Pinut
 {
   constexpr i32 MAX_ENTITIES = 1000;

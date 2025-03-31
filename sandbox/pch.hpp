@@ -17,7 +17,6 @@
 
 // TODO This should not be into sandbox.
 #include <../../../libs/external/vk-bootstrap/src/VkBootstrap.h>
-#include <vulkan/vulkan.h>
 
 #include <pinut/defines.h>
 #include <pinut/renderer/common.h>
