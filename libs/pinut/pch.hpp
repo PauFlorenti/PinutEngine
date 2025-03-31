@@ -26,5 +26,5 @@
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.h>
 
-#include "pinut/defines.h"
+#include "common/defines.h"
 #include "pinut/renderer/common.h"

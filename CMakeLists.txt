@@ -25,5 +25,5 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(libs/external)
 add_subdirectory(libs/render_device)
 add_subdirectory(libs/pinut)
+add_subdirectory(libs/common)
 add_subdirectory(sandbox)
-
