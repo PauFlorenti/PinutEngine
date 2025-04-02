@@ -5,12 +5,25 @@
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 
-#include "render_device/textureFormat.h"
+#include <common/color.h>
+#include <render_device/textureFormat.h>
 
 #include "pinut/assets/texture.h"
 
 namespace Pinut
 {
+
+const Texture Texture::WhiteTexture =
+  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::WhiteRGBA, "DefaultWhiteTexture");
+const Texture Texture::BlackTexture =
+  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::BlackRGBA, "DefaultBlackTexture");
+const Texture Texture::RedTexture =
+  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::RedRGBA, "DefaultRedTexture");
+const Texture Texture::GreenTexture =
+  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::GreenRGBA, "DefaultGreenTexture");
+const Texture Texture::BlueTexture =
+  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::BlueRGBA, "DefaultBlueTexture");
+
 Texture::Texture(const u32          width,
                  const u32          height,
                  RED::TextureFormat format,

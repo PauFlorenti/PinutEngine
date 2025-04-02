@@ -5,14 +5,15 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <tinygltf/json.hpp>
 
-#include "render_device/bufferDescriptor.h"
-#include "render_device/device.h"
-#include "render_device/drawCall.h"
-#include "render_device/renderPipeline.h"
-#include "render_device/shader.h"
-#include "render_device/textureDescriptor.h"
-#include "render_device/textureFormat.h"
+#include <render_device/bufferDescriptor.h>
+#include <render_device/device.h>
+#include <render_device/drawCall.h>
+#include <render_device/renderPipeline.h>
+#include <render_device/shader.h>
+#include <render_device/textureDescriptor.h>
+#include <render_device/textureFormat.h>
 
+#include "pinut/assets/material.h"
 #include "pinut/assets/mesh.h"
 #include "pinut/components/lightComponent.h"
 #include "pinut/components/meshComponent.h"
@@ -84,9 +85,8 @@ Renderer::Renderer(std::shared_ptr<RED::Device> device,
                    SwapchainInfo*               swapchain,
                    std::unique_ptr<PinutImGUI>  imgui)
 : m_device(device),
-  m_swapchain(swapchain)
+  m_swapchain(swapchain),
 #ifdef _DEBUG
-  ,
   m_imgui(std::move(imgui))
 #endif
 {
@@ -205,9 +205,19 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
               materialData.modelBuffer =
                 m_device->CreateBuffer({64, 64, RED::BufferUsage::UNIFORM});
 
-              u32 uniformMaterialData[4] = {0xFFFFFFFF, 0x00000000, 0, 0};
+              if (const auto m = renderComponent.material.lock())
+              {
+                  u32 uniformMaterialData[4] = {m->m_diffuse.RGBA(),
+                                                m->m_specular.RGBA(),
+                                                m->m_emissive.RGBA(),
+                                                0};
+                  materialData.uniformBuffer =
+                    m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM},
+                                           &uniformMaterialData);
+              }
+
               materialData.uniformBuffer =
-                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM}, &uniformMaterialData);
+                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM});
           }
       });
 

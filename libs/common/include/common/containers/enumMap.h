@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Common
+namespace common
 {
 template <typename Key, typename Enum, Key maxEnum = Key::MAX_VALUE>
 struct EnumMap
@@ -34,4 +34,4 @@ struct EnumMap
   private:
     std::array<Enum, arraySize> data{};
 };
-} // namespace Common
+} // namespace common

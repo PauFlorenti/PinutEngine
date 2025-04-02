@@ -1,6 +1,7 @@
 #pragma once
 
-#include "render_device/textureFormat.h"
+// #include <common/pack.h>
+#include <render_device/textureFormat.h>
 
 #include "pinut/assets/asset.h"
 
@@ -17,6 +18,12 @@ class Texture final : public Asset
             std::string        InName = "");
     Texture(const std::filesystem::path& filepath);
     ~Texture() = default;
+
+    static const Texture WhiteTexture;
+    static const Texture BlackTexture;
+    static const Texture RedTexture;
+    static const Texture GreenTexture;
+    static const Texture BlueTexture;
 
     void Destroy() override;
 

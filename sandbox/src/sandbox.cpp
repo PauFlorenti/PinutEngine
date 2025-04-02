@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include "pinut/assets/material.h"
 #include "pinut/assets/mesh.h"
 #include "pinut/assets/texture.h"
 #include "pinut/components/lightComponent.h"
@@ -30,15 +31,6 @@ void Sandbox::OnCreate()
     m_currentCamera->LookAt(glm::vec3(6.0f, 18.0f, 30.0f), glm::vec3(0.0f));
     m_currentCamera->SetProjection(glm::radians(45.0f), (f32)m_width / m_height, 0.01f, 1000.0f);
 
-    u32            data      = 0xFF0000FF; // AABBGGRR
-    u32            whiteData = 0xFFFFFFFF;
-    u32            blackData = 0xFF000000;
-    u32            blueData  = 0xFFFF0000;
-    Pinut::Texture redTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &data);
-    Pinut::Texture whiteTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &whiteData);
-    Pinut::Texture blackTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &blackData);
-    Pinut::Texture blueTexture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &blueData);
-
     m_assetManager.ImportAsset("monkey_smooth\\suzanne.obj");
     m_assetManager.ImportAsset("viking_room\\viking_room.obj");
     m_assetManager.ImportAsset("meshes\\sphere.obj");
@@ -51,11 +43,14 @@ void Sandbox::OnCreate()
     registry.emplace<Pinut::Component::MeshComponent>(
       monkey,
       *m_assetManager.GetAsset<Pinut::Mesh>("meshes\\monkey_smooth\\suzanne.obj.mesh"));
+
+    const auto monkeyMaterial =
+      m_assetManager.GetAsset<Pinut::Material>("meshes\\monkey_smooth\\suzanne.mat");
     registry.emplace<Pinut::Component::RenderComponent>(monkey,
-                                                        whiteTexture,
-                                                        blueTexture,
-                                                        blackTexture,
-                                                        blackTexture);
+                                                        Pinut::Texture::WhiteTexture,
+                                                        Pinut::Texture::BlueTexture,
+                                                        Pinut::Texture::BlackTexture,
+                                                        Pinut::Texture::BlackTexture);
 
     registry.emplace_or_replace<Pinut::Component::TransformComponent>(monkey,
                                                                       glm::vec3(0.0f, 5.0f, 10.0f));
@@ -67,9 +62,9 @@ void Sandbox::OnCreate()
     registry.emplace<Pinut::Component::RenderComponent>(
       vikingRoom,
       *m_assetManager.GetAsset<Pinut::Texture>("viking_room\\viking_room_diffuse.png"),
-      blueTexture,
-      blackTexture,
-      blackTexture);
+      Pinut::Texture::BlueTexture,
+      Pinut::Texture::BlackTexture,
+      Pinut::Texture::BlackTexture);
 
     registry.emplace_or_replace<Pinut::Component::TransformComponent>(
       vikingRoom,

@@ -43,9 +43,9 @@ layout(set = 0, binding = 1) uniform perFrame
 layout(set = 1, binding = 1) uniform perInstance
 {
     uint diffuse;
+    uint specular;
+    uint emissive;
     uint specularExponent;
-    uint dummy1;
-    uint dummy2;
 } perInstanceData;
 
 layout(set = 1, binding = 2) uniform sampler2D[5] materialTextures;

@@ -1,5 +1,6 @@
 #include "pch.hpp"
 
+#include <common/color.h>
 #include <tinygltf/tiny_gltf.h>
 #include <tinyobjloader/tiny_obj_loader.h>
 
@@ -91,9 +92,9 @@ void AssetManager::ProcessRawData(RawData InRawData)
 
         auto material = std::make_shared<Material>(rawMaterial.name);
 
-        material->m_diffuse  = rawMaterial.diffuse;
-        material->m_emissive = rawMaterial.emissive;
-        material->m_specular = rawMaterial.specular;
+        material->m_diffuse  = common::Color(rawMaterial.diffuse);
+        material->m_emissive = common::Color(rawMaterial.emissive);
+        material->m_specular = common::Color(rawMaterial.specular);
 
         m_assets.insert({material->GetUUID(), material});
     }

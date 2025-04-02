@@ -8,7 +8,7 @@ namespace RED
 {
 namespace vulkan
 {
-constexpr Common::EnumMap<TextureFormat, VkFormat> FormatToVulkanFormatMap{
+constexpr common::EnumMap<TextureFormat, VkFormat> FormatToVulkanFormatMap{
   {TextureFormat::UNDEFINED, VK_FORMAT_UNDEFINED},
   {TextureFormat::R8_UNORM, VK_FORMAT_R8_UNORM},
   {TextureFormat::R8_SNORM, VK_FORMAT_R8_SNORM},

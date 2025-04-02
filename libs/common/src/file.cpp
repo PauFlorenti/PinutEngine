@@ -2,7 +2,7 @@
 
 #include "common/file.h"
 
-namespace Common
+namespace common
 {
     bool ExistFile(const std::string& InFilePath)
     {

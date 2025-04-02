@@ -12,7 +12,8 @@ target_compile_features(Pinut
 target_precompile_headers(Pinut PRIVATE pch.hpp)
 
 target_link_libraries(Pinut
-    PUBLIC RenderDevice
+    PUBLIC common
+    RenderDevice
     entt
     glfw
     VKBOOTSTRAP

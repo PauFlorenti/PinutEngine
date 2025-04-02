@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Common
+namespace common
 {
 bool ExistFile(const std::string& InFilePath);
 }
