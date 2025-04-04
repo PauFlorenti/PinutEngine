@@ -10,19 +10,11 @@ namespace Pinut
 {
 namespace Component
 {
-SkyComponent::SkyComponent(Texture texture, const Mesh& mesh)
-: m_texture(std::move(texture)),
-  m_mesh(mesh)
+SkyComponent::SkyComponent(TexturePtr InTexture, MeshPtr InMesh)
+: m_texture(std::move(InTexture)),
+  m_mesh(InMesh)
 {
 }
-
-void SkyComponent::SetTexture(Texture texture)
-{
-    m_texture = std::move(texture);
-    m_dirty   = true;
-}
-
-const Texture& SkyComponent::GetTexture() const { return m_texture; }
 
 #ifdef _DEBUG
 void SkyComponent::RenderDebug()
@@ -34,5 +26,17 @@ void SkyComponent::RenderDebug()
     }
 }
 #endif
+
+void SkyComponent::SetTexture(TexturePtr texture)
+{
+    m_texture = std::move(texture);
+    m_dirty   = true;
+}
+
+SkyComponent::TexturePtr SkyComponent::GetTexture() const { return m_texture; }
+
+void SkyComponent::SetMesh(MeshPtr InMesh) { m_mesh = InMesh; }
+
+SkyComponent::MeshPtr SkyComponent::GetMesh() const { return m_mesh; }
 } // namespace Component
 } // namespace Pinut

@@ -5,17 +5,22 @@
 
 namespace Pinut
 {
+class Renderer;
 namespace Component
 {
 struct MeshComponent : public BaseComponent
 {
-    MeshComponent(const Mesh& inMesh) : m_mesh(inMesh) {}
+    using MeshPtr = std::shared_ptr<Mesh>;
+    MeshComponent(MeshPtr inMesh) : m_mesh(inMesh) {}
 
+    friend Renderer;
+
+    // BaseComponent
 #ifdef _DEBUG
     void RenderDebug() override;
 #endif
 
-    Mesh m_mesh;
+    MeshPtr m_mesh;
 };
 } // namespace Component
 } // namespace Pinut

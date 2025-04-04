@@ -3,10 +3,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-#include "render_device/buffer.h"
+#include <render_device/buffer.h>
 
 #include "pinut/assets/asset.h"
-#include "pinut/renderer/meshData.h"
 
 namespace Pinut
 {
@@ -40,9 +39,9 @@ struct Primitive
 
 class Mesh final : public Asset
 {
-    friend void Pinut::CreateMeshData(std::shared_ptr<RED::Device> device,
-                                      entt::registry&              registry,
-                                      Mesh&                        mesh);
+    friend void CreateMeshData(std::shared_ptr<RED::Device>,
+                               entt::registry&,
+                               std::shared_ptr<Mesh>);
     friend class Renderer;
 
   public:

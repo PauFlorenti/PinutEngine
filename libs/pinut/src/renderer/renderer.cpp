@@ -224,20 +224,20 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
 
         if (skyComponent.m_dirty)
         {
-            CreateMeshData(m_device, m_rendererRegistry, skyComponent.m_mesh);
+            CreateMeshData(m_device, m_rendererRegistry, skyComponent.GetMesh());
 
             auto& skyData      = m_rendererRegistry.ctx().emplace<SkyData>();
-            skyData.meshHandle = skyComponent.m_mesh.m_handle;
+            skyData.meshHandle = skyComponent.GetMesh()->m_handle;
 
             const auto&            texture = skyComponent.GetTexture();
-            RED::TextureDescriptor textureDescriptor{texture.GetWidth(),
-                                                     texture.GetHeight(),
+            RED::TextureDescriptor textureDescriptor{texture->GetWidth(),
+                                                     texture->GetHeight(),
                                                      1,
-                                                     texture.GetFormat(),
+                                                     texture->GetFormat(),
                                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                      VK_IMAGE_USAGE_SAMPLED_BIT};
             skyData.skyTexture =
-              m_device->CreateTexture(std::move(textureDescriptor), texture.GetData());
+              m_device->CreateTexture(std::move(textureDescriptor), texture->GetData());
 
             skyData.skyMeshDataBuffer = m_device->CreateBuffer(
               {sizeof(SkyboxUniformData), sizeof(SkyboxUniformData), RED::BufferUsage::UNIFORM});
@@ -272,7 +272,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
          this](auto entity, auto& transformComponent, auto& meshComponent, auto& renderComponent)
         {
             const auto meshData =
-              m_rendererRegistry.try_get<MeshData>(meshComponent.m_mesh.m_handle);
+              m_rendererRegistry.try_get<MeshData>(meshComponent.m_mesh->m_handle);
             const auto materialData =
               m_rendererRegistry.try_get<MaterialData>(renderComponent.m_handle);
 

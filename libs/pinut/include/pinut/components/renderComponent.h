@@ -6,6 +6,7 @@
 namespace Pinut
 {
 class Material;
+class Renderer;
 namespace Component
 {
 struct RenderComponent : public BaseComponent
@@ -16,6 +17,8 @@ struct RenderComponent : public BaseComponent
                     Texture inEmissive);
 
     RenderComponent(std::shared_ptr<Material> InMaterial);
+
+    friend Renderer;
 
 #ifdef _DEBUG
     void RenderDebug() override;
@@ -28,6 +31,7 @@ struct RenderComponent : public BaseComponent
 
     std::shared_ptr<Material> material;
 
+  private:
     entt::entity m_handle{entt::null};
 };
 } // namespace Component

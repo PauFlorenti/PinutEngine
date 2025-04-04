@@ -1,12 +1,12 @@
 #pragma once
 
-// #include <common/pack.h>
 #include <render_device/textureFormat.h>
 
 #include "pinut/assets/asset.h"
 
 namespace Pinut
 {
+class Renderer;
 class Texture final : public Asset
 {
   public:
@@ -18,6 +18,8 @@ class Texture final : public Asset
             std::string        InName = "");
     Texture(const std::filesystem::path& filepath);
     ~Texture() = default;
+
+    friend Renderer;
 
     static const Texture WhiteTexture;
     static const Texture BlackTexture;

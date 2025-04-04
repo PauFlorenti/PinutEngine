@@ -9,7 +9,9 @@ class Device;
 namespace Pinut
 {
 class Mesh;
-void CreateMeshData(std::shared_ptr<RED::Device> device, entt::registry& registry, Mesh& mesh);
+void CreateMeshData(std::shared_ptr<RED::Device> InDevice,
+                    entt::registry&              InRegistry,
+                    std::shared_ptr<Mesh>        InMesh);
 
 struct MeshData
 {

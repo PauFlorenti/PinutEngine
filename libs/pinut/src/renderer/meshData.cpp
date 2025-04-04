@@ -8,26 +8,28 @@
 
 namespace Pinut
 {
-void CreateMeshData(std::shared_ptr<RED::Device> device, entt::registry& registry, Mesh& mesh)
+void CreateMeshData(std::shared_ptr<RED::Device> InDevice,
+                    entt::registry&              InRegistry,
+                    std::shared_ptr<Mesh>        InMesh)
 {
-    if (auto data = registry.try_get<MeshData>(mesh.m_handle); data)
+    if (auto data = InRegistry.try_get<MeshData>(InMesh->m_handle); data)
         return;
 
-    const auto handle = registry.create();
-    mesh.m_handle     = handle;
-    auto& data        = registry.emplace<MeshData>(handle);
+    const auto handle = InRegistry.create();
+    InMesh->m_handle  = handle;
+    auto& data        = InRegistry.emplace<MeshData>(handle);
 
-    auto& vertices      = mesh.m_vertices;
-    data.m_vertexBuffer = device->CreateBuffer(
+    auto& vertices      = InMesh->m_vertices;
+    data.m_vertexBuffer = InDevice->CreateBuffer(
       {vertices.size() * sizeof(Vertex), sizeof(Vertex), RED::BufferUsage::VERTEX},
       vertices.data());
 
-    if (!mesh.m_indices.empty())
+    if (!InMesh->m_indices.empty())
     {
-        auto& indices = mesh.m_indices;
-        data.m_indexBuffer =
-          device->CreateBuffer({indices.size() * sizeof(u16), sizeof(u16), RED::BufferUsage::INDEX},
-                               indices.data());
+        auto& indices      = InMesh->m_indices;
+        data.m_indexBuffer = InDevice->CreateBuffer(
+          {indices.size() * sizeof(u16), sizeof(u16), RED::BufferUsage::INDEX},
+          indices.data());
     }
 }
 

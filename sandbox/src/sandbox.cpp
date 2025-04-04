@@ -42,7 +42,7 @@ void Sandbox::OnCreate()
     const auto monkey = m_currentScene->CreateEntity();
     registry.emplace<Pinut::Component::MeshComponent>(
       monkey,
-      *m_assetManager.GetAsset<Pinut::Mesh>("meshes\\monkey_smooth\\suzanne.obj.mesh"));
+      m_assetManager.GetAsset<Pinut::Mesh>("meshes\\monkey_smooth\\suzanne.obj.mesh"));
 
     const auto monkeyMaterial =
       m_assetManager.GetAsset<Pinut::Material>("meshes\\monkey_smooth\\suzanne.mat");
@@ -54,7 +54,7 @@ void Sandbox::OnCreate()
     const auto vikingRoom = m_currentScene->CreateEntity();
     registry.emplace<Pinut::Component::MeshComponent>(
       vikingRoom,
-      *m_assetManager.GetAsset<Pinut::Mesh>("viking_room\\viking_room.obj.mesh"));
+      m_assetManager.GetAsset<Pinut::Mesh>("viking_room\\viking_room.obj.mesh"));
 
     registry.emplace<Pinut::Component::RenderComponent>(
       vikingRoom,
@@ -67,8 +67,8 @@ void Sandbox::OnCreate()
     auto sky = m_currentScene->CreateEntity();
     registry.emplace<Pinut::Component::SkyComponent>(
       sky,
-      *m_assetManager.GetAsset<Pinut::Texture>("textures\\ciel_diffuse.jpg"),
-      *m_assetManager.GetAsset<Pinut::Mesh>("meshes\\sphere.obj.mesh"));
+      m_assetManager.GetAsset<Pinut::Texture>("textures\\ciel_diffuse.jpg"),
+      m_assetManager.GetAsset<Pinut::Mesh>("meshes\\sphere.obj.mesh"));
 
     {
         auto  pointLight           = m_currentScene->CreateEntity();

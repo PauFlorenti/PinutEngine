@@ -7,12 +7,15 @@
 
 namespace Pinut
 {
+class Renderer;
 class Material final : public Asset
 {
   public:
     Material() = delete;
     Material(const std::string& InFilepath);
     ~Material() = default;
+
+    friend Renderer;
 
     void Destroy() override;
 
@@ -25,5 +28,8 @@ class Material final : public Asset
     std::shared_ptr<Texture> normalTexture;
     std::shared_ptr<Texture> metallicRoughnessTexture;
     std::shared_ptr<Texture> emissiveTexture;
+
+  private:
+    entt::entity m_handle;
 };
 } // namespace Pinut
