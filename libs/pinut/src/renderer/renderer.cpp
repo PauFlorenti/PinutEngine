@@ -179,42 +179,41 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
       {
           CreateMeshData(m_device, m_rendererRegistry, meshComponent.m_mesh);
 
-          if (!m_rendererRegistry.try_get<MaterialData>(renderComponent.m_handle))
+          if (!m_rendererRegistry.try_get<MaterialData>(renderComponent.material->m_handle))
           {
-              renderComponent.m_handle = m_rendererRegistry.create();
+              renderComponent.material->m_handle = m_rendererRegistry.create();
               auto& materialData =
-                m_rendererRegistry.emplace<MaterialData>(renderComponent.m_handle);
+                m_rendererRegistry.emplace<MaterialData>(renderComponent.material->m_handle);
 
-              auto CreateMaterialDataTexture = [&device = this->m_device](Texture t)
+              auto CreateMaterialDataTexture =
+                [&device = this->m_device](std::shared_ptr<Texture> t)
               {
-                  RED::TextureDescriptor textureDescriptor{t.GetWidth(),
-                                                           t.GetHeight(),
+                  RED::TextureDescriptor textureDescriptor{t->GetWidth(),
+                                                           t->GetHeight(),
                                                            1,
-                                                           t.GetFormat(),
+                                                           t->GetFormat(),
                                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                            VK_IMAGE_USAGE_SAMPLED_BIT};
-                  return device->CreateTexture(textureDescriptor, t.GetData());
+                  return device->CreateTexture(textureDescriptor, t->GetData());
               };
 
-              materialData.difuseTexture = CreateMaterialDataTexture(renderComponent.difuse);
-              materialData.normalTexture = CreateMaterialDataTexture(renderComponent.normal);
+              auto material = renderComponent.material;
+
+              materialData.difuseTexture = CreateMaterialDataTexture(material->diffuseTexture);
+              materialData.normalTexture = CreateMaterialDataTexture(material->normalTexture);
               materialData.metallicRoughnessTexture =
-                CreateMaterialDataTexture(renderComponent.metallicRoughness);
-              materialData.emissiveTexture = CreateMaterialDataTexture(renderComponent.emissive);
+                CreateMaterialDataTexture(material->metallicRoughnessTexture);
+              materialData.emissiveTexture = CreateMaterialDataTexture(material->emissiveTexture);
 
               materialData.modelBuffer =
                 m_device->CreateBuffer({64, 64, RED::BufferUsage::UNIFORM});
 
+              u32 uniformMaterialData[4] = {material->m_diffuse.RGBA(),
+                                            material->m_specular.RGBA(),
+                                            material->m_emissive.RGBA(),
+                                            0};
               materialData.uniformBuffer =
-                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM});
-              if (const auto m = renderComponent.material)
-              {
-                  u32 uniformMaterialData[4] = {m->m_diffuse.RGBA(),
-                                                m->m_specular.RGBA(),
-                                                m->m_emissive.RGBA(),
-                                                0};
-                  m_device->UpdateBuffer(materialData.uniformBuffer.GetID(), &uniformMaterialData);
-              }
+                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM}, &uniformMaterialData);
           }
       });
 
@@ -274,7 +273,7 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
             const auto meshData =
               m_rendererRegistry.try_get<MeshData>(meshComponent.m_mesh->m_handle);
             const auto materialData =
-              m_rendererRegistry.try_get<MaterialData>(renderComponent.m_handle);
+              m_rendererRegistry.try_get<MaterialData>(renderComponent.material->m_handle);
 
             if (!meshData || !materialData)
                 return;

@@ -1,38 +1,29 @@
 #pragma once
 
-#include "pinut/assets/texture.h"
 #include "pinut/components/baseComponent.h"
 
 namespace Pinut
 {
 class Material;
 class Renderer;
+class Texture;
 namespace Component
 {
 struct RenderComponent : public BaseComponent
 {
-    RenderComponent(Texture inDifuse,
-                    Texture inNormal,
-                    Texture inMetallicRoughness,
-                    Texture inEmissive);
+    using TexturePtr  = std::shared_ptr<Texture>;
+    using MaterialPtr = std::shared_ptr<Material>;
 
-    RenderComponent(std::shared_ptr<Material> InMaterial);
+    RenderComponent(MaterialPtr InMaterial);
 
     friend Renderer;
 
+    // BaseComponent
 #ifdef _DEBUG
     void RenderDebug() override;
 #endif
 
-    Texture difuse;
-    Texture normal;
-    Texture metallicRoughness;
-    Texture emissive;
-
-    std::shared_ptr<Material> material;
-
-  private:
-    entt::entity m_handle{entt::null};
+    MaterialPtr material;
 };
 } // namespace Component
 } // namespace Pinut

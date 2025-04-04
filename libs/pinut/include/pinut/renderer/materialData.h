@@ -1,7 +1,12 @@
 #pragma once
 
+#include <render_device/buffer.h>
 #include <render_device/texture.h>
 
+namespace RED
+{
+class Device;
+}
 namespace Pinut
 {
 class Material;

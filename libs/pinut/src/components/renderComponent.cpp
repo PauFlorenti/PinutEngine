@@ -9,25 +9,7 @@ namespace Pinut
 {
 namespace Component
 {
-RenderComponent::RenderComponent(Texture inDifuse,
-                                 Texture inNormal,
-                                 Texture inMetallicRoughness,
-                                 Texture inEmissive)
-: difuse(inDifuse),
-  normal(inNormal),
-  metallicRoughness(inMetallicRoughness),
-  emissive(inEmissive)
-{
-}
-
-RenderComponent::RenderComponent(std::shared_ptr<Material> InMaterial)
-: material(InMaterial),
-  difuse(*InMaterial->diffuseTexture),
-  normal(*InMaterial->normalTexture),
-  metallicRoughness(*InMaterial->metallicRoughnessTexture),
-  emissive(*InMaterial->emissiveTexture)
-{
-}
+RenderComponent::RenderComponent(MaterialPtr InMaterial) : material(InMaterial) {}
 
 #ifdef _DEBUG
 void RenderComponent::RenderDebug()
