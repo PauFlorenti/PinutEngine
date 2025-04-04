@@ -26,7 +26,7 @@ struct RenderComponent : public BaseComponent
     Texture metallicRoughness;
     Texture emissive;
 
-    std::weak_ptr<Material> material;
+    std::shared_ptr<Material> material;
 
     entt::entity m_handle{entt::null};
 };

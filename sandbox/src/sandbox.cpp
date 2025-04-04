@@ -46,11 +46,7 @@ void Sandbox::OnCreate()
 
     const auto monkeyMaterial =
       m_assetManager.GetAsset<Pinut::Material>("meshes\\monkey_smooth\\suzanne.mat");
-    registry.emplace<Pinut::Component::RenderComponent>(monkey,
-                                                        Pinut::Texture::WhiteTexture,
-                                                        Pinut::Texture::BlueTexture,
-                                                        Pinut::Texture::BlackTexture,
-                                                        Pinut::Texture::BlackTexture);
+    registry.emplace<Pinut::Component::RenderComponent>(monkey, monkeyMaterial);
 
     registry.emplace_or_replace<Pinut::Component::TransformComponent>(monkey,
                                                                       glm::vec3(0.0f, 5.0f, 10.0f));
@@ -59,12 +55,10 @@ void Sandbox::OnCreate()
     registry.emplace<Pinut::Component::MeshComponent>(
       vikingRoom,
       *m_assetManager.GetAsset<Pinut::Mesh>("viking_room\\viking_room.obj.mesh"));
+
     registry.emplace<Pinut::Component::RenderComponent>(
       vikingRoom,
-      *m_assetManager.GetAsset<Pinut::Texture>("viking_room\\viking_room_diffuse.png"),
-      Pinut::Texture::BlueTexture,
-      Pinut::Texture::BlackTexture,
-      Pinut::Texture::BlackTexture);
+      m_assetManager.GetAsset<Pinut::Material>("viking_room\\viking_room.mat"));
 
     registry.emplace_or_replace<Pinut::Component::TransformComponent>(
       vikingRoom,
@@ -83,26 +77,26 @@ void Sandbox::OnCreate()
         lightComponent.m_radius    = 100.0f;
         lightComponent.m_intensity = 10.0f;
         registry.get<Pinut::Component::TransformComponent>(pointLight)
-          .SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 5.0f)));
+          .SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));
     }
-    {
-        auto  pointLight           = m_currentScene->CreateEntity();
-        auto& lightComponent       = registry.emplace<Pinut::Component::LightComponent>(pointLight);
-        lightComponent.m_color     = glm::vec3(1.0f, 0.0f, 0.0f);
-        lightComponent.m_radius    = 100.0f;
-        lightComponent.m_intensity = 10.0f;
-        registry.get<Pinut::Component::TransformComponent>(pointLight)
-          .SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 10.0f, 5.0f)));
-    }
-    {
-        auto  pointLight           = m_currentScene->CreateEntity();
-        auto& lightComponent       = registry.emplace<Pinut::Component::LightComponent>(pointLight);
-        lightComponent.m_color     = glm::vec3(0.0f, 0.0f, 1.0f);
-        lightComponent.m_radius    = 100.0f;
-        lightComponent.m_intensity = 10.0f;
-        registry.get<Pinut::Component::TransformComponent>(pointLight)
-          .SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 10.0f, 5.0f)));
-    }
+    // {
+    //     auto  pointLight           = m_currentScene->CreateEntity();
+    //     auto& lightComponent       = registry.emplace<Pinut::Component::LightComponent>(pointLight);
+    //     lightComponent.m_color     = glm::vec3(1.0f, 0.0f, 0.0f);
+    //     lightComponent.m_radius    = 100.0f;
+    //     lightComponent.m_intensity = 10.0f;
+    //     registry.get<Pinut::Component::TransformComponent>(pointLight)
+    //       .SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 10.0f, 5.0f)));
+    // }
+    // {
+    //     auto  pointLight           = m_currentScene->CreateEntity();
+    //     auto& lightComponent       = registry.emplace<Pinut::Component::LightComponent>(pointLight);
+    //     lightComponent.m_color     = glm::vec3(0.0f, 0.0f, 1.0f);
+    //     lightComponent.m_radius    = 100.0f;
+    //     lightComponent.m_intensity = 10.0f;
+    //     registry.get<Pinut::Component::TransformComponent>(pointLight)
+    //       .SetTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 10.0f, 5.0f)));
+    // }
 }
 
 void Sandbox::OnUpdate()

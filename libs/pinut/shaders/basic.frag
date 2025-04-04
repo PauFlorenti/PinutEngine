@@ -92,14 +92,11 @@ void main()
     const float metallic    = roughnessMetallicTexture.z;
     const vec3 F0           = mix(vec3(0.04), diffuseTexture, metallic);
 
-    vec3 materialDiffuseColor   = diffuseTexture * inColor.xyz * UnpackColor(perInstanceData.diffuse).xyz;
-
-    vec3 ambient = vec3(0.0f);
-    vec3 diffuse = vec3(0.0f);
-    vec3 specular = vec3(0.0f);
+    vec3 diffuseColor   = diffuseTexture * inColor.xyz * UnpackColor(perInstanceData.diffuse).xyz;
+    vec3 specular       = vec3(0.0f);
 
     vec3 Lo = vec3(0.0);
-    Lo += ComputeDirectionalLight(lightData.directionalLight, N, materialDiffuseColor);
+    Lo += ComputeDirectionalLight(lightData.directionalLight, N, diffuseColor);
 
     for (int i = 0; i < 4; ++i)
     {
@@ -162,7 +159,7 @@ void main()
         const vec3 kS = F;
         const vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
 
-        Lo += (kD * diffuseTexture / PI + specular) * radiance * NdotL;
+        Lo += (kD * diffuseColor / PI + specular) * radiance * NdotL;
     }
 
     outColor = vec4(Lo + emissiveTexture, 1.0);

@@ -205,19 +205,16 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
               materialData.modelBuffer =
                 m_device->CreateBuffer({64, 64, RED::BufferUsage::UNIFORM});
 
-              if (const auto m = renderComponent.material.lock())
+              materialData.uniformBuffer =
+                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM});
+              if (const auto m = renderComponent.material)
               {
                   u32 uniformMaterialData[4] = {m->m_diffuse.RGBA(),
                                                 m->m_specular.RGBA(),
                                                 m->m_emissive.RGBA(),
                                                 0};
-                  materialData.uniformBuffer =
-                    m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM},
-                                           &uniformMaterialData);
+                  m_device->UpdateBuffer(materialData.uniformBuffer.GetID(), &uniformMaterialData);
               }
-
-              materialData.uniformBuffer =
-                m_device->CreateBuffer({16, 16, RED::BufferUsage::UNIFORM});
           }
       });
 

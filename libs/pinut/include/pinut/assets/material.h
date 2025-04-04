@@ -21,15 +21,9 @@ class Material final : public Asset
     common::Color m_specular = common::Color::Black();
     common::Color m_emissive = common::Color::White();
 
-    std::string m_diffuseTexture;
-    std::string m_specularTexture;
-    std::string m_normalTexture;
-    std::string m_metallicRoughnessTexture;
-    std::string m_emissiveTexture;
-
-    // Texture difuseTexture;
-    // Texture normalTexture;
-    // Texture metallicRoughnessTexture;
-    // Texture emissiveTexture;
+    std::shared_ptr<Texture> diffuseTexture;
+    std::shared_ptr<Texture> normalTexture;
+    std::shared_ptr<Texture> metallicRoughnessTexture;
+    std::shared_ptr<Texture> emissiveTexture;
 };
 } // namespace Pinut

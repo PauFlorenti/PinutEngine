@@ -96,6 +96,31 @@ void AssetManager::ProcessRawData(RawData InRawData)
         material->m_emissive = common::Color(rawMaterial.emissive);
         material->m_specular = common::Color(rawMaterial.specular);
 
+        material->diffuseTexture =
+          rawMaterial.diffuseTexture.empty() ?
+            std::make_shared<Texture>(Texture::WhiteTexture) :
+            std::static_pointer_cast<Texture>(
+              m_assets.find(std::hash<std::string>{}(rawMaterial.diffuseTexture))->second);
+
+        material->normalTexture =
+          rawMaterial.normalTexture.empty() ?
+            std::make_shared<Texture>(Texture::BlueTexture) :
+            std::static_pointer_cast<Texture>(
+              m_assets.find(std::hash<std::string>{}(rawMaterial.normalTexture))->second);
+
+        material->metallicRoughnessTexture =
+          rawMaterial.metallicRoughnessTexture.empty() ?
+            std::make_shared<Texture>(Texture::GreenTexture) :
+            std::static_pointer_cast<Texture>(
+              m_assets.find(std::hash<std::string>{}(rawMaterial.metallicRoughnessTexture))
+                ->second);
+
+        material->emissiveTexture =
+          rawMaterial.emissiveTexture.empty() ?
+            std::make_shared<Texture>(Texture::BlackTexture) :
+            std::static_pointer_cast<Texture>(
+              m_assets.find(std::hash<std::string>{}(rawMaterial.emissiveTexture))->second);
+
         m_assets.insert({material->GetUUID(), material});
     }
 

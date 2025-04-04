@@ -22,10 +22,10 @@ RenderComponent::RenderComponent(Texture inDifuse,
 
 RenderComponent::RenderComponent(std::shared_ptr<Material> InMaterial)
 : material(InMaterial),
-  difuse(InMaterial->m_diffuseTexture),
-  normal(InMaterial->m_normalTexture),
-  metallicRoughness(InMaterial->m_metallicRoughnessTexture),
-  emissive(InMaterial->m_emissiveTexture)
+  difuse(*InMaterial->diffuseTexture),
+  normal(*InMaterial->normalTexture),
+  metallicRoughness(*InMaterial->metallicRoughnessTexture),
+  emissive(*InMaterial->emissiveTexture)
 {
 }
 

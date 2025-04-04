@@ -6,22 +6,29 @@ class Color final
 {
   public:
     constexpr Color(u32 InColor) : data(InColor) {};
-    constexpr Color(u8 InR, u8 InG, u8 InB, u8 InA)
-    : data((static_cast<u32>(InA) << alphaShiftValue) | (static_cast<u32>(InB) << blueShiftValue) |
-           (static_cast<u32>(InG) << greenShiftValue) |
-           (static_cast<u32>(InR) << redShiftValue)) {};
+    constexpr Color(u8 InR, u8 InG, u8 InB, u8 InA = 255)
+    {
+        data = InA << alphaShiftValue;
+        data |= InB << blueShiftValue;
+        data |= InG << greenShiftValue;
+        data |= InR << redShiftValue;
+    };
 
     constexpr Color(const glm::vec3& InColor)
-    : data((static_cast<u32>(0xFF) << alphaShiftValue) |
-           (static_cast<u32>(InColor.b) << blueShiftValue) |
-           (static_cast<u32>(InColor.g) << greenShiftValue) |
-           (static_cast<u32>(InColor.r) << redShiftValue)) {};
+    {
+        data = 255 << alphaShiftValue;
+        data |= (static_cast<u32>(InColor.b * 255) << blueShiftValue);
+        data |= (static_cast<u32>(InColor.g * 255) << greenShiftValue);
+        data |= (static_cast<u32>(InColor.r * 255) << redShiftValue);
+    };
 
     constexpr Color(const glm::vec4& InColor)
-    : data((static_cast<u32>(InColor.a) << alphaShiftValue) |
-           (static_cast<u32>(InColor.b) << blueShiftValue) |
-           (static_cast<u32>(InColor.g) << greenShiftValue) |
-           (static_cast<u32>(InColor.r) << redShiftValue)) {};
+    {
+        data = (static_cast<u32>(InColor.a * 255) << alphaShiftValue);
+        data |= (static_cast<u32>(InColor.b * 255) << blueShiftValue);
+        data |= (static_cast<u32>(InColor.g * 255) << greenShiftValue);
+        data |= (static_cast<u32>(InColor.r * 255) << redShiftValue);
+    }
 
     constexpr u32 RGBA() const { return data; }
 

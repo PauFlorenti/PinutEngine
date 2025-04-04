@@ -86,14 +86,23 @@ RawData OBJLoader::ParseObjFile(const std::filesystem::path& InFilepath)
                        InsertTexture(InMaterial.emissive_texname);
                        InsertTexture(InMaterial.specular_texname);
 
+                       //! TODO Assuming textures are on the same folder as .obj and .mat
                        return RawMaterialData{absolutePath + "\\" + InMaterial.name + ".mat",
                                               ConvertToVec3(InMaterial.diffuse),
                                               ConvertToVec3(InMaterial.emission),
                                               ConvertToVec3(InMaterial.specular),
-                                              InMaterial.diffuse_texname,
-                                              InMaterial.normal_texname,
-                                              InMaterial.emissive_texname,
-                                              InMaterial.specular_texname};
+                                              InMaterial.diffuse_texname.empty() ?
+                                                "" :
+                                                absolutePath + "\\" + InMaterial.diffuse_texname,
+                                              InMaterial.normal_texname.empty() ?
+                                                "" :
+                                                absolutePath + "\\" + InMaterial.normal_texname,
+                                              InMaterial.emissive_texname.empty() ?
+                                                "" :
+                                                absolutePath + "\\" + InMaterial.emissive_texname,
+                                              InMaterial.specular_texname.empty() ?
+                                                "" :
+                                                absolutePath + "\\" + InMaterial.specular_texname};
                    });
 
     rawData.meshData.resize(1);
