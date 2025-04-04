@@ -107,39 +107,39 @@ void Sandbox::OnCreate()
 
 void Sandbox::OnUpdate()
 {
-    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_LEFT_SHIFT))
         m_currentCamera->speed = 10.0f;
     else
         m_currentCamera->speed = 5.0f;
 
     const auto dt = static_cast<f32>(GetDeltaTime());
 
-    if (glfwGetKey(m_window, GLFW_KEY_W))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_W))
     {
         m_currentCamera->UpdateCameraWASD(m_currentCamera->Forward() * dt);
     }
-    if (glfwGetKey(m_window, GLFW_KEY_A))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_A))
     {
         m_currentCamera->UpdateCameraWASD(m_currentCamera->Right() * dt);
     }
-    if (glfwGetKey(m_window, GLFW_KEY_S))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_S))
     {
         m_currentCamera->UpdateCameraWASD(-m_currentCamera->Forward() * dt);
     }
-    if (glfwGetKey(m_window, GLFW_KEY_D))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_D))
     {
         m_currentCamera->UpdateCameraWASD(-m_currentCamera->Right() * dt);
     }
-    if (glfwGetKey(m_window, GLFW_KEY_Z))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_Z))
     {
         m_currentCamera->UpdateCameraWASD(-m_currentCamera->Up() * dt);
     }
-    if (glfwGetKey(m_window, GLFW_KEY_X))
+    if (glfwGetKey(m_window.get(), GLFW_KEY_X))
     {
         m_currentCamera->UpdateCameraWASD(m_currentCamera->Up() * dt);
     }
 
-    if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_2))
+    if (glfwGetMouseButton(m_window.get(), GLFW_MOUSE_BUTTON_2))
     {
         m_currentCamera->UpdateRotation(dt, -m_mouse.mouseOffset.x, -m_mouse.mouseOffset.y);
     }

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "pinut/core/assetManager.h"
+#include "pinut/core/window.h"
 #include "pinut/renderer/renderer.h"
 #include "pinut/renderer/swapchain.h"
 #ifdef _DEBUG
 #include "pinut/imgui/pinutImgui.h"
 #endif
 
-struct GLFWwindow;
 namespace Pinut
 {
 class Camera;
@@ -85,15 +85,14 @@ class Application
     u32         m_height;
 
     // TODO Shared_ptr
-    Camera*     m_currentCamera{nullptr};
-    Scene*      m_currentScene{nullptr};
-    GLFWwindow* m_window{nullptr}; // For glfw input
+    Camera* m_currentCamera{nullptr};
+    Scene*  m_currentScene{nullptr};
+    Window  m_window{nullptr};
 
     Mouse m_mouse;
 
   private:
     static vkb::Result<vkb::Instance> CreateInstance();
-    static VkSurfaceKHR               CreateSurface(const VkInstance& instance, GLFWwindow* window);
     static vkb::Result<vkb::Device>   CreateDevice(const vkb::Instance& vkbInstance,
                                                    const VkSurfaceKHR&  surface);
     static DeviceQueues               CreateDeviceQueues(const vkb::Device& vkbDevice);
@@ -107,9 +106,7 @@ class Application
 
     static void OnWindowResized(GLFWwindow* window, i32 width, i32 height);
 
-    bool SetupGlfw();
     bool SetupVulkan();
-    void ShutdownGlfw();
     void ShutdownVulkan();
 
     void Update();

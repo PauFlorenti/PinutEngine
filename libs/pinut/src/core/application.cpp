@@ -1,7 +1,6 @@
 #include "pch.hpp"
 
 #include <GLFW/glfw3.h>
-
 #include <render_device/device.h>
 
 #include "pinut/assets/mesh.h"
@@ -60,18 +59,6 @@ vkb::Result<vkb::Instance> Application::CreateInstance()
       .use_default_debug_messenger()
       .require_api_version(1, 3, 0)
       .build();
-}
-
-VkSurfaceKHR Application::CreateSurface(const VkInstance& instance, GLFWwindow* window)
-{
-    VkSurfaceKHR surface{VK_NULL_HANDLE};
-
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
-    {
-        printf("[ERROR]: Failed to create surface.");
-    }
-
-    return surface;
 }
 
 vkb::Result<vkb::Device> Application::CreateDevice(const vkb::Instance& vkbInstance,
@@ -187,12 +174,12 @@ Application::Application(const std::string& name, i32 width, i32 height)
   m_width(width),
   m_height(height)
 {
-    if (!SetupGlfw())
-        return;
+    const std::string windowName = "PinutEngine";
+    m_window                     = CreateWindow(m_width, m_height, windowName);
 
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetWindowSizeCallback(m_window, &Application::OnWindowResized);
-    glfwSetCursorPosCallback(m_window, &Application::OnMouseMoved);
+    glfwSetWindowUserPointer(m_window.get(), this);
+    glfwSetWindowSizeCallback(m_window.get(), &Application::OnWindowResized);
+    glfwSetCursorPosCallback(m_window.get(), &Application::OnMouseMoved);
 
     if (!SetupVulkan())
         return;
@@ -203,7 +190,7 @@ Application::Application(const std::string& name, i32 width, i32 height)
     auto imgui =
       std::make_unique<PinutImGUI>(&m_deviceInfo,
                                    &m_deviceQueues.at(static_cast<u32>(RED::QueueType::GRAPHICS)),
-                                   m_window,
+                                   m_window.get(),
                                    m_width,
                                    m_height);
     m_renderer = std::make_unique<Renderer>(std::move(device), &m_swapchainInfo, std::move(imgui));
@@ -220,7 +207,6 @@ Application::~Application()
     DestroySwapchain(m_deviceInfo.device, m_swapchainInfo);
     m_renderer.reset();
     ShutdownVulkan();
-    ShutdownGlfw();
 }
 
 void Application::OnWindowMoved(GLFWwindow* window, int x, int y)
@@ -250,12 +236,12 @@ void Application::Init() {}
 
 void Application::Run()
 {
-    while (!glfwWindowShouldClose(m_window))
+    while (!glfwWindowShouldClose(m_window.get()))
     {
         // Check if we should close
-        if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        if (glfwGetKey(m_window.get(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
-            glfwSetWindowShouldClose(m_window, true);
+            glfwSetWindowShouldClose(m_window.get(), true);
         }
 
         glfwPollEvents();
@@ -349,33 +335,6 @@ void Application::OnWindowResized(GLFWwindow* window, i32 width, i32 height)
     app->m_height = height;
 }
 
-bool Application::SetupGlfw()
-{
-    if (!glfwInit())
-    {
-        printf("[ERROR]: Failed to init GLFW.");
-        return false;
-    }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-    const std::string windowName = "PinutEngine";
-
-    m_window = glfwCreateWindow(m_width, m_height, windowName.c_str(), nullptr, nullptr);
-
-    if (!m_window)
-    {
-        glfwTerminate();
-        printf("[ERROR]: Failed to create window.");
-        return false;
-    }
-
-    // TODO If debug, init ImGui here.
-
-    return true;
-}
-
 bool Application::SetupVulkan()
 {
     auto vkbInstanceResult = CreateInstance();
@@ -392,7 +351,7 @@ bool Application::SetupVulkan()
     m_debugMessenger = vkbInstance.debug_messenger;
 #endif
 
-    m_surface = CreateSurface(m_deviceInfo.instance, m_window);
+    m_surface = CreateSurface(m_window.get(), m_deviceInfo.instance);
 
     auto vkbDeviceResult = CreateDevice(vkbInstance, m_surface);
     if (!vkbDeviceResult)
@@ -461,12 +420,6 @@ bool Application::SetupVulkan()
                    std::move(GetSwapchainStateCallback)};
 
     return true;
-}
-
-void Application::ShutdownGlfw()
-{
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
 }
 
 void Application::ShutdownVulkan()
