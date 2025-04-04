@@ -100,7 +100,7 @@ void Pinut::PinutImGUI::Render(entt::registry& registry, const ShaderCameraData&
 {
     ImGui::Begin("Entities");
 
-    ImGui::Text("FPS: %f", &ImGui::GetIO().Framerate);
+    ImGui::Text("FPS: %.3f", ImGui::GetIO().Framerate);
 
     registry.view<entt::entity>().each(
       [&](auto entity)
