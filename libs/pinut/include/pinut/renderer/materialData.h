@@ -15,11 +15,13 @@ void CreateMaterialData(std::shared_ptr<RED::Device> InDevice,
                         std::shared_ptr<Material>    InMaterial);
 struct MaterialData
 {
-    RED::GPUTexture difuseTexture;
-    RED::GPUTexture normalTexture;
-    RED::GPUTexture metallicRoughnessTexture;
-    RED::GPUTexture emissiveTexture;
-    RED::GPUBuffer  uniformBuffer;
-    RED::GPUBuffer  modelBuffer;
+    using TextureId = entt::entity;
+
+    TextureId      difuseTexture;
+    TextureId      normalTexture;
+    TextureId      metallicRoughnessTexture;
+    TextureId      emissiveTexture;
+    RED::GPUBuffer uniformBuffer;
+    RED::GPUBuffer modelBuffer;
 };
 } // namespace Pinut

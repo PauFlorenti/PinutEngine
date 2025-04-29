@@ -21,11 +21,11 @@ class Texture final : public Asset
 
     friend Renderer;
 
-    static const Texture WhiteTexture;
-    static const Texture BlackTexture;
-    static const Texture RedTexture;
-    static const Texture GreenTexture;
-    static const Texture BlueTexture;
+    static const std::shared_ptr<Texture> WhiteTexture;
+    static const std::shared_ptr<Texture> BlackTexture;
+    static const std::shared_ptr<Texture> RedTexture;
+    static const std::shared_ptr<Texture> GreenTexture;
+    static const std::shared_ptr<Texture> BlueTexture;
 
     void Destroy() override;
 

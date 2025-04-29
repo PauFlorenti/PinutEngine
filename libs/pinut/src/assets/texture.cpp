@@ -13,16 +13,36 @@
 namespace Pinut
 {
 
-const Texture Texture::WhiteTexture =
-  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::WhiteRGBA, "DefaultWhiteTexture");
-const Texture Texture::BlackTexture =
-  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::BlackRGBA, "DefaultBlackTexture");
-const Texture Texture::RedTexture =
-  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::RedRGBA, "DefaultRedTexture");
-const Texture Texture::GreenTexture =
-  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::GreenRGBA, "DefaultGreenTexture");
-const Texture Texture::BlueTexture =
-  Texture(1, 1, RED::TextureFormat::R8G8B8A8_UNORM, &common::BlueRGBA, "DefaultBlueTexture");
+const std::shared_ptr<Texture> Texture::WhiteTexture =
+  std::make_shared<Texture>(1,
+                            1,
+                            RED::TextureFormat::R8G8B8A8_UNORM,
+                            &common::WhiteRGBA,
+                            "DefaultWhiteTexture");
+const std::shared_ptr<Texture> Texture::BlackTexture =
+  std::make_shared<Texture>(1,
+                            1,
+                            RED::TextureFormat::R8G8B8A8_UNORM,
+                            &common::BlackRGBA,
+                            "DefaultBlackTexture");
+const std::shared_ptr<Texture> Texture::RedTexture =
+  std::make_shared<Texture>(1,
+                            1,
+                            RED::TextureFormat::R8G8B8A8_UNORM,
+                            &common::RedRGBA,
+                            "DefaultRedTexture");
+const std::shared_ptr<Texture> Texture::GreenTexture =
+  std::make_shared<Texture>(1,
+                            1,
+                            RED::TextureFormat::R8G8B8A8_UNORM,
+                            &common::GreenRGBA,
+                            "DefaultGreenTexture");
+const std::shared_ptr<Texture> Texture::BlueTexture =
+  std::make_shared<Texture>(1,
+                            1,
+                            RED::TextureFormat::R8G8B8A8_UNORM,
+                            &common::BlueRGBA,
+                            "DefaultBlueTexture");
 
 Texture::Texture(const u32          width,
                  const u32          height,

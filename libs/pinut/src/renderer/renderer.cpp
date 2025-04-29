@@ -26,6 +26,7 @@
 #include "pinut/renderer/renderer.h"
 #include "pinut/renderer/skyData.h"
 #include "pinut/renderer/swapchain.h"
+#include "pinut/renderer/textureData.h"
 #include "pinut/renderer/utils.h"
 
 namespace Pinut
@@ -186,15 +187,26 @@ void Renderer::Update(entt::registry& registry, const ViewportData& viewportData
                 m_rendererRegistry.emplace<MaterialData>(renderComponent.material->m_handle);
 
               auto CreateMaterialDataTexture =
-                [&device = this->m_device](std::shared_ptr<Texture> t)
+                [&device   = this->m_device,
+                 &registry = m_rendererRegistry](std::shared_ptr<Texture> t) -> entt::entity
               {
+                  if (registry.try_get<TextureData>(t->m_handle))
+                  {
+                      return t->m_handle;
+                  }
+
+                  t->m_handle = registry.create();
+                  auto& data  = registry.emplace<TextureData>(t->m_handle);
+
                   RED::TextureDescriptor textureDescriptor{t->GetWidth(),
                                                            t->GetHeight(),
                                                            1,
                                                            t->GetFormat(),
                                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                            VK_IMAGE_USAGE_SAMPLED_BIT};
-                  return device->CreateTexture(textureDescriptor, t->GetData());
+                  data.texture = device->CreateTexture(textureDescriptor, t->GetData());
+
+                  return t->m_handle;
               };
 
               auto material = renderComponent.material;
@@ -290,14 +302,14 @@ void Renderer::Render(entt::registry& registry, const ViewportData& viewportData
             dc.SetUniformBuffer({m_offscreenState.lightsBuffer}, RED::ShaderType::FRAGMENT, 1);
             dc.SetUniformBuffer({materialData->modelBuffer}, RED::ShaderType::VERTEX, 0, 1);
             dc.SetUniformBuffer({materialData->uniformBuffer}, RED::ShaderType::FRAGMENT, 1, 1);
-            dc.SetUniformTexture({materialData->difuseTexture,
-                                  materialData->normalTexture,
-                                  materialData->metallicRoughnessTexture,
-                                  materialData->emissiveTexture,
-                                  materialData->emissiveTexture},
-                                 RED::ShaderType::FRAGMENT,
-                                 2,
-                                 1);
+            dc.SetUniformTexture(
+              {m_rendererRegistry.get<TextureData>(materialData->difuseTexture).texture,
+               m_rendererRegistry.get<TextureData>(materialData->normalTexture).texture,
+               m_rendererRegistry.get<TextureData>(materialData->metallicRoughnessTexture).texture,
+               m_rendererRegistry.get<TextureData>(materialData->emissiveTexture).texture},
+              RED::ShaderType::FRAGMENT,
+              2,
+              1);
 
             depthDrawCall.SetUniformBuffer({m_offscreenState.globalUniformBuffer},
                                            RED::ShaderType::VERTEX,

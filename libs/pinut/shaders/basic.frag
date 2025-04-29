@@ -48,7 +48,7 @@ layout(set = 1, binding = 1) uniform perInstance
     uint specularExponent;
 } perInstanceData;
 
-layout(set = 1, binding = 2) uniform sampler2D[5] materialTextures;
+layout(set = 1, binding = 2) uniform sampler2D[4] materialTextures;
 
 float ambientLightIntensity = 0.01;
 
